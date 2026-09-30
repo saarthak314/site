@@ -46,6 +46,15 @@
   src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
 }
 
+@font-face {
+  font-display: swap;
+  font-family: "JBM Symbols";
+  font-style: normal;
+  font-weight: 400;
+  src: url("/fonts/jetbrains-mono-symbols.woff2") format("woff2");
+  unicode-range: U+03BB, U+2190-21FF, U+2500-25FF;
+}
+
 :root {
   color-scheme: dark;
   --background: #282828;
@@ -56,6 +65,7 @@
   --border: #504945;
   --accent: #fabd2f;
   --accent-hover: #fe8019;
+  --art: "JetBrains Mono", "JBM Symbols", ui-monospace, Menlo, monospace;
 }
 
 * {
@@ -194,6 +204,13 @@ h3 {
 .site-title:hover {
   color: var(--foreground-strong);
   text-decoration: none;
+}
+
+.lam {
+  font-family: var(--art);
+  font-size: 0.82em;
+  position: relative;
+  top: -0.02em;
 }
 
 .site-name {

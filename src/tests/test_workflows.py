@@ -119,6 +119,7 @@ class TestWorkflowConfiguration(unittest.TestCase):
     self.assertIn("uv run sitegen dev --open", readme)
     self.assertIn("uv run sitegen new", readme)
     self.assertIn("uv run python scripts/optimize_images.py", readme)
+    self.assertIn("uv run python scripts/subset_fonts.py", readme)
 
   def test_generated_site_is_ignored_but_custom_domain_is_source_controlled(
     self,

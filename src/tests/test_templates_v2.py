@@ -226,7 +226,9 @@ class TestSharedLayout(TemplateRenderingTestCase):
     self.assertIn('href="/feed.xml"', html)
     self.assertIn('<body class="home-page">', html)
     self.assertIn('<a class="skip-link" href="#main-content">skip to content</a>', html)
-    self.assertIn('<a class="site-title" href="/">sλrthak</a>', html)
+    self.assertIn(
+      '<a class="site-title" href="/">s<span class="lam">λ</span>rthak</a>', html
+    )
     self.assertIn('<span class="site-name">sarthak tomar</span>', html)
     self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', html)
     self.assertIn('href="https://x.com/sarthak2143" rel="me">twitter/x</a>', html)
