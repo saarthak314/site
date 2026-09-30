@@ -1525,10 +1525,6 @@ main,
   }
 
   .rail--home {
-    align-items: center;
-    column-gap: 22px;
-    display: grid;
-    grid-template-columns: 120px minmax(0, 1fr);
     padding-top: 0;
   }
 
@@ -1537,19 +1533,20 @@ main,
   }
 
   .rail--home .portrait {
-    font-size: calc(120px / (var(--cols) * 0.6));
-    margin: 0;
-    max-width: 120px;
+    font-size: calc(240px / (var(--cols) * 0.6));
+    margin: 0 0 14px;
+    max-width: 240px;
   }
 
   .rail--home .socials {
-    column-gap: 18px;
-    columns: 2;
+    display: flex;
+    flex-wrap: wrap;
     font-size: 13px;
+    gap: 0 20px;
   }
 
   .rail--home .socials a {
-    min-height: 26px;
+    min-height: 32px;
   }
 }
 
@@ -1643,11 +1640,17 @@ main,
   }
 
   .not-found {
-    min-height: 54vh;
+    align-items: start;
+    min-height: 0;
   }
 
   .not-found-content {
-    padding: 3rem 0;
+    padding: 1.5rem 0 2rem;
+  }
+
+  .writings-header,
+  .about-header {
+    padding-top: 12px;
   }
 
   .footer {
