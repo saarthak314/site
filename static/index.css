@@ -214,7 +214,7 @@ h3 {
 
 /* ascii art blocks */
 
-.lambda,
+.portrait,
 .katana,
 .not-found-figlet,
 .tree pre,
@@ -225,7 +225,7 @@ h3 {
   white-space: pre;
 }
 
-.lambda,
+.portrait,
 .katana,
 .not-found-figlet,
 .tree pre {
@@ -372,11 +372,50 @@ main {
   min-height: 44px;
 }
 
-.lambda {
-  color: var(--ink-3);
-  font-size: 22px;
+.rail--home {
+  container-type: inline-size;
+}
+
+.portrait {
+  color: var(--ink-4);
+  font-family: var(--art);
+  font-size: calc(100cqw / (var(--cols) * 0.6));
+  font-variant-ligatures: none;
+  letter-spacing: 0;
   line-height: 1;
-  margin: 0 0 26px;
+  margin: 0 0 28px;
+  max-width: 100%;
+  overflow: hidden;
+  user-select: none;
+  white-space: pre;
+}
+
+.portrait .p0 {
+  color: var(--ink-4);
+}
+
+.portrait .p1 {
+  color: var(--ink-3);
+}
+
+.portrait .p2 {
+  color: var(--ink-2);
+}
+
+.portrait .p3 {
+  color: var(--ink);
+}
+
+.portrait .p4 {
+  color: var(--accent-2);
+}
+
+.portrait .p5 {
+  color: var(--accent);
+}
+
+.portrait .p6 {
+  color: var(--accent-soft);
 }
 
 .socials {
@@ -1180,8 +1219,9 @@ main,
     padding-top: 8px;
   }
 
-  .layout--home .lambda {
-    display: none;
+  .layout--home .portrait {
+    font-size: calc(240px / (var(--cols) * 0.6));
+    max-width: 240px;
   }
 
   .layout--home .socials {

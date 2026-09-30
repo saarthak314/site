@@ -65,8 +65,8 @@ class TestSiteRendering(unittest.TestCase):
     self.assertLess(home.index(">web server</span>"), home.index(">paimon</a>"))
     for removed_project in ("pixel editor", "redis clone", "rag pipeline", "cf-parser"):
       self.assertNotIn(removed_project, home)
+    self.assertLess(home.index('id="experience"'), home.index('id="writing"'))
     self.assertLess(home.index('id="writing"'), home.index('id="projects"'))
-    self.assertLess(home.index('id="projects"'), home.index('id="experience"'))
     for slug in ("make_cool_stuff", "learn_ocaml", "randomness_impl"):
       self.assertIn(f'href="/blogs/{slug}/"', archive)
     for published in ("30 aug", "30 jul", "19 jul"):

@@ -436,7 +436,10 @@ class TestHomeTemplate(TemplateRenderingTestCase):
     )
     self.assertIn('<span class="writing-row__time">1 min read</span>', html)
     self.assertNotIn("older post", html)
-    self.assertIn('<pre class="lambda" aria-hidden="true">', html)
+    self.assertIn(
+      '<pre class="portrait" role="img" aria-label="ascii portrait of asuka langley soryu, chin on her hand, unimpressed"',
+      html,
+    )
     self.assertIn('<a class="home-writing-all" href="/blogs/">all writings</a>', html)
     self.assertIn('<section class="home-projects" id="projects"', html)
     self.assertIn('class="home-project__tech">python · agents</span>', html)
@@ -468,8 +471,8 @@ class TestHomeTemplate(TemplateRenderingTestCase):
       html,
     )
     self.assertNotIn("home-experience__highlights", html)
+    self.assertLess(html.index('id="experience"'), html.index('id="writing"'))
     self.assertLess(html.index('id="writing"'), html.index('id="projects"'))
-    self.assertLess(html.index('id="projects"'), html.index('id="experience"'))
 
 
 class TestWritingsTemplate(TemplateRenderingTestCase):
