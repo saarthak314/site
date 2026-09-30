@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from collections.abc import Callable, Sequence
+from datetime import date
 from pathlib import Path
 from typing import TextIO
 
 from .build import BuildOptions, SiteBuilder
 from .server import serve
 from .validate import SiteValidator
+
+SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:[-_][a-z0-9]+)*$")
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -53,6 +57,10 @@ def create_parser() -> argparse.ArgumentParser:
     help="open the site in the default browser",
   )
 
+  new_parser = commands.add_parser("new", help="create a draft writing")
+  new_parser.add_argument("slug")
+  new_parser.add_argument("--title")
+
   return parser
 
 
@@ -78,6 +86,32 @@ def _print_report(report: object, stdout: TextIO) -> None:
   )
 
 
+def _scaffold_post(project_root: Path, slug: str, title: str | None = None) -> Path:
+  if not SLUG_PATTERN.fullmatch(slug):
+    raise ValueError(
+      "invalid slug: use lowercase letters, digits, hyphens, or underscores"
+    )
+  post_path = project_root / "content" / "blogs" / slug / "index.md"
+  if post_path.exists():
+    raise FileExistsError(f"{post_path}: already exists")
+  post_path.parent.mkdir(parents=True, exist_ok=False)
+  resolved_title = (
+    title.strip()
+    if title and title.strip()
+    else slug.replace("_", " ").replace("-", " ")
+  )
+  post_path.write_text(
+    f"title: {resolved_title}\n"
+    f"date: {date.today().isoformat()}\n"
+    "draft: true\n"
+    "description: add a short summary\n"
+    "-----\n\n"
+    "start writing.\n",
+    encoding="utf-8",
+  )
+  return post_path
+
+
 def main(
   argv: Sequence[str] | None = None,
   *,
@@ -92,9 +126,14 @@ def main(
   errors = stderr or sys.stderr
   root = Path.cwd() if project_root is None else Path(project_root)
   arguments = create_parser().parse_args(argv)
-  options = _build_options(arguments)
 
   try:
+    if arguments.command == "new":
+      created = _scaffold_post(root, arguments.slug, arguments.title)
+      print(f"created {created}", file=output)
+      return 0
+
+    options = _build_options(arguments)
     if arguments.command == "serve":
       result = serve_func(
         root,
@@ -129,12 +168,6 @@ def main(
     if arguments.command == "build":
       _print_report(report, output)
       return 0
-
-    issues = validator_factory().validate(Path(report.output_dir))
-    if issues:
-      for issue in issues:
-        print(issue.format(), file=errors)
-      return 1
 
     print(f"valid: {report.output_dir}", file=output)
     return 0

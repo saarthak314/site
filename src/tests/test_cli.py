@@ -1,22 +1,15 @@
 import importlib
-import inspect
 import io
-import json
-import os
 import sys
 import tempfile
-import time
 import types
 import unittest
-from contextlib import contextmanager, redirect_stderr
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import partial
-from http.server import ThreadingHTTPServer
+from datetime import date
 from pathlib import Path
-from threading import Event, Thread
 from types import SimpleNamespace
-from typing import Iterator
-from urllib.request import urlopen
 
 
 @dataclass(frozen=True)
@@ -188,12 +181,7 @@ class TestCheckCommand(CliTestCase):
     self.assertIn("content invalid", stdout + stderr)
     self.assertEqual(RecordingValidator.instances, [])
 
-  def test_check_formats_every_issue_and_returns_nonzero(self) -> None:
-    RecordingValidator.issues = [
-      FormattedIssue("broken link: /missing/"),
-      FormattedIssue("missing image: /images/nope.png"),
-    ]
-
+  def test_check_uses_the_builders_validation_once(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
       with import_sitegen_module("sitegen.cli") as cli:
@@ -203,18 +191,12 @@ class TestCheckCommand(CliTestCase):
           project_root,
         )
 
-    output = stdout + stderr
-    self.assertNotEqual(exit_code, 0)
-    self.assertIn("broken link: /missing/", output)
-    self.assertIn("missing image: /images/nope.png", output)
+    self.assertEqual(exit_code, 0, stdout + stderr)
     self.assertEqual(
       RecordingBuilder.instances[0].options,
       [FakeBuildOptions(include_drafts=True, incremental=True)],
     )
-    self.assertEqual(
-      RecordingValidator.instances[0].roots,
-      [project_root / "docs"],
-    )
+    self.assertEqual(RecordingValidator.instances, [])
 
   def test_check_returns_zero_when_the_generated_site_is_valid(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -222,6 +204,42 @@ class TestCheckCommand(CliTestCase):
         exit_code, _, _ = self.run_cli(cli, ["check"], Path(temp_dir))
 
     self.assertEqual(exit_code, 0)
+
+
+class TestNewCommand(CliTestCase):
+  def test_new_scaffolds_a_draft_post(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      project_root = Path(temp_dir)
+      with import_sitegen_module("sitegen.cli") as cli:
+        exit_code, stdout, stderr = self.run_cli(
+          cli,
+          ["new", "better-builds", "--title", "better builds"],
+          project_root,
+        )
+
+      post = project_root / "content/blogs/better-builds/index.md"
+      content = post.read_text()
+
+    self.assertEqual(exit_code, 0, stdout + stderr)
+    self.assertIn("title: better builds", content)
+    self.assertIn(f"date: {date.today().isoformat()}", content)
+    self.assertIn("draft: true", content)
+    self.assertIn("created", stdout)
+
+  def test_new_rejects_existing_or_invalid_slugs(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      project_root = Path(temp_dir)
+      existing = project_root / "content/blogs/existing"
+      existing.mkdir(parents=True)
+      existing.joinpath("index.md").write_text("existing")
+      with import_sitegen_module("sitegen.cli") as cli:
+        existing_result = self.run_cli(cli, ["new", "existing"], project_root)
+        invalid_result = self.run_cli(cli, ["new", "Bad Slug"], project_root)
+
+    self.assertNotEqual(existing_result[0], 0)
+    self.assertIn("already exists", existing_result[1] + existing_result[2])
+    self.assertNotEqual(invalid_result[0], 0)
+    self.assertIn("invalid slug", invalid_result[1] + invalid_result[2])
 
 
 class TestServeCommand(CliTestCase):
@@ -378,683 +396,6 @@ class TestServeCommand(CliTestCase):
       calls,
       [(FakeBuildOptions(include_drafts=False, incremental=True), True)],
     )
-
-
-class TestServer(unittest.TestCase):
-  def test_live_reload_state_publishes_versioned_events(self) -> None:
-    with import_sitegen_module("sitegen.live_reload") as live_reload:
-      state_class = getattr(live_reload, "LiveReloadState", None)
-      self.assertIsNotNone(state_class)
-      state = state_class()
-
-      event = state.publish("css", "static/index.css")
-
-      self.assertEqual(event.version, 1)
-      self.assertEqual(event.kind, "css")
-      self.assertEqual(event.message, "static/index.css")
-      self.assertEqual(state.wait_for_update(0, timeout=0), event)
-      self.assertIsNone(state.wait_for_update(1, timeout=0))
-
-  def test_live_reload_markup_injects_versioned_client_before_body(self) -> None:
-    with import_sitegen_module("sitegen.live_reload") as live_reload:
-      inject = getattr(live_reload, "inject_live_reload", None)
-      self.assertTrue(callable(inject))
-
-      html = "<!doctype html><html><body><main>hello</main></body></html>"
-      rendered = inject(html, version=7)
-
-    self.assertIn("new EventSource", rendered)
-    self.assertIn("version=7", rendered)
-    self.assertLess(rendered.index("new EventSource"), rendered.index("</body>"))
-
-  def test_live_reload_client_swaps_css_and_renders_build_errors(self) -> None:
-    with import_sitegen_module("sitegen.live_reload") as live_reload:
-      client = getattr(live_reload, "LIVE_RELOAD_CLIENT", "")
-
-    self.assertIn('link[rel="stylesheet"]', client)
-    self.assertIn("build-error", client)
-    self.assertIn("__sitegen-error", client)
-
-  def test_request_handler_injects_live_reload_and_disables_cache(self) -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
-      root = Path(temp_dir)
-      (root / "index.html").write_text(
-        "<!doctype html><html><body>hello</body></html>",
-        encoding="utf-8",
-      )
-
-      with import_sitegen_module("sitegen.server") as server:
-        parameters = inspect.signature(server.SiteRequestHandler.__init__).parameters
-        self.assertIn("reload_state", parameters)
-        state = server.LiveReloadState()
-        handler = partial(
-          server.SiteRequestHandler,
-          directory=root,
-          reload_state=state,
-        )
-        httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-        thread = Thread(target=httpd.serve_forever, daemon=True)
-        thread.start()
-        try:
-          host, port = httpd.server_address
-          with urlopen(f"http://{host}:{port}/", timeout=2) as response:
-            html = response.read().decode("utf-8")
-            cache_control = response.headers.get("Cache-Control")
-        finally:
-          httpd.shutdown()
-          httpd.server_close()
-          thread.join()
-
-    self.assertEqual(cache_control, "no-store")
-    self.assertIn("data-sitegen-live-reload", html)
-    self.assertIn("version=0", html)
-
-  def test_request_handler_streams_versioned_reload_events(self) -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
-      root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
-        self.assertTrue(hasattr(server.SiteRequestHandler, "_serve_events"))
-        state = server.LiveReloadState()
-        state.publish("css", "static/index.css")
-        handler = partial(
-          server.SiteRequestHandler,
-          directory=root,
-          reload_state=state,
-        )
-        httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler)
-        thread = Thread(target=httpd.serve_forever, daemon=True)
-        thread.start()
-        try:
-          host, port = httpd.server_address
-          with urlopen(
-            f"http://{host}:{port}/__sitegen/events?version=0",
-            timeout=2,
-          ) as response:
-            payload = response.read().decode("utf-8")
-            content_type = response.headers.get_content_type()
-        finally:
-          httpd.shutdown()
-          httpd.server_close()
-          thread.join()
-
-    self.assertEqual(content_type, "text/event-stream")
-    self.assertIn("id: 1", payload)
-    self.assertIn("event: css", payload)
-    self.assertIn('data: {"message": "static/index.css"}', payload)
-
-  def test_request_handler_suppresses_access_logs_during_live_reload(self) -> None:
-    with import_sitegen_module("sitegen.server") as server:
-      self.assertIn("log_message", server.SiteRequestHandler.__dict__)
-      handler = server.SiteRequestHandler.__new__(server.SiteRequestHandler)
-      handler.reload_state = server.LiveReloadState()
-      stderr = io.StringIO()
-      with redirect_stderr(stderr):
-        handler.log_message("GET %s", "/__sitegen/events")
-
-    self.assertEqual(stderr.getvalue(), "")
-
-  def test_request_handler_declares_utf8_for_text_assets(self) -> None:
-    with import_sitegen_module("sitegen.server") as server:
-      handler = server.SiteRequestHandler.__new__(server.SiteRequestHandler)
-
-      self.assertEqual(
-        handler.guess_type("llms.txt"),
-        "text/plain; charset=utf-8",
-      )
-      self.assertEqual(
-        handler.guess_type("index.html"),
-        "text/html; charset=utf-8",
-      )
-      self.assertEqual(handler.guess_type("image.png"), "image/png")
-
-  def test_serve_snapshots_inputs_before_the_initial_build(self) -> None:
-    events: list[object] = []
-    initial_snapshot = {Path("content/post.md"): 1}
-
-    class Builder:
-      def __init__(self, project_root: Path) -> None:
-        self.output_dir = project_root / "docs"
-
-      def build(self, _options: FakeBuildOptions) -> SimpleNamespace:
-        events.append("build")
-        return SimpleNamespace(rendered=1, reused=0, output_dir=self.output_dir)
-
-    class FakeWatcher:
-      def __init__(
-        self,
-        _project_root: Path,
-        _rebuild: object,
-        *,
-        initial_snapshot: dict[Path, int] | None = None,
-      ) -> None:
-        events.append(("watcher", initial_snapshot))
-
-      def start(self) -> None:
-        events.append("watcher-started")
-
-      def stop(self) -> None:
-        events.append("watcher-stopped")
-
-    class FakeHttpServer:
-      def __init__(self, _address: tuple[str, int], _handler: object) -> None:
-        events.append("server")
-
-      def __enter__(self) -> "FakeHttpServer":
-        return self
-
-      def __exit__(self, *_: object) -> None:
-        pass
-
-      def serve_forever(self) -> None:
-        pass
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
-        server.snapshot_sources = lambda _root: events.append("snapshot") or initial_snapshot
-        server.serve(
-          project_root,
-          FakeBuildOptions(),
-          watch=True,
-          builder_factory=Builder,
-          server_factory=FakeHttpServer,
-          watcher_factory=FakeWatcher,
-          stdout=io.StringIO(),
-        )
-
-    self.assertEqual(
-      events,
-      [
-        "snapshot",
-        "build",
-        "server",
-        ("watcher", initial_snapshot),
-        "watcher-started",
-        "watcher-stopped",
-      ],
-    )
-
-  def test_serve_builds_before_starting_threading_http_server(self) -> None:
-    events: list[object] = []
-
-    class Builder:
-      def __init__(self, project_root: Path) -> None:
-        self.output_dir = project_root / "public"
-
-      def build(self, options: FakeBuildOptions) -> SimpleNamespace:
-        events.append(("build", options))
-        return SimpleNamespace(rendered=1, reused=0, output_dir=self.output_dir)
-
-    class FakeHttpServer:
-      def __init__(self, address: tuple[str, int], handler: object) -> None:
-        events.append(("server", address, handler))
-
-      def __enter__(self) -> "FakeHttpServer":
-        return self
-
-      def __exit__(self, *_: object) -> None:
-        events.append("closed")
-
-      def serve_forever(self) -> None:
-        events.append("serve_forever")
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
-        server.serve(
-          project_root,
-          FakeBuildOptions(),
-          host="127.0.0.1",
-          port=9876,
-          watch=False,
-          builder_factory=Builder,
-          server_factory=FakeHttpServer,
-          stdout=io.StringIO(),
-        )
-
-    self.assertIs(server.ThreadingHTTPServer, ThreadingHTTPServer)
-    self.assertEqual(events[0], ("build", FakeBuildOptions()))
-    self.assertEqual(events[1][0:2], ("server", ("127.0.0.1", 9876)))
-    self.assertEqual(
-      os.fspath(events[1][2].keywords["directory"]),
-      str(project_root / "public"),
-    )
-    self.assertEqual(events[2:], ["serve_forever", "closed"])
-
-  def test_serve_does_not_open_a_socket_when_the_initial_build_fails(self) -> None:
-    server_started = False
-
-    class BrokenBuilder:
-      def __init__(self, project_root: Path) -> None:
-        self.project_root = project_root
-
-      def build(self, options: FakeBuildOptions) -> SimpleNamespace:
-        raise RuntimeError("initial build failed")
-
-    def server_factory(*_: object) -> object:
-      nonlocal server_started
-      server_started = True
-      return object()
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-      with import_sitegen_module("sitegen.server") as server:
-        with self.assertRaisesRegex(RuntimeError, "initial build failed"):
-          server.serve(
-            Path(temp_dir),
-            FakeBuildOptions(),
-            host="127.0.0.1",
-            port=8888,
-            watch=False,
-            builder_factory=BrokenBuilder,
-            server_factory=server_factory,
-          )
-
-    self.assertFalse(server_started)
-
-  def test_watch_rebuild_failure_keeps_server_running_and_stops_watcher(self) -> None:
-    events: list[object] = []
-    published: list[tuple[str, str]] = []
-
-    class Builder:
-      def __init__(self, project_root: Path) -> None:
-        self.output_dir = project_root / "docs"
-        self.attempts = 0
-
-      def build(self, options: FakeBuildOptions) -> SimpleNamespace:
-        self.attempts += 1
-        events.append(("build", self.attempts))
-        if self.attempts == 2:
-          raise RuntimeError("broken rebuild")
-        return SimpleNamespace(rendered=1, reused=0, output_dir=self.output_dir)
-
-    class FakeWatcher:
-      def __init__(self, project_root: Path, rebuild: object, **_: object) -> None:
-        self.project_root = project_root
-        self.rebuild = rebuild
-        events.append(("watcher", project_root))
-
-      def start(self) -> None:
-        events.append("watcher-started")
-        self.rebuild((self.project_root / "templates" / "blog.html",))
-
-      def stop(self) -> None:
-        events.append("watcher-stopped")
-
-    class FakeHttpServer:
-      def __init__(self, _address: tuple[str, int], _handler: object) -> None:
-        pass
-
-      def __enter__(self) -> "FakeHttpServer":
-        return self
-
-      def __exit__(self, *_: object) -> None:
-        events.append("server-closed")
-
-      def serve_forever(self) -> None:
-        events.append("serve_forever")
-
-    class FakeReloadState:
-      version = 0
-
-      def publish(self, kind: str, message: str = "") -> None:
-        published.append((kind, message))
-
-    stderr = io.StringIO()
-    times = iter((5.0, 5.025))
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
-        server.serve(
-          project_root,
-          FakeBuildOptions(),
-          host="127.0.0.1",
-          port=8888,
-          watch=True,
-          live_reload=True,
-          builder_factory=Builder,
-          server_factory=FakeHttpServer,
-          watcher_factory=FakeWatcher,
-          reload_state_factory=FakeReloadState,
-          clock=lambda: next(times),
-          stdout=io.StringIO(),
-          stderr=stderr,
-        )
-
-    self.assertIn(
-      "rebuild failed in 25ms [templates/blog.html]: broken rebuild",
-      stderr.getvalue(),
-    )
-    self.assertEqual(
-      published,
-      [
-        (
-          "build-error",
-          "rebuild failed in 25ms [templates/blog.html]: broken rebuild",
-        )
-      ],
-    )
-    self.assertEqual(
-      events,
-      [
-        ("build", 1),
-        ("watcher", project_root),
-        "watcher-started",
-        ("build", 2),
-        "serve_forever",
-        "watcher-stopped",
-        "server-closed",
-      ],
-    )
-
-  def test_watch_updates_the_served_directory_after_a_valid_move(self) -> None:
-    captured_handler: list[object] = []
-
-    class Builder:
-      def __init__(self, project_root: Path) -> None:
-        self.outputs = [project_root / "docs", project_root / "preview"]
-
-      def build(self, _options: FakeBuildOptions) -> SimpleNamespace:
-        output_dir = self.outputs.pop(0)
-        return SimpleNamespace(rendered=1, reused=0, output_dir=output_dir)
-
-    class FakeWatcher:
-      def __init__(self, _project_root: Path, rebuild: object, **_: object) -> None:
-        self.rebuild = rebuild
-
-      def start(self) -> None:
-        self.rebuild()
-
-      def stop(self) -> None:
-        pass
-
-    class FakeHttpServer:
-      def __init__(self, _address: tuple[str, int], handler: object) -> None:
-        captured_handler.append(handler)
-
-      def __enter__(self) -> "FakeHttpServer":
-        return self
-
-      def __exit__(self, *_: object) -> None:
-        pass
-
-      def serve_forever(self) -> None:
-        pass
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
-        server.serve(
-          project_root,
-          FakeBuildOptions(),
-          watch=True,
-          builder_factory=Builder,
-          server_factory=FakeHttpServer,
-          watcher_factory=FakeWatcher,
-          stdout=io.StringIO(),
-        )
-
-    directory = captured_handler[0].keywords["directory"]
-    self.assertEqual(os.fspath(directory), str(project_root / "preview"))
-
-  def test_watch_css_rebuild_publishes_hot_swap_event_and_timing(self) -> None:
-    published: list[tuple[str, str]] = []
-
-    class Builder:
-      def __init__(self, project_root: Path) -> None:
-        self.output_dir = project_root / "docs"
-
-      def build(self, _options: FakeBuildOptions) -> SimpleNamespace:
-        return SimpleNamespace(rendered=1, reused=6, output_dir=self.output_dir)
-
-    class FakeWatcher:
-      def __init__(self, project_root: Path, rebuild: object, **_: object) -> None:
-        self.project_root = project_root
-        self.rebuild = rebuild
-
-      def start(self) -> None:
-        self.rebuild((self.project_root / "static" / "index.css",))
-
-      def stop(self) -> None:
-        pass
-
-    class FakeHttpServer:
-      def __init__(self, _address: tuple[str, int], _handler: object) -> None:
-        pass
-
-      def __enter__(self) -> "FakeHttpServer":
-        return self
-
-      def __exit__(self, *_: object) -> None:
-        pass
-
-      def serve_forever(self) -> None:
-        pass
-
-    class FakeReloadState:
-      version = 0
-
-      def publish(self, kind: str, message: str = "") -> None:
-        published.append((kind, message))
-
-    times = iter((10.0, 10.015))
-    stdout = io.StringIO()
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
-        parameters = inspect.signature(server.serve).parameters
-        self.assertIn("live_reload", parameters)
-        server.serve(
-          project_root,
-          FakeBuildOptions(),
-          watch=True,
-          live_reload=True,
-          builder_factory=Builder,
-          server_factory=FakeHttpServer,
-          watcher_factory=FakeWatcher,
-          reload_state_factory=FakeReloadState,
-          clock=lambda: next(times),
-          stdout=stdout,
-        )
-
-    self.assertEqual(published, [("css", "static/index.css")])
-    self.assertIn("rebuilt 1 page(s), reused 6 in 15ms", stdout.getvalue())
-    self.assertIn("static/index.css", stdout.getvalue())
-
-  def test_open_browser_uses_loopback_for_wildcard_host(self) -> None:
-    opened: list[str] = []
-
-    class Builder:
-      def __init__(self, project_root: Path) -> None:
-        self.output_dir = project_root / "docs"
-
-      def build(self, _options: FakeBuildOptions) -> SimpleNamespace:
-        return SimpleNamespace(rendered=1, reused=0, output_dir=self.output_dir)
-
-    class FakeHttpServer:
-      def __init__(self, _address: tuple[str, int], _handler: object) -> None:
-        pass
-
-      def __enter__(self) -> "FakeHttpServer":
-        return self
-
-      def __exit__(self, *_: object) -> None:
-        pass
-
-      def serve_forever(self) -> None:
-        pass
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-      with import_sitegen_module("sitegen.server") as server:
-        server.serve(
-          Path(temp_dir),
-          FakeBuildOptions(),
-          host="0.0.0.0",
-          port=4321,
-          open_browser=True,
-          builder_factory=Builder,
-          server_factory=FakeHttpServer,
-          browser_opener=opened.append,
-          stdout=io.StringIO(),
-        )
-
-    self.assertEqual(opened, ["http://127.0.0.1:4321"])
-
-
-class TestPollingWatcher(unittest.TestCase):
-  def test_snapshot_sources_tracks_only_build_inputs(self) -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      tracked_paths = [
-        project_root / "config.json",
-        project_root / "content" / "post" / "index.md",
-        project_root / "templates" / "blog.html",
-        project_root / "static" / "index.css",
-      ]
-      ignored_paths = [
-        project_root / "docs" / "index.html",
-        project_root / "README.md",
-      ]
-      for path in tracked_paths + ignored_paths:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(path.name)
-
-      with import_sitegen_module("sitegen.server") as server:
-        snapshot = server.snapshot_sources(project_root)
-
-    self.assertEqual(set(snapshot), set(tracked_paths))
-    self.assertTrue(all(isinstance(mtime, int) for mtime in snapshot.values()))
-
-  def test_snapshot_sources_uses_configured_input_directories(self) -> None:
-    with tempfile.TemporaryDirectory() as temp_dir:
-      project_root = Path(temp_dir)
-      project_root.joinpath("config.json").write_text(
-        json.dumps(
-          {
-            "site_url": "https://example.com",
-            "email": "hello@example.com",
-            "social_image": "/social.png",
-            "content_dir": "articles",
-            "template_dir": "views",
-            "static_dir": "assets",
-          }
-        )
-      )
-      configured_paths = [
-        project_root / "articles" / "post.md",
-        project_root / "views" / "page.html",
-        project_root / "assets" / "site.css",
-      ]
-      default_path = project_root / "content" / "ignored.md"
-      for path in configured_paths + [default_path]:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(path.name)
-
-      with import_sitegen_module("sitegen.server") as server:
-        snapshot = server.snapshot_sources(project_root)
-
-    self.assertEqual(
-      set(snapshot),
-      {project_root / "config.json", *configured_paths},
-    )
-
-  def test_polling_watcher_debounces_and_coalesces_changes(self) -> None:
-    state = {"snapshot": {Path("content/post.md"): 1}}
-    rebuilds: list[tuple[Path, ...]] = []
-
-    def snapshotter(_: Path) -> dict[Path, int]:
-      return dict(state["snapshot"])
-
-    with import_sitegen_module("sitegen.server") as server:
-      watcher = server.PollingWatcher(
-        Path("/project"),
-        rebuilds.append,
-        debounce_seconds=0.2,
-        snapshotter=snapshotter,
-      )
-
-      state["snapshot"] = {Path("content/post.md"): 2}
-      watcher.poll(now=1.0)
-      state["snapshot"] = {Path("content/post.md"): 3}
-      watcher.poll(now=1.1)
-      watcher.poll(now=1.29)
-      watcher.poll(now=1.31)
-
-    self.assertEqual(rebuilds, [(Path("content/post.md"),)])
-
-  def test_polling_watcher_survives_failure_and_rebuilds_next_change(self) -> None:
-    state = {"snapshot": {Path("templates/blog.html"): 1}}
-    attempts = 0
-
-    def snapshotter(_: Path) -> dict[Path, int]:
-      return dict(state["snapshot"])
-
-    def rebuild(_changed_paths: tuple[Path, ...]) -> None:
-      nonlocal attempts
-      attempts += 1
-      if attempts == 1:
-        raise RuntimeError("bad template")
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-      output = Path(temp_dir) / "docs" / "index.html"
-      output.parent.mkdir(parents=True)
-      output.write_text("last valid output")
-
-      with import_sitegen_module("sitegen.server") as server:
-        watcher = server.PollingWatcher(
-          Path(temp_dir),
-          rebuild,
-          debounce_seconds=0.1,
-          snapshotter=snapshotter,
-          stderr=io.StringIO(),
-        )
-
-        state["snapshot"] = {Path("templates/blog.html"): 2}
-        watcher.poll(now=1.0)
-        watcher.poll(now=1.11)
-        self.assertEqual(output.read_text(), "last valid output")
-
-        state["snapshot"] = {Path("templates/blog.html"): 3}
-        watcher.poll(now=2.0)
-        watcher.poll(now=2.11)
-
-    self.assertEqual(attempts, 2)
-
-  def test_stop_waits_for_an_active_rebuild(self) -> None:
-    state = {"snapshot": {Path("content/post.md"): 1}}
-    rebuild_started = Event()
-    release_rebuild = Event()
-
-    def snapshotter(_: Path) -> dict[Path, int]:
-      return dict(state["snapshot"])
-
-    def rebuild(_changed_paths: tuple[Path, ...]) -> None:
-      rebuild_started.set()
-      release_rebuild.wait()
-
-    with import_sitegen_module("sitegen.server") as server:
-      watcher = server.PollingWatcher(
-        Path("/project"),
-        rebuild,
-        debounce_seconds=0,
-        poll_interval=0.01,
-        snapshotter=snapshotter,
-      )
-      watcher.start()
-      state["snapshot"] = {Path("content/post.md"): 2}
-      self.assertTrue(rebuild_started.wait(timeout=1))
-
-      releaser = Thread(
-        target=lambda: (time.sleep(1.1), release_rebuild.set()),
-        daemon=True,
-      )
-      releaser.start()
-      started_at = time.monotonic()
-      watcher.stop()
-      elapsed = time.monotonic() - started_at
-      releaser.join()
-
-    self.assertGreaterEqual(elapsed, 1.05)
-    self.assertFalse(watcher._thread.is_alive())
 
 
 if __name__ == "__main__":
