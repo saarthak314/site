@@ -100,11 +100,17 @@ lets be real for a sec, even if you could count on `RAND_MAX` having that partic
 
 so in short, we have a function `rand` in the `<cstdlib>` library that generates a random number between $0$ ad a positive constant `RAND_MAX`, which is some point on a number line that looks like this:
 
-![rand_max number line](/images/rand_max.webp)
+```diagram a number line from 0 to RAND_MAX
+├────────────────────────────────────────────────────────────┤
+0                                                     RAND_MAX
+```
 
 to simulate the die roll, for eg, we need to transform that random integer into one of the following discrete outcomes:
 
-![die num line](/images/die_num_line.webp)
+```diagram a number line with six ticks labelled 1 to 6
+├───────────┼───────────┼────────────┼───────────┼───────────┤
+1           2           3            4           5           6
+```
 
 as it happens, there are many bad strategies for performing this transformation.
 
@@ -130,7 +136,11 @@ well the problem is that `rand` guarantees only that the value it produces is un
 
 what we want to do instead is divide the integers between $0$ and `RAND_MAX` into six equal-sized segments that correspond to the different outcomes, as follows:
 
-![partitions](/images/partitions.webp)
+```diagram the range 0 to RAND_MAX divided into six equal segments labelled 1 to 6
+0                                                     RAND_MAX
+├─────────┼─────────┼─────────┼──────────┼─────────┼─────────┤
+     1         2         3          4         5         6
+```
 
 in the more general case, we need to divide the number line between $0$ and `RAND_MAX`  into $k$ equal intervals, where $k$ is the number of possible outcomes in the desired range.
 
@@ -145,7 +155,29 @@ if the initial call to `rand()` returns $848, 256, 064$ and `RAND_MAX` has its m
 
 steps required to generate a random integer in the range $1$ to $6$ are:
 
-![steps](/images/steps.webp)
+```diagram four number lines: 848,256,064 normalized to 0.395, scaled to 2.37, translated to 3.37, floored to 3
+initial call to rand()
+                   848,256,064
+├───────────────────────┿────────────────────────────────────┤
+0                                                     RAND_MAX
+
+normalize  d = rand() / (RAND_MAX + 1)
+                      0.395
+├───────────────────────┿────────────────────────────────────┤
+0                                                            1
+
+scale  d × 6
+0                     2.37                                   6
+├─────────┼─────────┼───┿─────┼──────────┼─────────┼─────────┤
+0         1         2         3          4         5         6
+
+translate  + 1
+1                     3.37                                   7
+├─────────┼─────────┼───┿─────┼──────────┼─────────┼─────────┤
+1         2         3         4          5         6         7
+
+floor  → 3
+```
 
 now writing the code to implement this is pretty straightforward if you understood everything till here.
 
@@ -200,11 +232,19 @@ RAND_MAX: 2147483647
 
 since the first call to rand produces the value $1804289383$ the second call to `rand` corresponds to putting $1804289383$ into one end of the black box and having $846930886$ pop out on the other side:
 
-![black box 1](/images/blackbox1.webp)
+```diagram 1804289383 goes into a box labelled rand and 846930886 comes out
+  1804289383      ┌──────────┐
+             ────▶│   rand   │────▶  846930886
+                  └──────────┘
+```
 
 on the next call to `rand` the implementation puts $846930886$ into the black box, which returns $1681692777$:
 
-![blackbox2](/images/blackbox2.webp)
+```diagram 846930886 goes into a box labelled rand and 1681692777 comes out
+   846930886      ┌──────────┐
+             ────▶│   rand   │────▶  1681692777
+                  └──────────┘
+```
 
 this same process is repeated on each call to `rand`. the computation inside the black box is designed so that:
 
@@ -213,7 +253,11 @@ this same process is repeated on each call to `rand`. the computation inside the
 
 but what about the first call to `rand` the one that returns $1804289383$? the implementation must have a starting point. there must be an integer $s0$ that goes into the black box and produces $1804289383$:
 
-![black box 3](/images/blackbox3.webp)
+```diagram s0 goes into a box labelled rand and 1804289383 comes out
+          s0      ┌──────────┐
+             ────▶│   rand   │────▶  1804289383
+                  └──────────┘
+```
 
 this initial value that is used to get the entire process started is called the _seed_ for the random number generator.
 
@@ -277,7 +321,7 @@ let us solve a interesting problem that involves randomness to approximate the v
 
 imagine that you have a dartboard hanging on your wall that consists of a circle painted on a square backdrop, as in the following diagram:
 
-![square](/images/square.webp)
+![a square dartboard with an inscribed circle and 180 random darts](/images/diagrams/dartboard.svg "monte carlo: 4 × darts inside / darts thrown, an estimate of pi")
 
 what happens if you throw a whole bunch of darts completely randomly, ignoring any darts that miss the board altogether? some of the darts will fall inside the gray circle, but some will be outside the circle in the white corners of the square. if the throws are random, the ratio of the number of darts landing inside the circle to the total number of darts hitting the square should be approximately equal to the ratio between the two areas. the ratio of the areas is independent of the actual size of the dartboard, as illustrated by the formula:
 

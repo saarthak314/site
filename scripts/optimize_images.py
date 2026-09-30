@@ -19,15 +19,7 @@ ARTICLE_IMAGES = (
   "lain_studying.png",
   "gojo.jpeg",
   "reddit-meme.jpg",
-  "rand_max.png",
-  "die_num_line.png",
-  "partitions.png",
-  "steps.png",
-  "blackbox1.png",
-  "blackbox2.png",
-  "blackbox3.png",
   "lain-meme.jpeg",
-  "square.png",
 )
 
 
