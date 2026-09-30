@@ -1,0 +1,123 @@
+/* syntax highlighting in the site's own palette: ink ramp for structure,
+   lavender for the two things worth noticing (keywords, strings), and a
+   single warm tone reserved for errors and deletions. */
+
+.blog-article pre code {
+  color: var(--ink-2);
+}
+
+/* comments and preprocessor lines recede */
+.c,
+.ch,
+.cm,
+.cp,
+.cpf,
+.c1,
+.cs {
+  color: var(--ink-4);
+  font-style: italic;
+}
+
+/* keywords and types */
+.k,
+.kc,
+.kd,
+.kn,
+.kp,
+.kr,
+.kt,
+.ow {
+  color: var(--accent);
+}
+
+/* strings */
+.s,
+.sa,
+.sb,
+.sc,
+.dl,
+.sd,
+.s2,
+.sh,
+.si,
+.sx,
+.sr,
+.s1,
+.ss {
+  color: var(--accent-soft);
+}
+
+/* numbers */
+.m,
+.mb,
+.mf,
+.mh,
+.mi,
+.mo,
+.il,
+.no {
+  color: var(--accent-2);
+}
+
+/* names: functions, classes, builtins, attributes brighten; variables stay as ink */
+.nf,
+.fm,
+.nc,
+.nn,
+.nt,
+.nb,
+.bp,
+.na {
+  color: var(--ink);
+}
+
+.nv,
+.vc,
+.vg,
+.vi,
+.vm {
+  color: var(--ink-2);
+}
+
+/* punctuation and operators are quiet */
+.p,
+.o {
+  color: var(--ink-3);
+}
+
+.se {
+  color: var(--accent);
+}
+
+/* generic (diffs, prompts, output) */
+.ge {
+  font-style: italic;
+}
+
+.gs,
+.gh {
+  font-weight: 600;
+}
+
+.gu {
+  text-decoration: underline;
+}
+
+.gp {
+  color: var(--ink-4);
+}
+
+.go {
+  color: var(--ink-2);
+}
+
+.gi {
+  color: var(--accent-soft);
+}
+
+.gd,
+.gr,
+.gt,
+.err {
+  color: #d98c7a;
+}
