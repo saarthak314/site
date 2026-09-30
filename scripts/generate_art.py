@@ -1,9 +1,8 @@
-"""Generate the site's static SVG art: the footer sea and the Monte Carlo dartboard.
+"""Generate the site's static SVG art: the Monte Carlo dartboard.
 
-Both drawings are seeded so every run produces byte-identical output.
+The drawing is seeded so every run produces byte-identical output.
 """
 
-import math
 import random
 from pathlib import Path
 
@@ -13,49 +12,6 @@ OUTPUT_IMAGE_DIR = PROJECT_ROOT / "static" / "images"
 INK = "#f2f0ea"
 INK_3 = "#85827c"
 ACCENT = "#b4a3e6"
-
-
-def sea_svg(
-  width: int = 1200,
-  height: int = 220,
-  rows: int = 44,
-  seed: int = 7,
-  color: str = INK,
-  horizon_inset: int = 160,
-  ease: float = 2.4,
-) -> str:
-  """A trapezoid of horizontal dashes, dense at the horizon and sparse in front."""
-  rng = random.Random(seed)
-  paths = []
-  for row in range(rows):
-    depth = (row / (rows - 1)) ** ease
-    y = 12 + depth * (height - 24)
-    inset = (1 - depth) * horizon_inset - 24
-    x_start, x_end = inset, width - inset
-    opacity = 0.06 + 0.22 * depth
-    stroke = 0.7 + 0.5 * depth
-    wavelength = 140 + 260 * depth
-    segments = []
-    x = x_start + rng.random() * 30
-    while x < x_end:
-      phase = 0.85 * row
-      swell = (math.sin(x / wavelength * math.tau + phase) + 1) / 2
-      ripple = (math.sin(x / (wavelength * 0.37) * math.tau - phase) + 1) / 2
-      dash = 4 + (swell * 0.7 + ripple * 0.3) ** 1.35 * (10 + 44 * depth)
-      dash *= 0.6 + rng.random() * 0.8
-      gap = 6 + rng.random() * (10 + 26 * depth)
-      segments.append(f"M{x:.1f} {y:.1f}h{min(dash, x_end - x):.1f}")
-      x += dash + gap
-    paths.append(
-      f'<path d="{"".join(segments)}" stroke-opacity="{opacity:.3f}" '
-      f'stroke-width="{stroke:.2f}"/>'
-    )
-  return (
-    f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
-    f'width="{width}" height="{height}" preserveAspectRatio="xMidYMax slice" '
-    f'aria-hidden="true" focusable="false">'
-    f'<g fill="none" stroke="{color}" stroke-linecap="butt">{"".join(paths)}</g></svg>\n'
-  )
 
 
 def dartboard_svg(darts: int = 180, seed: int = 3) -> str:
@@ -92,13 +48,10 @@ def dartboard_svg(darts: int = 180, seed: int = 3) -> str:
 
 
 def main() -> None:
-  sea = OUTPUT_IMAGE_DIR / "sea.svg"
-  sea.write_text(sea_svg())
   dartboard = OUTPUT_IMAGE_DIR / "diagrams" / "dartboard.svg"
   dartboard.parent.mkdir(parents=True, exist_ok=True)
   dartboard.write_text(dartboard_svg())
-  for path in (sea, dartboard):
-    print(f"{path.relative_to(PROJECT_ROOT)}: {path.stat().st_size} bytes")
+  print(f"{dartboard.relative_to(PROJECT_ROOT)}: {dartboard.stat().st_size} bytes")
 
 
 if __name__ == "__main__":

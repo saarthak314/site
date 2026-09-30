@@ -257,11 +257,9 @@ class TestSharedLayout(TemplateRenderingTestCase):
 
     footer = html[html.index('<footer class="footer">') : html.index("</footer>")]
     self.assertRegex(footer, r"© \d{4} sarthak tomar\. built with love\.")
-    self.assertIn('<pre class="katana" aria-hidden="true">', footer)
-    self.assertIn(
-      '<img class="footer__sea" src="/images/sea.svg" alt="" aria-hidden="true"',
-      footer,
-    )
+    self.assertNotIn("<a ", footer)
+    self.assertNotIn("<pre", footer)
+    self.assertNotIn("<img", footer)
     self.assertNotIn('aria-label="Footer navigation"', html)
 
   def test_ordinary_strings_escape_while_markdown_html_remains_safe(self) -> None:
