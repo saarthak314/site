@@ -553,6 +553,14 @@ a.home-project__name,
   text-decoration: underline;
 }
 
+.home-experience__logo {
+  display: inline-block;
+  height: 15px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  width: 15px;
+}
+
 .home-project__tech,
 .home-experience__period {
   color: var(--ink-3);

@@ -78,6 +78,7 @@ class TestFrontMatter(unittest.TestCase):
         "  - role: systems engineer\n"
         "    company: morph labs\n"
         "    company_url: https://morph.so\n"
+        "    company_logo: /images/logos/morph.png\n"
         "    period: jun 2026 — present\n"
         "    highlights:\n"
         "      - agentic workflows and cloud inference systems\n"
@@ -99,6 +100,7 @@ class TestFrontMatter(unittest.TestCase):
       self.assertEqual(experience.role, "systems engineer")
       self.assertEqual(experience.company, "morph labs")
       self.assertEqual(experience.company_url, "https://morph.so")
+      self.assertEqual(experience.company_logo, "/images/logos/morph.png")
       self.assertEqual(experience.period, "jun 2026 — present")
       self.assertEqual(
         experience.highlights,
@@ -121,6 +123,21 @@ class TestFrontMatter(unittest.TestCase):
       )
 
       with self.assertRaisesRegex(ContentError, "experience must be a list"):
+        parse_document(path)
+
+  def test_rejects_company_logos_outside_the_images_tree(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      path = Path(temp_dir) / "_index.md"
+      path.write_text(
+        "title: home\ndate: 2026-08-26\nexperience:\n"
+        "  - role: engineer\n    company: acme\n"
+        "    company_logo: https://acme.test/logo.png\n    period: jun 2026\n"
+        "-----\nintro"
+      )
+
+      with self.assertRaisesRegex(
+        ContentError, "company_logo must live under /images/"
+      ):
         parse_document(path)
 
   def test_reports_path_for_invalid_metadata(self) -> None:

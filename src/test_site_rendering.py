@@ -67,7 +67,10 @@ class TestSiteRendering(unittest.TestCase):
       "all projects</a>",
       home,
     )
-    self.assertIn('href="https://morph.so">morph labs</a>', home)
+    self.assertIn('href="https://www.math.inc">math.inc</a>', home)
+    self.assertIn(
+      '<img class="home-experience__logo" src="/images/logos/mathinc.png"', home
+    )
     self.assertIn('class="home-project__tech">python · agents</span>', home)
     self.assertLess(home.index(">kurama</a>"), home.index(">sakura</a>"))
     self.assertLess(home.index(">sakura</a>"), home.index(">web server</span>"))

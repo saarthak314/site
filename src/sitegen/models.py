@@ -18,6 +18,7 @@ class ExperienceItem:
   company_url: str | None
   period: str
   highlights: tuple[str, ...] = ()
+  company_logo: str | None = None
 
 
 @dataclass(frozen=True)

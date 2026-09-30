@@ -194,6 +194,13 @@ def _experience_value(path: Path, value: object) -> tuple[ExperienceItem, ...]:
       label,
       required=False,
     )
+    company_logo = _item_string(
+      path,
+      candidate,
+      "company_logo",
+      label,
+      required=False,
+    )
     period = _item_string(path, candidate, "period", label, required=True)
     highlights = (
       _string_list(path, candidate["highlights"], f"{label} highlights")
@@ -204,6 +211,11 @@ def _experience_value(path: Path, value: object) -> tuple[ExperienceItem, ...]:
       _validate_http_url(path, company_url, f"{label} company_url")
       if not company:
         raise ContentError(f"{path}: {label} company_url requires company")
+    if company_logo:
+      if not company:
+        raise ContentError(f"{path}: {label} company_logo requires company")
+      if not company_logo.startswith("/images/"):
+        raise ContentError(f"{path}: {label} company_logo must live under /images/")
     items.append(
       ExperienceItem(
         role=role,
@@ -211,6 +223,7 @@ def _experience_value(path: Path, value: object) -> tuple[ExperienceItem, ...]:
         company_url=company_url,
         period=period,
         highlights=highlights,
+        company_logo=company_logo,
       )
     )
   return tuple(items)

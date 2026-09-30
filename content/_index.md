@@ -4,8 +4,9 @@ updated: 2026-08-29
 description: notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
 experience:
   - role: systems engineer
-    company: morph labs
-    company_url: https://morph.so
+    company: math.inc
+    company_url: https://www.math.inc
+    company_logo: /images/logos/mathinc.png
     period: jun 2026 — present
     highlights:
       - working across agentic workflows, autoresearch, and inference systems on cloud runtimes
@@ -41,6 +42,6 @@ hey, i'm sarthak. 20 y/o cs undergrad into **inference systems**, **high-perform
 
 mostly obsessed with the machinery behind intelligence: how a pile of matmuls turns into useful behaviour, how **agent harnesses** turn that behaviour into useful work, and how to make the systems around it fast, reliable, and efficient.
 
-currently going deep on **pretraining**, **post-training**, and the systems around them.
+can work across any stack, but most proficient in **ai systems**, **infra**, and **post-training**.
 
 this site is a log of things i'm learning, building, or overthinking. usually the latter.

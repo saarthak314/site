@@ -244,7 +244,7 @@ class TestSharedLayout(TemplateRenderingTestCase):
     rail_start = html.index('<aside class="rail rail--home" aria-label="elsewhere">')
     rail = html[rail_start : html.index("</aside>", rail_start)]
     self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', rail)
-    self.assertIn('href="https://x.com/sarthak2143" rel="me">twitter/x</a>', rail)
+    self.assertIn('href="https://x.com/sarthak2143" rel="me">twitter</a>', rail)
     self.assertIn(
       'href="https://linkedin.com/in/sarthaktomar2143" rel="me">linkedin</a>',
       rail,
