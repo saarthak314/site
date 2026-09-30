@@ -3,10 +3,10 @@ import json
 import shutil
 import tempfile
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
-from typing import Callable
 
 from sitegen.config import SiteConfig
 from sitegen.content import ContentRepository
@@ -14,8 +14,7 @@ from sitegen.feeds import render_rss, render_sitemap
 from sitegen.manifest import BuildManifest, digest_paths
 from sitegen.models import ContentError
 
-
-RENDER_PIPELINE_VERSION = 2
+RENDER_PIPELINE_VERSION = 3
 
 
 class BuildError(RuntimeError):
@@ -55,7 +54,9 @@ class SiteBuilder:
     markdown_renderer = self._markdown_renderer or self._default_markdown_renderer(
       config
     )
-    template_renderer = self._template_renderer or self._default_template_renderer(config)
+    template_renderer = self._template_renderer or self._default_template_renderer(
+      config
+    )
     validator = self._validator or self._default_validator()
     index = ContentRepository(config, markdown_renderer).discover(
       include_drafts=options.include_drafts
@@ -104,7 +105,9 @@ class SiteBuilder:
 
       archive_page = index.page_for_route("/blogs/")
       for page in index.pages:
-        template_digest = self._template_digest(template_renderer, config, page.template)
+        template_digest = self._template_digest(
+          template_renderer, config, page.template
+        )
         context_digest = index.digest if page.route in {"/", "/blogs/"} else ""
         page_digest = _hash_values(
           config_digest,
@@ -127,6 +130,21 @@ class SiteBuilder:
             page.output_path,
             page_digest,
             lambda page=page: template_renderer.render_page(page, index),
+          )
+
+        for alias in page.aliases:
+          alias_digest = _hash_values(
+            config_digest,
+            self._template_digest(template_renderer, config, "redirect.html"),
+            alias,
+            page.canonical_url,
+          )
+          emit(
+            _route_to_output_path(alias),
+            alias_digest,
+            lambda alias=alias, page=page: template_renderer.render_redirect(
+              alias, page
+            ),
           )
 
       if archive_page is None:
@@ -196,9 +214,7 @@ class SiteBuilder:
         shutil.rmtree(staging_dir)
 
   def _publish(self, staging_dir: Path, output_dir: Path) -> None:
-    backup_dir = output_dir.with_name(
-      f".{output_dir.name}.backup-{uuid.uuid4().hex}"
-    )
+    backup_dir = output_dir.with_name(f".{output_dir.name}.backup-{uuid.uuid4().hex}")
     moved_existing = False
     try:
       if output_dir.exists():
@@ -248,6 +264,8 @@ class SiteBuilder:
 def _route_to_output_path(route: str) -> Path:
   if route == "/":
     return Path("index.html")
+  if route.endswith(".html"):
+    return Path(route.strip("/"))
   return Path(route.strip("/")) / "index.html"
 
 
@@ -257,13 +275,13 @@ def _config_digest(config: SiteConfig, options: BuildOptions) -> str:
     "site_url": config.site_url,
     "email": config.email,
     "social_image": config.social_image,
+    "author_name": config.author_name,
+    "twitter_handle": config.twitter_handle,
     "posts_per_page": config.posts_per_page,
     "include_drafts": options.include_drafts,
     "year": date.today().year,
   }
-  return hashlib.sha256(
-    json.dumps(payload, sort_keys=True).encode("utf-8")
-  ).hexdigest()
+  return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
 
 def _hash_values(*values) -> str:

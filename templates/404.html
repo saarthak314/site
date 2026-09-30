@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block main %}
+<main class="not-found" id="main-content" tabindex="-1">
+  <section class="not-found-content" aria-labelledby="not-found-title">
+    <p class="not-found-code">404</p>
+    <h1 class="not-found-heading" id="not-found-title">{{ page.title }}</h1>
+    <div class="not-found-copy">{{ content }}</div>
+    <nav class="not-found-links" aria-label="404 navigation">
+      <a href="/">go home</a>
+      <a href="/blogs/">all writings</a>
+    </nav>
+  </section>
+</main>
+{% endblock %}

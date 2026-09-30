@@ -43,9 +43,7 @@ class TestContentRepository(unittest.TestCase):
     self.root.joinpath("content/_index.md").write_text(
       "title: home\ndate: 2026-08-20\n-----\nhome body"
     )
-    blogs.joinpath("_index.md").write_text(
-      "title: writings\ndate: 2026-08-20\n-----\n"
-    )
+    blogs.joinpath("_index.md").write_text("title: writings\ndate: 2026-08-20\n-----\n")
     self._write_post(
       "alpha",
       "title: alpha\ndate: 2026-08-24\ntags: [systems, inference]",
@@ -84,10 +82,16 @@ class TestContentRepository(unittest.TestCase):
     )
     self.assertEqual(len(index.pages), 5)
     self.assertEqual(len(self.renderer.calls), 5)
-    self.assertEqual(index.posts[0].social_image_url, "https://example.com/images/default.png")
-    self.assertEqual(index.posts[1].social_image_url, "https://example.com/images/beta.png")
+    self.assertEqual(
+      index.posts[0].social_image_url, "https://example.com/images/default.png"
+    )
+    self.assertEqual(
+      index.posts[1].social_image_url, "https://example.com/images/beta.png"
+    )
 
-    self.assertEqual([page.route for page in index.pagination], ["/blogs/", "/blogs/page/2/"])
+    self.assertEqual(
+      [page.route for page in index.pagination], ["/blogs/", "/blogs/page/2/"]
+    )
     self.assertEqual(index.pagination[0].next_url, "/blogs/page/2/")
     self.assertEqual(index.pagination[1].previous_url, "/blogs/")
     systems = next(tag for tag in index.tags if tag.slug == "systems")
@@ -100,19 +104,97 @@ class TestContentRepository(unittest.TestCase):
     self.assertEqual(index.posts[0].title, "draft")
     self.assertEqual(len(index.posts), 4)
 
+  def test_carries_structured_homepage_sections_to_the_home_page(self) -> None:
+    self.root.joinpath("content/_index.md").write_text(
+      "title: home\n"
+      "date: 2026-08-20\n"
+      "experience:\n"
+      "  - role: systems engineer\n"
+      "    company: morph labs\n"
+      "    company_url: https://morph.so\n"
+      "    period: jun 2026 — present\n"
+      "    highlights: [agentic workflows and cloud inference systems]\n"
+      "projects:\n"
+      "  - name: paimon\n"
+      "    url: https://github.com/saarthak314/paimon\n"
+      "    description: agentic coding harness\n"
+      "    tech: [python, agents]\n"
+      "  - name: web server\n"
+      "    description: nginx-style web server\n"
+      "    tech: [c, networking]\n"
+      "-----\n"
+      "home body"
+    )
+
+    index = ContentRepository(self.config, self.renderer).discover()
+    home = index.page_for_route("/")
+
+    self.assertEqual(home.experience[0].company, "morph labs")
+    self.assertEqual(
+      home.experience[0].highlights,
+      ("agentic workflows and cloud inference systems",),
+    )
+    self.assertEqual(home.projects[0].tech, ("python", "agents"))
+    self.assertIsNone(home.projects[1].url)
+
   def test_rejects_duplicate_routes(self) -> None:
     self._write_post(
       "collision",
       "title: collision\ndate: 2026-08-21\npermalink: /notes/gamma/",
     )
 
-    with self.assertRaisesRegex(ContentError, "duplicate route /notes/gamma/"):
+    with self.assertRaisesRegex(ContentError, "duplicate route or alias /notes/gamma/"):
       ContentRepository(self.config, self.renderer).discover()
 
   def test_rejects_blog_directory_without_index(self) -> None:
     self.root.joinpath("content/blogs/empty").mkdir()
 
-    with self.assertRaisesRegex(ContentError, "empty/index.md: blog directory is missing index.md"):
+    with self.assertRaisesRegex(
+      ContentError, "empty/index.md: blog directory is missing index.md"
+    ):
+      ContentRepository(self.config, self.renderer).discover()
+
+  def test_discovers_not_found_page_and_post_aliases(self) -> None:
+    self.root.joinpath("content/404.md").write_text(
+      "title: not found\ndate: 2026-08-26\nnoindex: true\n-----\nnothing here"
+    )
+    self._write_post(
+      "aliased",
+      "title: aliased\ndate: 2026-08-25\naliases: [/writeups/aliased/]",
+    )
+
+    index = ContentRepository(self.config, self.renderer).discover()
+
+    not_found = index.page_for_route("/404.html")
+    self.assertIsNotNone(not_found)
+    self.assertTrue(not_found.noindex)
+    aliased = index.page_for_route("/blogs/aliased/")
+    self.assertEqual(aliased.aliases, ("/writeups/aliased/",))
+
+  def test_discovers_optional_about_page(self) -> None:
+    self.root.joinpath("content/about.md").write_text(
+      "title: about me\n"
+      "date: 2026-08-30\n"
+      "description: the person outside the terminal\n"
+      "-----\n"
+      "about body"
+    )
+
+    index = ContentRepository(self.config, self.renderer).discover()
+
+    about = index.page_for_route("/about/")
+    self.assertIsNotNone(about)
+    self.assertEqual(about.template, "about.html")
+    self.assertEqual(about.output_path, Path("about/index.html"))
+    self.assertFalse(about.is_post)
+
+  def test_rejects_alias_that_collides_with_a_route(self) -> None:
+    self._write_post(
+      "colliding",
+      "title: colliding\ndate: 2026-08-25\naliases: [/notes/gamma/]",
+    )
+
+    with self.assertRaisesRegex(ContentError, "duplicate route or alias"):
       ContentRepository(self.config, self.renderer).discover()
 
 

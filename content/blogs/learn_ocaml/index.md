@@ -1,29 +1,37 @@
 title: why you should learn ocaml
 date: 2025-07-30
+updated: 2026-08-26
+description: a case for learning ocaml, functional programming, and a cleaner way to reason about software.
+aliases:
+  - /writeups/learn_ocaml/
 -----
 
-all of the following ideologies apply to all functional programming languages but here i will be only focusing on ocaml.
+the ideas here apply to functional programming in general, but i'll focus on ocaml.
 
->relatablequote.jpg
+## empty the cup
 
-> Nan-in (南隠), a Japanese master during the Meiji era (1868-1912), received a university professor who came to inquire about Zen. Nan-in served tea. He poured his visitor’s cup full, and then kept on pouring. The professor watched the overflow until he no longer could restrain himself. “It is overfull. No more will go in!” “Like this cup,” Nan-in said, “you are full of your own opinions and speculations. How can I show you Zen unless you first empty your cup?” 
+> Nan-in (南隠), a Japanese master during the Meiji era (1868-1912), received a university professor who came to inquire about Zen. Nan-in served tea. He poured his visitor's cup full, then kept pouring. The professor watched the overflow until he could no longer restrain himself. "It is overfull. No more will go in!" "Like this cup," Nan-in said, "you are full of your own opinions and speculations. How can I show you Zen unless you first empty your cup?"
 
-how can learning ocaml will make you a better programmer? because you will:
+## why ocaml
+
+how can learning ocaml make you a better programmer? you will:
 
 - experience the freedom of _immutability_, fuck debugging
 - improve at _abstraction_, fuck bloated code (luke smith giggles)
 - learn a better _type system_, fuck failing tests
 - get exposed to some _theory and implementation of programming languages_
 
-ocaml will change the way you think about programming
+ocaml will change the way you think about programming.
 
-"a language that doesn’t affect the way you think about programming is not worth knowing." - alan j. perlis (first recipient of turing award)
+> _a language that doesn't affect the way you think about programming is not worth knowing._
+>
+> -- alan j. perlis, first recipient of the turing award
 
 moreover, ocaml is beautiful. some normies might not agree to this statement but **aesthetics do matter**. ocaml is elegant, simple and graceful.
 
-fyi ocaml stands for _objective abstract machine language_, read [more](https://cs3110.github.io/textbook/chapters/intro/past.html) about its history.
+fyi, ocaml stands for _objective caml_. read [more](https://cs3110.github.io/textbook/chapters/intro/past.html) about its history.
 
-![ritsuko holding orly](/images/ritsuko.png)
+![ritsuko holding orly](/images/ritsuko.webp)
 
 ocaml is _awesome_ due to:
 
@@ -36,13 +44,12 @@ ocaml is _awesome_ due to:
 - garbage collection
 - modules
 
-before moving on, you need to understand that **languages are tools**
-each language is meant for a specific job
+before moving on, you need to understand that **languages are tools**. each language is meant for a specific job:
 
 - there is no universally perfect tool
 - hence, there is no universally perfect language
 
-what is a functional language?
+## the functional model
 
 a functional language:
 
@@ -59,7 +66,7 @@ functions are _first-class_: you can use them as input to other functions, and p
 
 now, _imperative languages_ involve _mutable_ state that changes throughout execution. commands specify how to compute by destructively changing that state. procedures/methods can have _side effects_ that update state in addition to producing a return value.
 
-an example of destructive change of state is 
+an example of destructive state change is:
 
 ```
 x = x + 1
@@ -67,17 +74,19 @@ x = x + 1
 
 now this may seem fine to you, but this will trigger any mathematician.
 
-buy why is _mutability_ bad?
+## mutability is the trap
 
-the **fantasy** of mutability: its easy to reason about, computer does operations step by step
+but why is _mutability_ bad?
 
-the **reality** of mutability: indeed, machines are good at complicated manipulation of state, but the thing is that humans are not good at understanding it. the essence of why's that true is that mutability breaks _referential transparency_: the ability to replace an expression with its value w/o affecting the result of a computation.
+the **fantasy** of mutability: it's easy to reason about because the computer does operations step by step.
+
+the **reality** of mutability: machines are good at complicated state manipulation; humans are not. mutability breaks _referential transparency_: the ability to replace an expression with its value w/o affecting the result of a computation.
 
 in math, $f(x) = y$, then you can substitute $y$ anywhere you see $f(x)$. in imperative languages, you cannot: $f$ might have side effects, so computing $f(x)$ at time $t$ might result in a different value than at time $t0$.
 
 it makes it tempting to believe that there's a single state that the machine manipulates and that the computer only does one thing at a time. computer systems go to great lengths in attempting to provide this illusion. but this in fact is just an _illusion_. in reality, there are many states, spread across threads, cores, processors, and networked systems and it all works concurrently. mutability makes reasoning about distributed state and concurrent execution immensely difficult.
 
-![immutability](/images/immutability.jpg)
+![immutability](/images/immutability.webp)
 
 _immutability_, however, frees the programmer from these concerns. it provides powerful methods to build correct and concurrent programs.
 
@@ -85,10 +94,12 @@ in functional langs:
 
 _expressions_ specify **what to compute**
 
-- variables never change value (this may break the very notion of calling them "variables", identifier would be a better replacement, but it's what used throughout)
+- variables never change value (this may break the notion of calling them "variables"; identifier would be more accurate, but variable is the word everyone uses)
 - functions never have side effects
 
-ocaml and other functional langs are nowhere near as popular as python, c++ or java. ocaml's real strength lies in language manipulation (compilers, analyzers, verifiers, provers, etc) after all it was evolved from the domain of theorem proving.
+## where ocaml shows up
+
+ocaml and other functional langs are nowhere near as popular as python, c++, or java. ocaml's real strength lies in language manipulation: compilers, analyzers, verifiers, provers, etc. it evolved from the domain of theorem proving, after all.
 
 but that doesn't mean that functional langs aren't used in the industry, there are many [industry](https://ocaml.org/learn/companies.html) using ocaml and haskell. some of the major ones are:
 
@@ -121,7 +132,7 @@ quoted from their blog:
 
 head of technology at jane street (yaron minsky) published a [paper](https://www.cambridge.org/core/journals/journal-of-functional-programming/article/caml-trading-experiences-with-functional-programming-on-wall-street/02F18023B4C43BF6E53512AA7062A9A5) about using ocaml in the financial industry, i highly recommend you to read this paper.
 
-- another project is multicore ocaml, [technical paper](https://kcsrk.info/papers/multicore-ocaml20.pdf). now jane street has been instrumental in this area by funding research in multicore ocaml and the ocaml compiler via a research grant for the last 10+ years through the ocaml labs initiative at uni of cambridge. moreover, the tools and compiler (t&c) team at jane street actively engage with the multicore ocaml devs. [another paper](https://annas-archive.org/scidb/10.1145/3192366.3192421/) which dives deep in the workings of multicore
+- another project is multicore ocaml, covered in this [technical paper](https://kcsrk.info/papers/multicore-ocaml20.pdf). jane street has been instrumental here, funding research in multicore ocaml and the compiler for 10+ years through the ocaml labs initiative at the university of cambridge. the tools and compiler team also works directly with multicore ocaml developers. [another paper](https://dl.acm.org/doi/10.1145/3192366.3192421) dives deeper into how multicore works.
 
 some other major corps that use ocaml are bloomberg, docker, cea-list, simcorp, etc. see [more](https://ocaml.org/industrial-users/businesses).
 

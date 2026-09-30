@@ -82,7 +82,10 @@ class TestSiteValidator(unittest.TestCase):
     issues = SiteValidator().validate(self.root)
 
     self.assertTrue(
-      any(issue.path == missing_path and "missing canonical" in issue.message for issue in issues)
+      any(
+        issue.path == missing_path and "missing canonical" in issue.message
+        for issue in issues
+      )
     )
     self.assertTrue(
       any(
@@ -113,8 +116,12 @@ class TestSiteValidator(unittest.TestCase):
     issues = SiteValidator().validate(self.root)
     source_messages = [issue.message for issue in issues if issue.path == source_path]
 
-    self.assertEqual(sum("broken internal href" in message for message in source_messages), 1)
-    self.assertEqual(sum("missing fragment" in message for message in source_messages), 2)
+    self.assertEqual(
+      sum("broken internal href" in message for message in source_messages), 1
+    )
+    self.assertEqual(
+      sum("missing fragment" in message for message in source_messages), 2
+    )
     self.assertTrue(any("/missing/" in message for message in source_messages))
     self.assertTrue(any("#absent" in message for message in source_messages))
 
@@ -131,8 +138,12 @@ class TestSiteValidator(unittest.TestCase):
     issues = SiteValidator().validate(self.root)
     source_messages = [issue.message for issue in issues if issue.path == source_path]
 
-    self.assertEqual(sum("broken internal href" in message for message in source_messages), 1)
-    self.assertTrue(any("example.com/missing" in message for message in source_messages))
+    self.assertEqual(
+      sum("broken internal href" in message for message in source_messages), 1
+    )
+    self.assertTrue(
+      any("example.com/missing" in message for message in source_messages)
+    )
     self.assertFalse(any("external.example" in message for message in source_messages))
 
   def test_reports_missing_local_src_assets_and_ignores_remote_sources(self) -> None:
@@ -152,8 +163,12 @@ class TestSiteValidator(unittest.TestCase):
     issues = SiteValidator().validate(self.root)
     source_messages = [issue.message for issue in issues if issue.path == source_path]
 
-    self.assertEqual(sum("missing local src" in message for message in source_messages), 2)
-    self.assertTrue(any("/images/missing.png" in message for message in source_messages))
+    self.assertEqual(
+      sum("missing local src" in message for message in source_messages), 2
+    )
+    self.assertTrue(
+      any("/images/missing.png" in message for message in source_messages)
+    )
     self.assertTrue(any('""' in message for message in source_messages))
 
   def test_reports_unparseable_rss_and_sitemap_xml(self) -> None:
@@ -166,7 +181,10 @@ class TestSiteValidator(unittest.TestCase):
       any(issue.path == feed_path and "RSS XML" in issue.message for issue in issues)
     )
     self.assertTrue(
-      any(issue.path == sitemap_path and "sitemap XML" in issue.message for issue in issues)
+      any(
+        issue.path == sitemap_path and "sitemap XML" in issue.message
+        for issue in issues
+      )
     )
 
   def test_reports_non_absolute_sitemap_locations(self) -> None:
@@ -183,7 +201,9 @@ class TestSiteValidator(unittest.TestCase):
     issues = SiteValidator().validate(self.root)
     sitemap_messages = [issue.message for issue in issues if issue.path == sitemap_path]
 
-    self.assertEqual(sum("absolute sitemap loc" in message for message in sitemap_messages), 2)
+    self.assertEqual(
+      sum("absolute sitemap loc" in message for message in sitemap_messages), 2
+    )
     self.assertTrue(any("/blogs/" in message for message in sitemap_messages))
 
   def test_every_issue_identifies_its_source_output_path(self) -> None:

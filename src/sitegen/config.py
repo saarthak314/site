@@ -12,6 +12,8 @@ class SiteConfig:
   site_url: str
   email: str
   social_image: str
+  author_name: str
+  twitter_handle: str
   posts_per_page: int
   content_dir: Path
   template_dir: Path
@@ -35,12 +37,16 @@ class SiteConfig:
     site_url = _required_string(raw, "site_url", config_path).rstrip("/")
     parsed_url = urlparse(site_url)
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
-      raise ContentError(
-        f"{config_path}: site_url must be an absolute http(s) URL"
-      )
+      raise ContentError(f"{config_path}: site_url must be an absolute http(s) URL")
 
     email = _required_string(raw, "email", config_path)
     social_image = _required_string(raw, "social_image", config_path)
+    author_name = raw.get("author_name", "Sarthak Tomar")
+    twitter_handle = raw.get("twitter_handle", "@sarthak2143")
+    if not isinstance(author_name, str) or not author_name.strip():
+      raise ContentError(f"{config_path}: author_name must be a non-empty string")
+    if not isinstance(twitter_handle, str) or not twitter_handle.startswith("@"):
+      raise ContentError(f"{config_path}: twitter_handle must start with @")
     posts_per_page = raw.get("posts_per_page", 10)
     if not isinstance(posts_per_page, int) or isinstance(posts_per_page, bool):
       raise ContentError(f"{config_path}: posts_per_page must be an integer")
@@ -52,6 +58,8 @@ class SiteConfig:
       site_url=site_url,
       email=email,
       social_image=social_image,
+      author_name=author_name.strip(),
+      twitter_handle=twitter_handle,
       posts_per_page=posts_per_page,
       content_dir=_path_setting(raw, "content_dir", root / "content", root),
       template_dir=_path_setting(raw, "template_dir", root / "templates", root),

@@ -1,6 +1,6 @@
-from datetime import datetime, time, timezone
-from email.utils import format_datetime
 import xml.etree.ElementTree as ET
+from datetime import UTC, datetime, time
+from email.utils import format_datetime
 
 from sitegen.content import ContentIndex
 
@@ -41,12 +41,16 @@ def render_sitemap(index: ContentIndex, site_url: str) -> str:
   seen: set[str] = set()
 
   for page in index.pages:
+    if page.noindex:
+      continue
     modified = page.updated or page.date
     _append_entry(entries, seen, page.canonical_url, modified.isoformat())
   for pagination in index.pagination:
     if pagination.page == 1:
       continue
-    modified = max((post.updated or post.date for post in pagination.items), default=None)
+    modified = max(
+      (post.updated or post.date for post in pagination.items), default=None
+    )
     _append_entry(
       entries,
       seen,
@@ -83,7 +87,7 @@ def _append_entry(
 
 
 def _rss_date(value) -> str:
-  timestamp = datetime.combine(value, time.min, tzinfo=timezone.utc)
+  timestamp = datetime.combine(value, time.min, tzinfo=UTC)
   return format_datetime(timestamp)
 
 

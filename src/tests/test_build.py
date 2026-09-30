@@ -31,6 +31,13 @@ class FakeTemplateRenderer:
   def render_tag(self, tag, index) -> str:
     return f"<html><head><link rel='canonical' href='https://example.com{tag.route}'></head><body>{tag.name}</body></html>"
 
+  def render_redirect(self, alias: str, page) -> str:
+    return (
+      "<html><head><meta name='robots' content='noindex'>"
+      f"<link rel='canonical' href='{page.canonical_url}'></head>"
+      f"<body><a href='{page.route}'>{alias}</a></body></html>"
+    )
+
   def template_digest(self, template_name: str) -> str:
     return f"template:{template_name}"
 
@@ -62,8 +69,9 @@ class TestSiteBuilder(unittest.TestCase):
     self.root.joinpath("content/_index.md").write_text(
       "title: home\ndate: 2026-08-20\n-----\nhome"
     )
-    blogs.joinpath("_index.md").write_text(
-      "title: writings\ndate: 2026-08-20\n-----\n"
+    blogs.joinpath("_index.md").write_text("title: writings\ndate: 2026-08-20\n-----\n")
+    self.root.joinpath("content/404.md").write_text(
+      "title: not found\ndate: 2026-08-26\nnoindex: true\n-----\nmissing"
     )
     self._write_post("newer", "2026-08-24", "systems")
     self._write_post("older", "2026-08-23", "systems")
@@ -81,7 +89,9 @@ class TestSiteBuilder(unittest.TestCase):
     post = self.root / "content" / "blogs" / slug
     post.mkdir()
     post.joinpath("index.md").write_text(
-      f"title: {slug}\ndate: {published}\ntags: [{tag}]\n-----\n{slug} body"
+      f"title: {slug}\ndate: {published}\ntags: [{tag}]\n"
+      + ("aliases: [/writeups/newer/]\n" if slug == "newer" else "")
+      + f"-----\n{slug} body"
     )
 
   def _builder(self, validator=None) -> SiteBuilder:
@@ -96,7 +106,9 @@ class TestSiteBuilder(unittest.TestCase):
     report = self._builder().build(BuildOptions(incremental=False))
 
     self.assertTrue(report.output_dir.joinpath("index.html").is_file())
+    self.assertTrue(report.output_dir.joinpath("404.html").is_file())
     self.assertTrue(report.output_dir.joinpath("blogs/newer/index.html").is_file())
+    self.assertTrue(report.output_dir.joinpath("writeups/newer/index.html").is_file())
     self.assertTrue(report.output_dir.joinpath("blogs/page/2/index.html").is_file())
     self.assertTrue(report.output_dir.joinpath("tags/systems/index.html").is_file())
     self.assertTrue(report.output_dir.joinpath("feed.xml").is_file())

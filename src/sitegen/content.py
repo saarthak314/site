@@ -1,6 +1,7 @@
 import hashlib
 import json
 import math
+import mimetypes
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ from typing import Protocol
 
 from sitegen.config import SiteConfig
 from sitegen.frontmatter import parse_document
+from sitegen.markdown import image_dimensions
 from sitegen.models import ContentError, Page
 
 
@@ -65,6 +67,26 @@ class ContentRepository:
       self._create_page(home_path, "/", "home.html", is_post=False),
       self._create_page(archive_path, "/blogs/", "writings.html", is_post=False),
     ]
+    about_path = content_dir / "about.md"
+    if about_path.is_file():
+      pages.append(
+        self._create_page(
+          about_path,
+          "/about/",
+          "about.html",
+          is_post=False,
+        )
+      )
+    not_found_path = content_dir / "404.md"
+    if not_found_path.is_file():
+      pages.append(
+        self._create_page(
+          not_found_path,
+          "/404.html",
+          "404.html",
+          is_post=False,
+        )
+      )
 
     for child in sorted(blogs_dir.iterdir(), key=lambda path: path.name):
       if not child.is_dir():
@@ -125,6 +147,12 @@ class ContentRepository:
     output_path = _route_to_output_path(route)
     social_image = metadata.social_image or self.config.social_image
     social_image_url = _absolute_url(self.config.site_url, social_image)
+    social_image_path = self.config.static_dir / social_image.lstrip("/")
+    social_dimensions = (
+      image_dimensions(social_image_path) if social_image_path.is_file() else None
+    )
+    social_image_width, social_image_height = social_dimensions or (1200, 630)
+    social_image_type = mimetypes.guess_type(social_image_path.name)[0] or "image/jpeg"
     return Page(
       source_path=source_path,
       output_path=output_path,
@@ -138,22 +166,31 @@ class ContentRepository:
       permalink=metadata.permalink,
       description=metadata.description or rendered.description,
       social_image_url=social_image_url,
+      social_image_width=social_image_width,
+      social_image_height=social_image_height,
+      social_image_type=social_image_type,
       tags=metadata.tags,
       template=metadata.template or default_template,
       markdown=document.body,
       rendered=rendered,
       is_post=is_post,
+      aliases=metadata.aliases,
+      noindex=metadata.noindex,
+      experience=metadata.experience,
+      projects=metadata.projects,
     )
 
   def _ensure_unique_routes(self, pages: list[Page]) -> None:
     sources_by_route: dict[str, Path] = {}
     for page in pages:
-      existing = sources_by_route.get(page.route)
-      if existing:
-        raise ContentError(
-          f"{page.source_path}: duplicate route {page.route}; already used by {existing}"
-        )
-      sources_by_route[page.route] = page.source_path
+      for route in (page.route, *page.aliases):
+        existing = sources_by_route.get(route)
+        if existing:
+          raise ContentError(
+            f"{page.source_path}: duplicate route or alias {route}; "
+            f"already used by {existing}"
+          )
+        sources_by_route[route] = page.source_path
 
   def _paginate(self, posts: tuple[Page, ...]) -> tuple[PaginationPage, ...]:
     total_pages = max(1, math.ceil(len(posts) / self.config.posts_per_page))
@@ -168,9 +205,7 @@ class ContentRepository:
       elif page_number > 2:
         previous_url = f"/blogs/page/{page_number - 1}/"
       next_url = (
-        f"/blogs/page/{page_number + 1}/"
-        if page_number < total_pages
-        else None
+        f"/blogs/page/{page_number + 1}/" if page_number < total_pages else None
       )
       pages.append(
         PaginationPage(
@@ -221,8 +256,32 @@ class ContentRepository:
           "updated": page.updated.isoformat() if page.updated else None,
           "description": page.description,
           "image": page.social_image_url,
+          "image_width": page.social_image_width,
+          "image_height": page.social_image_height,
+          "image_type": page.social_image_type,
           "tags": page.tags,
           "template": page.template,
+          "aliases": page.aliases,
+          "noindex": page.noindex,
+          "experience": [
+            {
+              "role": item.role,
+              "company": item.company,
+              "company_url": item.company_url,
+              "period": item.period,
+              "highlights": item.highlights,
+            }
+            for item in page.experience
+          ],
+          "projects": [
+            {
+              "name": item.name,
+              "url": item.url,
+              "description": item.description,
+              "tech": item.tech,
+            }
+            for item in page.projects
+          ],
           "markdown": page.markdown,
         }
         for page in pages
@@ -237,6 +296,8 @@ class ContentRepository:
 def _route_to_output_path(route: str) -> Path:
   if route == "/":
     return Path("index.html")
+  if route.endswith(".html"):
+    return Path(route.strip("/"))
   return Path(route.strip("/")) / "index.html"
 
 

@@ -16,9 +16,12 @@
     {% for tag in page.tags %}<a href="/tags/{{ tag|tag_slug }}/">{{ tag }}</a>{% endfor %}
   </nav>
   {% endif %}
-  <nav class="article-nav" aria-label="Article navigation">
-    <a href="/blogs/">all writings</a>
-    <a href="#main-content">top</a>
-  </nav>
+  <footer class="blog-footer">
+    {% if page.updated %}<p class="blog-updated">last updated <time datetime="{{ page.updated|iso_date }}">{{ page.updated|full_date }}</time></p>{% endif %}
+    <nav class="article-nav" aria-label="Article navigation">
+      <a href="/blogs/">all writings</a>
+      <a href="#main-content">top</a>
+    </nav>
+  </footer>
 </main>
 {% endblock %}

@@ -7,7 +7,6 @@ from typing import Any
 from jinja2 import Environment
 from markupsafe import Markup
 
-
 HOME_TITLE = "sλrthak — systems, models, machines"
 HOME_DESCRIPTION = (
   "Sarthak Tomar writes about inference engineering, distributed systems, "
@@ -53,6 +52,7 @@ class TemplateRenderer:
       footer_phrase=(
         "built by hand." if page.template == "blog.html" else "built with love."
       ),
+      structured_data=_structured_data(page, values.get("config")),
     )
     output = self.environment.get_template(page.template).render(**values)
     return "\n".join(line.rstrip() for line in output.splitlines()) + "\n"
@@ -85,9 +85,13 @@ class TemplateRenderer:
       canonical_url=f"{self._site_url()}{tag.route}",
       description=f"writing tagged {tag.name}",
       social_image_url=_absolute_url(self._site_url(), self._config().social_image),
+      social_image_width=1200,
+      social_image_height=630,
+      social_image_type="image/jpeg",
       tags=(),
       rendered=rendered,
       template="tags.html",
+      noindex=False,
     )
     return self.render_page(
       page,
@@ -100,18 +104,21 @@ class TemplateRenderer:
 
   def template_digest(self, template_name: str) -> str:
     digest = hashlib.sha256()
-    for name in (
-      template_name,
-      "base.html",
-      "partials/header.html",
-      "partials/footer.html",
-    ):
+    names = sorted(set([template_name, *self.environment.list_templates()]))
+    for name in names:
       source, _, _ = self.environment.loader.get_source(self.environment, name)
       digest.update(name.encode("utf-8"))
       digest.update(b"\0")
       digest.update(source.encode("utf-8"))
       digest.update(b"\0")
     return digest.hexdigest()
+
+  def render_redirect(self, alias: str, page: Any) -> str:
+    output = self.environment.get_template("redirect.html").render(
+      alias=alias,
+      page=page,
+    )
+    return "\n".join(line.rstrip() for line in output.splitlines()) + "\n"
 
   def _config(self) -> Any:
     if self.config is None:
@@ -181,9 +188,11 @@ def _meta_description(page: Any) -> str:
 def _body_class(template_name: str) -> str:
   return {
     "home.html": "home-page",
+    "about.html": "about-page",
     "writings.html": "writings-page",
     "blog.html": "blog-page",
     "tags.html": "tags-page",
+    "404.html": "not-found-page",
   }[template_name]
 
 
@@ -191,6 +200,48 @@ def _page_at_route(page: Any, route: str, site_url: str) -> SimpleNamespace:
   values = _context_values(page)
   values.update(route=route, canonical_url=f"{site_url}{route}")
   return SimpleNamespace(**values)
+
+
+def _structured_data(page: Any, config: Any) -> dict[str, Any]:
+  author_name = getattr(config, "author_name", "Sarthak Tomar")
+  site_url = getattr(config, "site_url", "https://sarrthak.com").rstrip("/")
+  if page.template == "blog.html":
+    payload = {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "headline": page.title,
+      "description": page.description,
+      "image": page.social_image_url,
+      "datePublished": page.date.isoformat(),
+      "dateModified": (page.updated or page.date).isoformat(),
+      "mainEntityOfPage": page.canonical_url,
+      "author": {
+        "@type": "Person",
+        "name": author_name,
+        "url": site_url,
+      },
+    }
+  elif page.route == "/":
+    payload = {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": author_name,
+      "url": site_url,
+      "sameAs": [
+        "https://github.com/saarthak314",
+        "https://x.com/sarthak2143",
+        "https://linkedin.com/in/sarthaktomar2143",
+      ],
+    }
+  else:
+    payload = {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      "name": page.title,
+      "description": page.description,
+      "url": page.canonical_url,
+    }
+  return payload
 
 
 def _absolute_url(site_url: str, value: str) -> str:

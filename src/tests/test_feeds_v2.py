@@ -12,7 +12,9 @@ from sitegen.models import Page
 def make_page(title: str, route: str, published: date, *, post: bool) -> Page:
   return Page(
     source_path=Path(f"content{route}index.md"),
-    output_path=Path(route.strip("/")) / "index.html" if route != "/" else Path("index.html"),
+    output_path=Path(route.strip("/")) / "index.html"
+    if route != "/"
+    else Path("index.html"),
     route=route,
     canonical_url=f"https://example.com{route}",
     title=title,
@@ -23,11 +25,18 @@ def make_page(title: str, route: str, published: date, *, post: bool) -> Page:
     permalink=None,
     description=f"description for {title}",
     social_image_url="https://example.com/images/social.png",
+    social_image_width=1200,
+    social_image_height=630,
+    social_image_type="image/png",
     tags=(),
     template="blog.html" if post else "home.html",
     markdown="body",
-    rendered=SimpleNamespace(html="<p>body</p>", reading_time="1 min read", has_math=False, has_code=False),
+    rendered=SimpleNamespace(
+      html="<p>body</p>", reading_time="1 min read", has_math=False, has_code=False
+    ),
     is_post=post,
+    aliases=(),
+    noindex=False,
   )
 
 

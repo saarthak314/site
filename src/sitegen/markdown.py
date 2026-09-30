@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import math
+import mimetypes
 import re
 import unicodedata
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from html import unescape
 from pathlib import Path
-from typing import Iterable, Sequence
 from urllib.parse import unquote, urlsplit
 
 from markdown_it import MarkdownIt
@@ -14,7 +15,10 @@ from markdown_it.common.utils import escapeHtml
 from markdown_it.renderer import RendererHTML
 from markdown_it.rules_inline.state_inline import StateInline
 from markdown_it.token import Token
-
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import TextLexer, get_lexer_by_name
+from pygments.util import ClassNotFound
 
 _WORD_RE = re.compile(r"\b[\w']+\b", re.UNICODE)
 _CONTROL_RE = re.compile(r"[\x00-\x20\x7f]+")
@@ -51,9 +55,7 @@ class MarkdownRenderer:
     self._add_image_attributes(tokens)
 
     return RenderedMarkdown(
-      html=self._markdown.renderer.render(
-        tokens, self._markdown.options, environment
-      ),
+      html=self._markdown.renderer.render(tokens, self._markdown.options, environment),
       description=self._description(tokens),
       reading_time=self._reading_time(tokens),
       has_math=any(token.type == "mathjax" for token in _walk_tokens(tokens)),
@@ -76,6 +78,7 @@ class MarkdownRenderer:
     markdown.inline.add_terminator_char("$")
     markdown.add_render_rule("mathjax", _render_mathjax)
     markdown.add_render_rule("visually_hidden", _render_visually_hidden)
+    markdown.add_render_rule("fence", _render_fence)
     markdown.validateLink = _is_safe_link
     return markdown
 
@@ -149,12 +152,16 @@ class MarkdownRenderer:
       image_path = _local_asset_path(self.static_dir, source)
       if image_path is None or not image_path.is_file():
         continue
-      dimensions = _image_dimensions(image_path)
+      dimensions = image_dimensions(image_path)
       if dimensions is None:
         continue
       width, height = dimensions
       token.attrSet("width", str(width))
       token.attrSet("height", str(height))
+      variants = _responsive_variants(image_path, source)
+      if variants:
+        token.attrSet("srcset", ", ".join([*variants, f"{source} {width}w"]))
+        token.attrSet("sizes", "(max-width: 640px) calc(100vw - 34px), 653px")
 
   def _description(self, tokens: Sequence[Token]) -> str:
     for index, token in enumerate(tokens[:-1]):
@@ -253,10 +260,28 @@ def _render_visually_hidden(
   environment: dict[str, object],
 ) -> str:
   del renderer, options, environment
+  return f'<span class="visually-hidden">{escapeHtml(tokens[index].content)}</span>'
+
+
+def _render_fence(
+  renderer: RendererHTML,
+  tokens: Sequence[Token],
+  index: int,
+  options: dict[str, object],
+  environment: dict[str, object],
+) -> str:
+  del renderer, options, environment
+  token = tokens[index]
+  language = token.info.strip().split(maxsplit=1)[0] if token.info.strip() else "text"
+  safe_language = re.sub(r"[^a-zA-Z0-9_+-]", "", language) or "text"
+  try:
+    lexer = get_lexer_by_name(safe_language)
+  except ClassNotFound:
+    lexer = TextLexer()
+  highlighted = highlight(token.content, lexer, HtmlFormatter(nowrap=True))
   return (
-    '<span class="visually-hidden">'
-    f"{escapeHtml(tokens[index].content)}"
-    "</span>"
+    f'<pre><code class="language-{escapeHtml(safe_language)}">'
+    f"{highlighted}</code></pre>\n"
   )
 
 
@@ -318,7 +343,7 @@ def _local_asset_path(static_dir: Path, source: str) -> Path | None:
   return candidate
 
 
-def _image_dimensions(image_path: Path) -> tuple[int, int] | None:
+def image_dimensions(image_path: Path) -> tuple[int, int] | None:
   data = image_path.read_bytes()
   if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24:
     return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
@@ -370,12 +395,7 @@ def _image_dimensions(image_path: Path) -> tuple[int, int] | None:
       ) & 0x3FFF
     if chunk == b"VP8L" and len(payload) >= 5:
       width = 1 + payload[1] + ((payload[2] & 0x3F) << 8)
-      height = (
-        1
-        + (payload[2] >> 6)
-        + (payload[3] << 2)
-        + ((payload[4] & 0x0F) << 10)
-      )
+      height = 1 + (payload[2] >> 6) + (payload[3] << 2) + ((payload[4] & 0x0F) << 10)
       return width, height
   ispe_index = data.find(b"ispe")
   if ispe_index >= 4 and ispe_index + 16 <= len(data):
@@ -384,3 +404,22 @@ def _image_dimensions(image_path: Path) -> tuple[int, int] | None:
       int.from_bytes(data[ispe_index + 12 : ispe_index + 16], "big"),
     )
   return None
+
+
+def image_type(image_path: Path) -> str:
+  guessed, _ = mimetypes.guess_type(image_path.name)
+  return guessed or "image/jpeg"
+
+
+def _responsive_variants(image_path: Path, source: str) -> list[str]:
+  pattern = re.compile(
+    rf"^{re.escape(image_path.stem)}-(\d+)w{re.escape(image_path.suffix)}$"
+  )
+  variants: list[tuple[int, str]] = []
+  source_dir = source.rsplit("/", 1)[0]
+  for candidate in image_path.parent.glob(f"{image_path.stem}-*w{image_path.suffix}"):
+    match = pattern.fullmatch(candidate.name)
+    if match:
+      width = int(match.group(1))
+      variants.append((width, f"{source_dir}/{candidate.name} {width}w"))
+  return [value for _, value in sorted(variants)]

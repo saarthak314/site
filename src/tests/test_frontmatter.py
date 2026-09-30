@@ -22,6 +22,8 @@ class TestFrontMatter(unittest.TestCase):
         "permalink: /notes/sample/\n"
         "description: explicit summary\n"
         "social_image: /images/sample.png\n"
+        "aliases: [/writeups/sample/, /notes/old-sample/]\n"
+        "noindex: true\n"
         "tags: [systems, inference]\n"
         "template: blog.html\n"
         "-----\n\n"
@@ -38,6 +40,11 @@ class TestFrontMatter(unittest.TestCase):
       self.assertEqual(document.metadata.permalink, "/notes/sample/")
       self.assertEqual(document.metadata.description, "explicit summary")
       self.assertEqual(document.metadata.social_image, "/images/sample.png")
+      self.assertEqual(
+        document.metadata.aliases,
+        ("/writeups/sample/", "/notes/old-sample/"),
+      )
+      self.assertTrue(document.metadata.noindex)
       self.assertEqual(document.metadata.tags, ("systems", "inference"))
       self.assertEqual(document.metadata.template, "blog.html")
       self.assertEqual(document.body, "\nfinal paragraph without newline")
@@ -61,6 +68,61 @@ class TestFrontMatter(unittest.TestCase):
       self.assertEqual(document.metadata.tags, ("systems", "compilers"))
       self.assertEqual(document.body, "body")
 
+  def test_parses_structured_homepage_sections(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      path = Path(temp_dir) / "_index.md"
+      path.write_text(
+        "title: home\n"
+        "date: 2026-08-26\n"
+        "experience:\n"
+        "  - role: systems engineer\n"
+        "    company: morph labs\n"
+        "    company_url: https://morph.so\n"
+        "    period: jun 2026 — present\n"
+        "    highlights:\n"
+        "      - agentic workflows and cloud inference systems\n"
+        "projects:\n"
+        "  - name: paimon\n"
+        "    url: https://github.com/saarthak314/paimon\n"
+        "    description: an agentic coding harness\n"
+        "    tech: [python, agents]\n"
+        "  - name: web server\n"
+        "    description: nginx-style web server\n"
+        "    tech: [c, networking]\n"
+        "-----\n"
+        "intro"
+      )
+
+      document = parse_document(path)
+
+      experience = document.metadata.experience[0]
+      self.assertEqual(experience.role, "systems engineer")
+      self.assertEqual(experience.company, "morph labs")
+      self.assertEqual(experience.company_url, "https://morph.so")
+      self.assertEqual(experience.period, "jun 2026 — present")
+      self.assertEqual(
+        experience.highlights,
+        ("agentic workflows and cloud inference systems",),
+      )
+      project = document.metadata.projects[0]
+      self.assertEqual(project.name, "paimon")
+      self.assertEqual(project.url, "https://github.com/saarthak314/paimon")
+      self.assertEqual(project.description, "an agentic coding harness")
+      self.assertEqual(project.tech, ("python", "agents"))
+      unlinked_project = document.metadata.projects[1]
+      self.assertEqual(unlinked_project.name, "web server")
+      self.assertIsNone(unlinked_project.url)
+
+  def test_rejects_invalid_structured_homepage_sections(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      path = Path(temp_dir) / "_index.md"
+      path.write_text(
+        "title: home\ndate: 2026-08-26\nexperience: systems engineer\n-----\nintro"
+      )
+
+      with self.assertRaisesRegex(ContentError, "experience must be a list"):
+        parse_document(path)
+
   def test_reports_path_for_invalid_metadata(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       path = Path(temp_dir) / "broken.md"
@@ -82,6 +144,17 @@ class TestFrontMatter(unittest.TestCase):
       )
       with self.assertRaisesRegex(ContentError, "permalink must start and end with /"):
         parse_document(invalid_permalink)
+
+      invalid_alias = Path(temp_dir) / "invalid-alias.md"
+      invalid_alias.write_text(
+        "title: invalid\n"
+        "date: 2026-08-20\n"
+        "aliases: [writeups/no-leading-slash]\n"
+        "-----\n"
+        "body"
+      )
+      with self.assertRaisesRegex(ContentError, "alias must start and end with /"):
+        parse_document(invalid_alias)
 
   def test_rejects_unclosed_front_matter(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -127,7 +200,9 @@ class TestSiteConfig(unittest.TestCase):
         )
       )
 
-      with self.assertRaisesRegex(ContentError, r"site_url must be an absolute http\(s\) URL"):
+      with self.assertRaisesRegex(
+        ContentError, r"site_url must be an absolute http\(s\) URL"
+      ):
         SiteConfig.load(root)
 
 

@@ -5,6 +5,7 @@
 ## navigation
 
 - [home](/): about sarthak, current interests, experience, and projects.
+- [about](/about/): personal interests, current equipment, and daily tools.
 - [all writings](/blogs/): every article, ordered newest first.
 - [rss feed](/feed.xml): the latest writing in rss 2.0 format.
 

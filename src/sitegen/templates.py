@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
+
 from sitegen.render import TemplateRenderer
 
 
@@ -38,4 +39,6 @@ def _tag_slug(value: str) -> str:
   normalized = unicodedata.normalize("NFKD", value)
   ascii_value = normalized.encode("ascii", "ignore").decode("ascii").lower()
   return re.sub(r"[^a-z0-9]+", "-", ascii_value).strip("-")
+
+
 __all__ = ["TemplateRenderer", "create_environment"]

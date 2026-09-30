@@ -1,8 +1,8 @@
 import hashlib
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable
 
 MANIFEST_NAME = ".sitegen-manifest.json"
 MANIFEST_VERSION = 1
@@ -24,8 +24,7 @@ class BuildManifest:
       return cls()
     entries = data.get("entries")
     if not isinstance(entries, dict) or not all(
-      isinstance(key, str) and isinstance(value, str)
-      for key, value in entries.items()
+      isinstance(key, str) and isinstance(value, str) for key, value in entries.items()
     ):
       return cls()
     return cls(entries=dict(entries))

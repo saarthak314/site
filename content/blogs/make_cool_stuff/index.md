@@ -1,22 +1,28 @@
 title: make cool stuff
 date: 2025-08-30
+updated: 2026-08-26
+description: escape tutorial hell by building weird, useful, constrained, and genuinely personal projects.
+aliases:
+  - /writeups/make_cool_stuff/
 -----
 
-this article focuses on breaking free from repetitive programming projects, but its ideas can be applied to any creative field, like film making, music, or art.
+this article is about breaking free from repetitive programming projects, but the ideas apply to any creative field: filmmaking, music, art, whatever.
+
+## build for curiosity
 
 are you stuck in tutorial hell, unsure of your next project, or burned out from repetitive coding?
 
-![frieren studying](/images/frieren-studying.jpg)
+![frieren studying](/images/frieren-studying.webp)
 
 i use niche tools, code in multiple languages, and build unconventional projects just to learn how things work and for the love of the craft. my goal isn’t to make the most money - at least not yet lol.
 
 you don’t need to churn out another crud app or generic saas product just to stand out. you need to make projects for your "learning" purpose.
 
-- make stuff that others would appreciate while using
-- reinventing the wheel to appreciate its "roundness"
-- make for your own personal usecases
+- make stuff other people would appreciate using
+- reinvent the wheel to appreciate its "roundness"
+- make things for your own use cases
 
-sure not all of this would be "useful" but you learning something valuable that may or may not be useful one day, you kept your curiosity alive - that's what matters.
+sure, not all of this will be "useful," but you learned something and kept your curiosity alive. that's what matters.
 
 programming isn’t just about landing a faang gig or shipping the next unicorn startup. it’s about creating stuff that makes you feel alive. build projects that reflect your quirks, your passions, your weird obsessions. whether it’s a regex engine in C or a music synth in google sheets, make it "soulful".
 
@@ -24,9 +30,11 @@ get stuck, learn, and keep that curiosity burning. you got this :)
 
 being good at programming doesn't mean to know every javascript framework, python library and memorize all leetcode hard problems asked in faang, it means to build stuff from first principles that works.
 
-tutorial hell and rot learning can only take only so far, you need to be interested in the underlying principles. you dont need to think about the results, just keep doing what you love.
+tutorial hell and rote learning can only take you so far. you need to care about the underlying principles. don't obsess over the result; keep doing what you love.
 
 there are so many "cool" things in programming other than copy pasting gesture detection linkedin slop or react todo with sqlite.
+
+## better project ideas
 
 so what should you make?
 
@@ -48,11 +56,13 @@ some great projects to learn underlying principles with articles/blogs to start:
 
 you don't have to follow everything in the articles, just see where you got stuck and implement it yourself.
 
-OR you can just whatever you want, but make it soulful not just another knockoff.
+or you can make whatever you want. just make it soulful, not another knockoff.
 
-![lain studying](/images/lain_studying.png)
+![lain studying](/images/lain_studying.webp)
 
-another thing you could is making things under HEAVY constraints like:
+## constraints make it interesting
+
+another option is making things under heavy constraints:
 
 - neural network in vimscript
 - building entire games in shader code
@@ -72,7 +82,9 @@ some small, toy projects under these constraints. highly recommended to see thei
 - [Web browser under couple thousands lines of code (this is considered minimal in the scale of browser)](https://browser.engineering/)
 - [Database in 3000 lines with 0 dependencies](https://build-your-own.org/database/)
 
-another thing i want to write about is making "cool" stuff, what does cool means?
+## make it feel alive
+
+what does "cool" even mean?
 
 in my opinion, if people fuck with your product, it's cool
 
@@ -82,20 +94,20 @@ my big dawg carl jung once said:
 
 you could be the best engineer in the world but if your product feels dead and soulless, no one would care. why?
 
-people dont care about perfection, they care about connection!
+people don't care about perfection; they care about connection.
 
-![gojo hollow purple](/images/gojo.jpeg)
+![gojo hollow purple](/images/gojo.webp)
 
 let me break it down for you:
 
-people dont just use things they relate to them. how?
+people don't just use things; they relate to them. how?
 
-we yell at our cars when they dont start. we thank our mobile phone after a successful call
+we yell at our cars when they don't start. we thank our phones after a successful call.
 
 but why we do this?
 
 because we treat them like a real person, we think our concerns can be met with a personality.
 
-so, try make shit that others feel connected and use them daily. even if no uses it, at least you would use it to save your time and have fun making them.
+so, make shit people can connect with and use daily. even if nobody else uses it, at least you'll save yourself time and have fun building it.
 
 "maybe the real projects was the friends we made along the way"

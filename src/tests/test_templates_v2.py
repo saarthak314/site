@@ -9,7 +9,6 @@ from jinja2 import FileSystemLoader, StrictUndefined, UndefinedError
 from sitegen.render import TemplateRenderer
 from sitegen.templates import create_environment
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TEMPLATE_ROOT = PROJECT_ROOT / "templates"
 
@@ -42,7 +41,13 @@ def page(
   updated: date | None = None,
   description: str = "systems notes",
   social_image_url: str = "https://sarrthak.com/images/social.png",
+  social_image_width: int = 1200,
+  social_image_height: int = 630,
+  social_image_type: str = "image/png",
+  noindex: bool = False,
   tags: tuple[str, ...] = (),
+  experience: tuple[SimpleNamespace, ...] = (),
+  projects: tuple[SimpleNamespace, ...] = (),
   body: SimpleNamespace | None = None,
 ) -> SimpleNamespace:
   return namespace(
@@ -53,7 +58,13 @@ def page(
     canonical_url=f"https://sarrthak.com{route}",
     description=description,
     social_image_url=social_image_url,
+    social_image_width=social_image_width,
+    social_image_height=social_image_height,
+    social_image_type=social_image_type,
+    noindex=noindex,
     tags=tags,
+    experience=experience,
+    projects=projects,
     rendered=body or rendered(),
     template=template,
   )
@@ -64,6 +75,8 @@ def config() -> SimpleNamespace:
     site_url="https://sarrthak.com",
     email="hey@sarrthak.com",
     social_image="/images/social.png",
+    author_name="Sarthak Tomar",
+    twitter_handle="@sarthak2143",
   )
 
 
@@ -100,9 +113,7 @@ class TestTemplateEnvironment(unittest.TestCase):
   def test_environment_loads_files_strictly_and_autoescapes_html(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       template_dir = Path(temp_dir)
-      template_dir.joinpath("escaped.html").write_text(
-        "{{ value }}", encoding="utf-8"
-      )
+      template_dir.joinpath("escaped.html").write_text("{{ value }}", encoding="utf-8")
       template_dir.joinpath("plain.txt").write_text("{{ value }}", encoding="utf-8")
 
       environment = create_environment(template_dir)
@@ -128,6 +139,8 @@ class TestTemplateEnvironment(unittest.TestCase):
       site_url="https://sarrthak.com",
       email="hey@sarrthak.com",
       social_image="/images/social.png",
+      author_name="Sarthak Tomar",
+      twitter_handle="@sarthak2143",
     )
     renderer = BuildTemplateRenderer(site_config)
     post = page(
@@ -196,14 +209,18 @@ class TestSharedLayout(TemplateRenderingTestCase):
     self.assertIn('<link rel="canonical" href="https://sarrthak.com/"', html)
     self.assertIn('<meta property="og:type" content="website"', html)
     self.assertIn('<meta property="og:site_name" content="sλrthak"', html)
-    self.assertIn(
-      '<meta property="og:url" content="https://sarrthak.com/"', html
-    )
+    self.assertIn('<meta property="og:url" content="https://sarrthak.com/"', html)
     self.assertIn(
       '<meta property="og:image" content="https://sarrthak.com/images/social.png"',
       html,
     )
+    self.assertIn('<meta property="og:image:width" content="1200"', html)
+    self.assertIn('<meta property="og:image:height" content="630"', html)
+    self.assertIn('<meta property="og:image:type" content="image/png"', html)
     self.assertIn('<meta name="twitter:card" content="summary_large_image"', html)
+    self.assertIn('<meta name="twitter:creator" content="@sarthak2143"', html)
+    self.assertIn('"@type": "Person"', html)
+    self.assertIn('"name": "Sarthak Tomar"', html)
     self.assertIn('<link rel="describedby" href="/llms.txt"', html)
     self.assertIn('type="application/rss+xml"', html)
     self.assertIn('href="/feed.xml"', html)
@@ -211,13 +228,15 @@ class TestSharedLayout(TemplateRenderingTestCase):
     self.assertIn('<a class="skip-link" href="#main-content">skip to content</a>', html)
     self.assertIn('<a class="site-title" href="/">sλrthak</a>', html)
     self.assertIn('<span class="site-name">sarthak tomar</span>', html)
-    self.assertIn('href="https://github.com/saarthak314">github</a>', html)
-    self.assertIn('href="https://x.com/sarthak2143">twitter/x</a>', html)
+    self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', html)
+    self.assertIn('href="https://x.com/sarthak2143" rel="me">twitter/x</a>', html)
     self.assertIn(
-      'href="https://linkedin.com/in/sarthaktomar2143">linkedin</a>', html
+      'href="https://linkedin.com/in/sarthaktomar2143" rel="me">linkedin</a>',
+      html,
     )
     self.assertIn(
-      'href="https://discord.com/users/1226399791362080820">discord</a>', html
+      'href="https://discord.com/users/1226399791362080820" rel="me">discord</a>',
+      html,
     )
     self.assertRegex(html, r"© \d{4} sarthak tomar\. built with love\.")
     self.assertIn('href="mailto:hey@sarrthak.com">email</a>', html)
@@ -265,12 +284,71 @@ class TestSharedLayout(TemplateRenderingTestCase):
     plain_html = self.render(plain_article, namespace(config=config()))
     rich_html = self.render(rich_article, namespace(config=config()))
 
-    self.assertNotIn("mathjax@3/es5/tex-chtml.js", plain_html)
+    self.assertNotIn("mathjax@3.2.2/es5/tex-chtml.js", plain_html)
     self.assertNotIn("highlight.min.js", plain_html)
     self.assertNotIn("/gruvbox-dark-hard.css", plain_html)
-    self.assertIn("mathjax@3/es5/tex-chtml.js", rich_html)
-    self.assertIn("highlight.min.js", rich_html)
+    self.assertIn("mathjax@3.2.2/es5/tex-chtml.js", rich_html)
+    self.assertIn(
+      'integrity="sha384-AHAnt9ZhGeHIrydA1Kp1L7FN+2UosbF7RQg6C+9Is/a7kDpQ1684C2iH2VWil6r4"',
+      rich_html,
+    )
+    self.assertIn('crossorigin="anonymous"', rich_html)
+    self.assertNotIn("highlight.min.js", rich_html)
     self.assertIn("/gruvbox-dark-hard.css", rich_html)
+
+  def test_article_metadata_includes_updates_and_blog_posting_schema(self) -> None:
+    article = page(
+      title="updated article",
+      route="/blogs/updated/",
+      template="blog.html",
+      published=date(2025, 7, 19),
+      updated=date(2026, 8, 26),
+    )
+
+    html = self.render(article, namespace(config=config()))
+
+    updated = (
+      '<p class="blog-updated">last updated '
+      '<time datetime="2026-08-26">26 aug 2026</time></p>'
+    )
+    metadata = html[html.index('<div class="blog-meta">') : html.index("</div>")]
+    self.assertIn(updated, html)
+    self.assertNotIn("updated", metadata)
+    self.assertLess(html.index("</article>"), html.index(updated))
+    self.assertLess(html.index(updated), html.index('<nav class="article-nav"'))
+    self.assertIn('"@type": "BlogPosting"', html)
+    self.assertIn('"datePublished": "2025-07-19"', html)
+    self.assertIn('"dateModified": "2026-08-26"', html)
+
+  def test_noindex_pages_emit_robots_metadata(self) -> None:
+    not_found = page(
+      title="not found",
+      route="/404.html",
+      template="404.html",
+      noindex=True,
+    )
+
+    html = self.render(not_found, namespace(config=config()))
+
+    self.assertIn('<meta name="robots" content="noindex, nofollow"', html)
+
+  def test_template_digest_tracks_every_template_file(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      template_dir = Path(temp_dir)
+      partials = template_dir / "partials"
+      partials.mkdir()
+      template_dir.joinpath("home.html").write_text("home")
+      template_dir.joinpath("base.html").write_text("base")
+      partials.joinpath("header.html").write_text("header")
+      partials.joinpath("footer.html").write_text("footer")
+      partials.joinpath("extra.html").write_text("first")
+      renderer = TemplateRenderer(create_environment(template_dir))
+
+      first = renderer.template_digest("home.html")
+      partials.joinpath("extra.html").write_text("second")
+      second = renderer.template_digest("home.html")
+
+    self.assertNotEqual(first, second)
 
 
 class TestHomeTemplate(TemplateRenderingTestCase):
@@ -292,6 +370,29 @@ class TestHomeTemplate(TemplateRenderingTestCase):
       route="/",
       template="home.html",
       body=rendered("<p>trusted <strong>intro</strong>.</p>"),
+      experience=(
+        namespace(
+          role="systems engineer",
+          company="morph labs",
+          company_url="https://morph.so",
+          period="jun 2026 — present",
+          highlights=("agentic workflows and cloud inference systems",),
+        ),
+      ),
+      projects=(
+        namespace(
+          name="paimon",
+          url="https://github.com/saarthak314/paimon",
+          description="an agentic coding harness",
+          tech=("python", "agents"),
+        ),
+        namespace(
+          name="web server",
+          url=None,
+          description="nginx-style web server",
+          tech=("c", "networking"),
+        ),
+      ),
     )
     context = namespace(
       config=config(),
@@ -311,9 +412,39 @@ class TestHomeTemplate(TemplateRenderingTestCase):
       html,
     )
     self.assertNotIn("older post", html)
+    self.assertIn('<a class="home-writing-all" href="/blogs/">all writings</a>', html)
+    self.assertIn('<section class="home-projects" id="projects"', html)
+    self.assertIn('class="home-project__tech">python · agents</span>', html)
+    self.assertIn('<span class="home-project__name">web server</span>', html)
+    self.assertNotIn('href="None">web server</a>', html)
     self.assertIn(
-      '<a class="home-writing-all" href="/blogs/">all writings</a>', html
+      '<a class="home-projects-all" href="https://github.com/saarthak314">'
+      "all projects</a>",
+      html,
     )
+    projects_start = html.index('<section class="home-projects"')
+    projects_end = html.index("</section>", projects_start)
+    all_projects = html.index('class="home-projects-all"')
+    self.assertLess(projects_start, all_projects)
+    self.assertLess(all_projects, projects_end)
+    self.assertIn('<section class="home-experience" id="experience"', html)
+    self.assertIn('<div class="home-experience__header">', html)
+    self.assertIn(
+      '<a class="home-experience__company" href="https://morph.so">morph labs</a>',
+      html,
+    )
+    self.assertIn(
+      '<span class="home-experience__period">jun 2026 — present</span>',
+      html,
+    )
+    self.assertIn(
+      '<span class="home-experience__description">'
+      "agentic workflows and cloud inference systems</span>",
+      html,
+    )
+    self.assertNotIn("home-experience__highlights", html)
+    self.assertLess(html.index('id="experience"'), html.index('id="projects"'))
+    self.assertLess(html.index('id="projects"'), html.index('id="writing"'))
 
 
 class TestWritingsTemplate(TemplateRenderingTestCase):
@@ -347,7 +478,7 @@ class TestWritingsTemplate(TemplateRenderingTestCase):
     self.assertIn('href="/blogs/second/">second post</a>', html)
     self.assertIn('<nav class="pagination" aria-label="Pagination">', html)
     self.assertIn('rel="prev" href="/blogs/">previous</a>', html)
-    self.assertIn('<span>page 2 of 3</span>', html)
+    self.assertIn("<span>page 2 of 3</span>", html)
     self.assertIn('rel="next" href="/blogs/page/3/">next</a>', html)
 
 
@@ -373,12 +504,8 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     self.assertIn('<body class="blog-page">', html)
     self.assertIn("<title>strict templates — sλrthak</title>", html)
     self.assertIn('<meta property="og:type" content="article"', html)
-    self.assertIn(
-      '<meta property="article:published_time" content="2026-08-24"', html
-    )
-    self.assertIn(
-      '<meta property="article:modified_time" content="2026-08-25"', html
-    )
+    self.assertIn('<meta property="article:published_time" content="2026-08-24"', html)
+    self.assertIn('<meta property="article:modified_time" content="2026-08-25"', html)
     self.assertIn(
       '<meta name="twitter:description" content="strict rendering without surprises"',
       html,
@@ -453,10 +580,8 @@ class TestTagsTemplate(TemplateRenderingTestCase):
     self.assertIn('href="/blogs/tagged/">tagged post</a>', html)
     self.assertIn('<span class="writing-row__date">24 aug 2026</span>', html)
     self.assertIn('rel="prev" href="/tags/systems/">previous</a>', html)
-    self.assertIn('<span>page 2 of 3</span>', html)
-    self.assertIn(
-      'rel="next" href="/tags/systems/page/3/">next</a>', html
-    )
+    self.assertIn("<span>page 2 of 3</span>", html)
+    self.assertIn('rel="next" href="/tags/systems/page/3/">next</a>', html)
 
 
 if __name__ == "__main__":

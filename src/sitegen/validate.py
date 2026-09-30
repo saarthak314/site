@@ -28,9 +28,7 @@ class _HtmlDocument(HTMLParser):
     self.srcs: list[str] = []
     self.ids: set[str] = set()
 
-  def handle_starttag(
-    self, tag: str, attrs: list[tuple[str, str | None]]
-  ) -> None:
+  def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
     attributes = {name.lower(): value for name, value in attrs}
 
     element_id = attributes.get("id")
@@ -111,15 +109,11 @@ class SiteValidator:
 
     return sorted(issues, key=lambda issue: (str(issue.path), issue.message))
 
-  def _template_marker_issues(
-    self, path: Path, content: str
-  ) -> list[ValidationIssue]:
+  def _template_marker_issues(self, path: Path, content: str) -> list[ValidationIssue]:
     issues = []
     for marker in ("{{", "{%"):
       if marker in content:
-        issues.append(
-          ValidationIssue(path, f'unresolved template marker "{marker}"')
-        )
+        issues.append(ValidationIssue(path, f'unresolved template marker "{marker}"'))
     return issues
 
   def _canonical_issues(
@@ -191,9 +185,7 @@ class SiteValidator:
         root, resolved_source, parsed.path, allow_directory_route=False
       )
       if target is None:
-        issues.append(
-          ValidationIssue(source_path, f'missing local src asset: "{src}"')
-        )
+        issues.append(ValidationIssue(source_path, f'missing local src asset: "{src}"'))
     return issues
 
   def _xml_issues(self, path: Path, content: str) -> list[ValidationIssue]:

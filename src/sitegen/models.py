@@ -12,6 +12,23 @@ class ContentError(ValueError):
 
 
 @dataclass(frozen=True)
+class ExperienceItem:
+  role: str
+  company: str | None
+  company_url: str | None
+  period: str
+  highlights: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ProjectItem:
+  name: str
+  url: str | None
+  description: str
+  tech: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class PageMetadata:
   title: str
   date: date
@@ -23,6 +40,10 @@ class PageMetadata:
   social_image: str | None = None
   tags: tuple[str, ...] = ()
   template: str | None = None
+  aliases: tuple[str, ...] = ()
+  noindex: bool = False
+  experience: tuple[ExperienceItem, ...] = ()
+  projects: tuple[ProjectItem, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -45,8 +66,15 @@ class Page:
   permalink: str | None
   description: str
   social_image_url: str
+  social_image_width: int
+  social_image_height: int
+  social_image_type: str
   tags: tuple[str, ...]
   template: str
   markdown: str
   rendered: "RenderedMarkdown"
   is_post: bool
+  aliases: tuple[str, ...]
+  noindex: bool
+  experience: tuple[ExperienceItem, ...] = ()
+  projects: tuple[ProjectItem, ...] = ()

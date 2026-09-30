@@ -19,18 +19,15 @@ class TestMarkdownRenderer(unittest.TestCase):
     rendered = self.renderer.render("```python\nprint('still here')")
 
     self.assertIn('<code class="language-python">', rendered.html)
-    self.assertIn("print('still here')", rendered.html)
+    self.assertIn("still here", rendered.html)
     self.assertTrue(rendered.has_code)
 
   def test_renders_nested_emphasis_and_parenthesized_links(self) -> None:
     rendered = self.renderer.render(
-      "**bold with _nested emphasis_** and "
-      "[docs](https://example.com/a_(b))"
+      "**bold with _nested emphasis_** and [docs](https://example.com/a_(b))"
     )
 
-    self.assertIn(
-      "<strong>bold with <em>nested emphasis</em></strong>", rendered.html
-    )
+    self.assertIn("<strong>bold with <em>nested emphasis</em></strong>", rendered.html)
     self.assertIn('href="https://example.com/a_(b)"', rendered.html)
 
   def test_keeps_mathjax_inside_inline_code_as_code(self) -> None:
@@ -41,9 +38,7 @@ class TestMarkdownRenderer(unittest.TestCase):
     self.assertTrue(rendered.has_code)
 
   def test_preserves_mathjax_in_text_without_parsing_its_markdown(self) -> None:
-    rendered = self.renderer.render(
-      "Inline $x_i * y_j$ and display \\[a_b + c_d\\]."
-    )
+    rendered = self.renderer.render("Inline $x_i * y_j$ and display \\[a_b + c_d\\].")
 
     self.assertIn("$x_i * y_j$", rendered.html)
     self.assertIn("\\[a_b + c_d\\]", rendered.html)
@@ -52,16 +47,12 @@ class TestMarkdownRenderer(unittest.TestCase):
 
   def test_renders_fence_languages_and_tables(self) -> None:
     rendered = self.renderer.render(
-      "| name | value |\n"
-      "| --- | --- |\n"
-      "| alpha | 1 |\n\n"
-      "```rust\n"
-      "fn main() {}\n"
-      "```"
+      "| name | value |\n| --- | --- |\n| alpha | 1 |\n\n```rust\nfn main() {}\n```"
     )
 
     self.assertIn("<table>", rendered.html)
     self.assertIn('<code class="language-rust">', rendered.html)
+    self.assertIn('<span class="k">fn</span>', rendered.html)
     self.assertTrue(rendered.has_code)
 
   def test_disables_raw_html_and_escapes_image_attributes(self) -> None:
@@ -70,9 +61,7 @@ class TestMarkdownRenderer(unittest.TestCase):
       '![the "quote" & more](https://example.com/a.png "title & more")'
     )
 
-    self.assertIn(
-      "&lt;script&gt;alert(&quot;nope&quot;)&lt;/script&gt;", rendered.html
-    )
+    self.assertIn("&lt;script&gt;alert(&quot;nope&quot;)&lt;/script&gt;", rendered.html)
     self.assertIn('alt="the &quot;quote&quot; &amp; more"', rendered.html)
     self.assertIn('title="title &amp; more"', rendered.html)
     self.assertNotIn("</img>", rendered.html)
@@ -116,6 +105,8 @@ class TestMarkdownRenderer(unittest.TestCase):
         + (3).to_bytes(4, "big")
       )
       image_dir.joinpath("test.png").write_bytes(png)
+      image_dir.joinpath("test-480w.png").write_bytes(png)
+      image_dir.joinpath("test-960w.png").write_bytes(png)
 
       rendered = MarkdownRenderer(static_dir=static_dir).render(
         "![test](/images/test.png)"
@@ -125,6 +116,11 @@ class TestMarkdownRenderer(unittest.TestCase):
     self.assertIn('decoding="async"', rendered.html)
     self.assertIn('width="4"', rendered.html)
     self.assertIn('height="3"', rendered.html)
+    self.assertIn(
+      'srcset="/images/test-480w.png 480w, /images/test-960w.png 960w, /images/test.png 4w"',
+      rendered.html,
+    )
+    self.assertIn('sizes="(max-width: 640px) calc(100vw - 34px), 653px"', rendered.html)
 
   def test_returns_description_reading_time_and_asset_flags(self) -> None:
     markdown = (
@@ -138,9 +134,7 @@ class TestMarkdownRenderer(unittest.TestCase):
     rendered = self.renderer.render(markdown)
 
     self.assertIsInstance(rendered, RenderedMarkdown)
-    self.assertEqual(
-      rendered.description, "A short description with a link."
-    )
+    self.assertEqual(rendered.description, "A short description with a link.")
     self.assertEqual(rendered.reading_time, "2 min read")
     self.assertTrue(rendered.has_math)
     self.assertTrue(rendered.has_code)

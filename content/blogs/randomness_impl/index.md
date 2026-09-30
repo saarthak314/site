@@ -1,5 +1,9 @@
 title: on randomness and its implementation
 date: 2025-07-19
+updated: 2026-08-26
+description: how deterministic computers fake randomness, from rand and seeds to monte carlo integration.
+aliases:
+  - /writeups/randomness_impl/
 -----
 
 > _I shall never believe that God plays dice with the world_.
@@ -8,7 +12,7 @@ date: 2025-07-19
 
 despite einstein's meta-physical objections, the current models of physics, and particularly of quantum theory, are based on the idea that nature does indeed involve random processes.
 
-as much as randomness is abundant, its hard to implement this randomness in programs.
+as abundant as randomness is, it's hard to implement in programs.
 
 being able to simulate random behavior is necessary, for example, if you want to write a computer game that involves flipping a coin or rolling a die, but is also useful in more practical contexts, as well. programs that simulate such random events are called **non-deterministic** programs.
 
@@ -24,7 +28,7 @@ now you might be wondering how is it possible to generate unpredictable results 
 
 yet computers do in fact use a deterministic procedure to generate what we call "random" numbers. this strategy somehow works because, even though the user could, in theory, follow the same set of rules and anticipate the computer's response, no one actually bothers to do so (lol lmao even).
 
-![random number](/images/reddit-meme.jpg)
+![random number](/images/reddit-meme.webp)
 
 turns out in most practical applications, it doesn't matter if the numbers are truly random; all that matters is that the number _appears_ to be random.
 
@@ -96,11 +100,11 @@ lets be real for a sec, even if you could count on `RAND_MAX` having that partic
 
 so in short, we have a function `rand` in the `<cstdlib>` library that generates a random number between $0$ ad a positive constant `RAND_MAX`, which is some point on a number line that looks like this:
 
-![rand_max number line](/images/rand_max.png)
+![rand_max number line](/images/rand_max.webp)
 
 to simulate the die roll, for eg, we need to transform that random integer into one of the following discrete outcomes:
 
-![die num line](/images/die_num_line.png)
+![die num line](/images/die_num_line.webp)
 
 as it happens, there are many bad strategies for performing this transformation.
 
@@ -126,7 +130,7 @@ well the problem is that `rand` guarantees only that the value it produces is un
 
 what we want to do instead is divide the integers between $0$ and `RAND_MAX` into six equal-sized segments that correspond to the different outcomes, as follows:
 
-![partitions](/images/partitions.png)
+![partitions](/images/partitions.webp)
 
 in the more general case, we need to divide the number line between $0$ and `RAND_MAX`  into $k$ equal intervals, where $k$ is the number of possible outcomes in the desired range.
 
@@ -141,7 +145,7 @@ if the initial call to `rand()` returns $848, 256, 064$ and `RAND_MAX` has its m
 
 steps required to generate a random integer in the range $1$ to $6$ are:
 
-![steps](/images/steps.png)
+![steps](/images/steps.webp)
 
 now writing the code to implement this is pretty straightforward if you understood everything till here.
 
@@ -196,11 +200,11 @@ RAND_MAX: 2147483647
 
 since the first call to rand produces the value $1804289383$ the second call to `rand` corresponds to putting $1804289383$ into one end of the black box and having $846930886$ pop out on the other side:
 
-![black box 1](/images/blackbox1.png)
+![black box 1](/images/blackbox1.webp)
 
 on the next call to `rand` the implementation puts $846930886$ into the black box, which returns $1681692777$:
 
-![blackbox2](/images/blackbox2.png)
+![blackbox2](/images/blackbox2.webp)
 
 this same process is repeated on each call to `rand`. the computation inside the black box is designed so that:
 
@@ -209,7 +213,7 @@ this same process is repeated on each call to `rand`. the computation inside the
 
 but what about the first call to `rand` the one that returns $1804289383$? the implementation must have a starting point. there must be an integer $s0$ that goes into the black box and produces $1804289383$:
 
-![black box 3](/images/blackbox3.png)
+![black box 3](/images/blackbox3.webp)
 
 this initial value that is used to get the entire process started is called the _seed_ for the random number generator.
 
@@ -219,7 +223,7 @@ as we know from the multiple runs of the previous program, the C++ library sets 
 
 to implement this change, the functions `randomInteger` and `randomReal` must first check to see whether the random number _seed_ has already been initialized and, if not, set it to some starting value that would be difficult for users to predict, which is usually taken from the value of the system clock.
 
-now you might be thinking : "senpai, but why the value from the system clock? why not add my body count? its unique :3" so the reason is we need a different value every time our program runs and guess what changes everytime? "time" - you guessed it right!!
+now you might be thinking: "senpai, why the system clock? why not add my body count? it's unique :3" we need a different value every time the program runs, and guess what changes every time? time. you guessed it.
 
 in C++, we can retrieve the current value of the system clock by calling the function `time` and then converting the result to an integer. this allows you to write the following statement, which has the effect of initializing the pseudorandom number generator to an unpredictable point:
 
@@ -265,7 +269,7 @@ double randomReal(double low, double high) {
 
 and our random number generating library is complete now, i hope you understood the underlying basics :)
 
-![random num gen meme](/images/lain-meme.jpeg)
+![random num gen meme](/images/lain-meme.webp)
 
 ### monte carlo integration
 
@@ -273,7 +277,7 @@ let us solve a interesting problem that involves randomness to approximate the v
 
 imagine that you have a dartboard hanging on your wall that consists of a circle painted on a square backdrop, as in the following diagram:
 
-![square](/images/square.png)
+![square](/images/square.webp)
 
 what happens if you throw a whole bunch of darts completely randomly, ignoring any darts that miss the board altogether? some of the darts will fall inside the gray circle, but some will be outside the circle in the white corners of the square. if the throws are random, the ratio of the number of darts landing inside the circle to the total number of darts hitting the square should be approximately equal to the ratio between the two areas. the ratio of the areas is independent of the actual size of the dartboard, as illustrated by the formula:
 
