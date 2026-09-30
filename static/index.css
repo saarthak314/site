@@ -1141,12 +1141,12 @@ blockquote p {
 .city__sky {
   background:
     radial-gradient(
-      ellipse 42% 70% at 43% 70%,
-      rgb(143 127 196 / 0.14),
-      rgb(143 127 196 / 0.05) 40%,
-      transparent 60%
+      ellipse 95% 80% at 50% 85%,
+      rgb(143 127 196 / 0.06),
+      rgb(143 127 196 / 0.025) 50%,
+      transparent 90%
     ),
-    linear-gradient(to top, rgb(143 127 196 / 0.07), transparent 55%),
+    linear-gradient(to top, rgb(143 127 196 / 0.04), transparent 45%),
     linear-gradient(to right, rgb(0 0 0 / 0.35), transparent 22%, transparent 78%, rgb(0 0 0 / 0.35));
   inset: 0;
   position: absolute;
