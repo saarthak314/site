@@ -178,7 +178,7 @@
     cities.forEach((city) => {
       const lane = city.querySelector(".city__ships");
       if (!lane) return;
-      const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0 };
+      const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0, shakeTimer: 0 };
       const maxShips = () => (window.innerWidth > 1400 ? 3 : 2);
       const spawn = () => {
         state.timer = 0;
@@ -211,7 +211,25 @@
           window.setTimeout(() => city.classList.toggle("city--glitch", index % 2 === 0), delay);
         });
         window.setTimeout(() => city.classList.remove("city--glitch"), 180);
-        state.glitchTimer = window.setTimeout(jolt, between(20000, 40000));
+        state.glitchTimer = window.setTimeout(jolt, between(100000, 200000));
+      };
+
+      // Lag patches: one random rectangle of the skyline shakes for 600 ms, then
+      // nothing animates until the next burst. Segments share an --i per patch.
+      const patches = new Map();
+      city.querySelectorAll(".glitch").forEach((segment) => {
+        const key = segment.style.getPropertyValue("--i").trim().split(";")[0];
+        if (!patches.has(key)) patches.set(key, []);
+        patches.get(key).push(segment);
+      });
+      const patchKeys = Array.from(patches.keys());
+      const shake = () => {
+        state.shakeTimer = 0;
+        if (state.paused || !state.visible || !patchKeys.length) return;
+        const group = patches.get(patchKeys[Math.floor(Math.random() * patchKeys.length)]);
+        group.forEach((segment) => segment.classList.add("glitch--on"));
+        window.setTimeout(() => group.forEach((segment) => segment.classList.remove("glitch--on")), 700);
+        state.shakeTimer = window.setTimeout(shake, between(8000, 14000));
       };
       const schedule = (delay) => {
         if (state.timer) window.clearTimeout(state.timer);
@@ -223,7 +241,8 @@
         city.classList.toggle("city--paused", !running);
         if (running) {
           if (!state.timer) schedule(state.alive ? between(5000, 9000) : 1500);
-          if (!state.glitchTimer) state.glitchTimer = window.setTimeout(jolt, between(20000, 40000));
+          if (!state.glitchTimer) state.glitchTimer = window.setTimeout(jolt, between(100000, 200000));
+          if (!state.shakeTimer) state.shakeTimer = window.setTimeout(shake, between(3000, 8000));
           if (!state.budgeted && document.getAnimations) {
             state.budgeted = true;
             if (document.getAnimations().length > 100) city.classList.add("city--lean");
@@ -231,8 +250,10 @@
         } else {
           if (state.timer) window.clearTimeout(state.timer);
           if (state.glitchTimer) window.clearTimeout(state.glitchTimer);
+          if (state.shakeTimer) window.clearTimeout(state.shakeTimer);
           state.timer = 0;
           state.glitchTimer = 0;
+          state.shakeTimer = 0;
         }
       };
       new IntersectionObserver(

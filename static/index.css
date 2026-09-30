@@ -1095,6 +1095,7 @@ blockquote p {
 }
 
 .footer--city {
+  border-top: 0;
   display: block;
   height: 450px;
   margin-left: calc(50% - 50vw);
@@ -1150,6 +1151,18 @@ blockquote p {
   transform: translateX(-50%);
   user-select: none;
   will-change: transform;
+}
+
+.city__layer--stars {
+  bottom: auto;
+  color: var(--ink-4);
+  top: 0;
+  z-index: 0;
+}
+
+.city .star--twinkle {
+  animation: city-twinkle calc(9s + var(--i, 0) * 1.3s) ease-in-out calc(var(--i, 0) * -2s) infinite;
+  display: inline-block;
 }
 
 .city__layer--far {
@@ -1212,16 +1225,18 @@ blockquote p {
 }
 
 .city .sign {
-  animation: city-glitch calc(4s + var(--i, 0) * 0.4s) steps(1, end) calc(var(--i, 0) * -1.3s) infinite;
+  animation: city-glitch calc(20s + var(--i, 0) * 2s) steps(1, end) calc(var(--i, 0) * -6.5s) infinite;
   color: var(--accent-2);
   display: inline-block;
   will-change: transform, opacity;
 }
 
 .city .glitch {
-  animation: city-shake calc(6s + var(--i, 0) * 0.7s) steps(1, end) calc(var(--i, 0) * -1.7s) infinite;
   display: inline-block;
-  will-change: transform;
+}
+
+.city .glitch--on {
+  animation: city-shake 0.6s steps(1, end) 1;
 }
 
 @keyframes city-twinkle {
@@ -1259,9 +1274,10 @@ blockquote p {
 
 @keyframes city-glitch {
   0%,
-  44%,
-  50%,
-  93%,
+  44.9%,
+  45.7%,
+  93.9%,
+  94.9%,
   100% {
     color: var(--accent-2);
     opacity: 1;
@@ -1275,15 +1291,15 @@ blockquote p {
     transform: translate(2px, -1px);
   }
 
-  46%,
-  96% {
+  45.3%,
+  94.3% {
     color: var(--accent);
     opacity: 0.85;
     transform: translate(-3px, 1px);
   }
 
-  48%,
-  98% {
+  45.5%,
+  94.6% {
     color: var(--accent-soft);
     opacity: 0.4;
     transform: translate(1px, 0);
@@ -1291,51 +1307,42 @@ blockquote p {
 }
 
 @keyframes city-shake {
-  0%,
-  59.9%,
-  61.2%,
-  88.9%,
-  93.1%,
-  100% {
-    color: inherit;
-    opacity: 1;
-    transform: none;
-  }
-
-  60% {
-    color: var(--accent);
-    transform: translate(2px, 0);
-  }
-
-  89% {
+  0% {
     color: var(--accent);
     transform: translate(3px, 0);
   }
 
-  89.8% {
+  15% {
     color: var(--accent);
     transform: translate(-2px, 1px);
   }
 
-  90.6% {
+  30% {
     color: var(--accent);
     opacity: 0.7;
     transform: translate(4px, -1px);
   }
 
-  91.4% {
+  45% {
     color: var(--accent);
     opacity: 1;
     transform: translate(-3px, 0);
   }
 
-  92.2% {
+  60% {
     color: var(--accent);
     transform: translate(1px, 1px);
   }
 
-  93% {
+  75% {
     color: var(--accent);
+    transform: translate(-1px, 0);
+  }
+
+  90%,
+  100% {
+    color: inherit;
+    opacity: 1;
     transform: none;
   }
 }
@@ -1627,6 +1634,7 @@ main,
   .city .band,
   .city .sign,
   .city .glitch,
+  .city .star--twinkle,
   .ship {
     animation: none;
   }

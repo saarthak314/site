@@ -2,7 +2,7 @@ import re
 import unittest
 from collections import defaultdict
 
-from sitegen.city import ALLOWED_GLYPHS, FAR_ROWS, NEAR_ROWS, city_layers
+from sitegen.city import ALLOWED_GLYPHS, FAR_ROWS, NEAR_ROWS, STAR_ROWS, city_layers
 
 TAG_RE = re.compile(r"<[^>]+>")
 LIGHT_RE = re.compile(r'class="(?:glitch )?lt')
@@ -54,11 +54,11 @@ class TestCity(unittest.TestCase):
     far = str(self.city.far)
 
     self.assertGreaterEqual(len(LIGHT_RE.findall(near)), 150)
-    self.assertLess(near.count("<span"), 260)
+    self.assertLess(near.count("<span"), 320)
     self.assertEqual(near.count('class="beacon"'), 3)
-    self.assertGreaterEqual(near.count('class="sign"'), 3)
-    self.assertGreaterEqual(near.count('class="band"'), 2)
-    self.assertGreaterEqual(near.count('class="strip"'), 3)
+    self.assertGreaterEqual(len(re.findall(r'class="(?:glitch )?sign"', near)), 3)
+    self.assertGreaterEqual(len(re.findall(r'class="(?:glitch )?band"', near)), 2)
+    self.assertGreaterEqual(len(re.findall(r'class="(?:glitch )?strip"', near)), 3)
     self.assertRegex(
       near, r'class="(?:glitch )?lt lt--twinkle" style="(?:--i: \d; )?--i: \d"'
     )
@@ -76,7 +76,22 @@ class TestCity(unittest.TestCase):
       for match in GLITCH_RE.finditer(line):
         rows_by_index[match.group(1)].add(row)
 
-    self.assertGreaterEqual(len(rows_by_index), 5)
+    self.assertGreaterEqual(len(rows_by_index), 4)
     for index, rows in rows_by_index.items():
       self.assertGreaterEqual(len(rows), 3, index)
       self.assertEqual(max(rows) - min(rows) + 1, len(rows), index)  # contiguous
+
+
+class TestStars(unittest.TestCase):
+  def test_star_layer_is_sparse_plain_text_with_a_few_twinkles(self) -> None:
+    stars = str(city_layers().stars)
+    lines = stars.split("\n")
+    stripped = [re.sub(r"<[^>]+>", "", line) for line in lines]
+
+    self.assertEqual(len(lines), STAR_ROWS)
+    self.assertTrue(all(len(line) == 220 for line in stripped))
+    glyphs = "".join(stripped).replace(" ", "")
+    self.assertTrue(30 <= len(glyphs) <= 70, len(glyphs))
+    self.assertTrue(set(glyphs) <= set(".'+*"), set(glyphs))
+    self.assertEqual(stars.count('class="star star--twinkle"'), 6)
+    self.assertEqual(stars, str(city_layers().stars))

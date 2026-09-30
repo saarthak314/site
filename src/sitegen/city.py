@@ -21,6 +21,7 @@ ALLOWED_GLYPHS = frozenset("▪│┃━▓░▒█▀┌┐└┘╭╮╯╰�
 Cell = tuple[str, str | None, str | None]  # glyph, class, style
 NEAR_ROWS = 26
 FAR_ROWS = 20
+STAR_ROWS = 40
 
 
 @dataclass
@@ -346,11 +347,11 @@ def _dress_glitches(rng: random.Random, canvas: Canvas, count: int) -> int:
   placed = 0
   attempts = 0
   taken: list[tuple[int, int, int, int]] = []  # row0, row1, col0, col1
-  while placed < count and attempts < 600:
+  while placed < count and attempts < 3000:
     attempts += 1
-    height = rng.randint(3, 5)
-    width = rng.randint(10, 24)
-    row0 = rng.randint(6, min(22, canvas.rows - 2) - height)
+    height = rng.randint(5, 8)
+    width = rng.randint(24, 40)
+    row0 = rng.randint(4, min(24, canvas.rows - 2) - height)
     col0 = rng.randint(0, canvas.cols - width)
     row1, col1 = row0 + height, col0 + width
     if any(
@@ -359,11 +360,9 @@ def _dress_glitches(rng: random.Random, canvas: Canvas, count: int) -> int:
     ):
       continue
     cells = [canvas.cells[r][c] for r in range(row0, row1) for c in range(col0, col1)]
-    if any(cell[1] is not None and not cell[1].startswith("lt") for cell in cells):
+    if any(cell[1] is not None and cell[1].startswith("beacon") for cell in cells):
       continue
-    if sum(1 for cell in cells if cell[0] != " ") < len(cells) // 2:
-      continue
-    if sum(1 for cell in cells if cell[1] is not None) > 3:
+    if sum(1 for cell in cells if cell[0] != " ") < len(cells) // 3:
       continue
     style = f"--i: {placed}"
     for r in range(row0, row1):
@@ -389,6 +388,32 @@ def _draw_ground(canvas: Canvas) -> None:
   for col in range(canvas.cols):
     if canvas.glyph(row, col) == " ":
       canvas.put(row, col, "─")
+
+
+def _stars(cols: int, rows: int, seed: int, count: int = 46, twinkling: int = 6) -> str:
+  """A sparse field of plain-text stars for the sky band above the skyline."""
+  rng = random.Random(seed)
+  canvas = Canvas(cols, rows)
+  placed = 0
+  attempts = 0
+  while placed < count and attempts < count * 20:
+    attempts += 1
+    row, col = rng.randrange(rows), rng.randrange(cols)
+    if canvas.glyph(row, col) != " ":
+      continue
+    if any(
+      canvas.glyph(r, c) != " "
+      for r in range(max(0, row - 1), min(rows, row + 2))
+      for c in range(max(0, col - 3), min(cols, col + 4))
+    ):
+      continue
+    glyph = rng.choices(".'+*", weights=(7, 1, 1, 1))[0]
+    if placed < twinkling:
+      canvas.put(row, col, glyph, "star star--twinkle", f"--i: {placed}")
+    else:
+      canvas.put(row, col, glyph)
+    placed += 1
+  return canvas.render()
 
 
 def _scatter_sky_lights(rng: random.Random, canvas: Canvas, count: int) -> None:
@@ -448,7 +473,7 @@ def _layer(cols: int, rows: int, seed: int, *, near: bool) -> str:
     _dress_windows(rng, canvas, buildings, budget=172, lit=True)
     _dress_texture(rng, canvas, buildings)
     _dress_neon(rng, canvas, buildings, strips=4, bands=3, signs=5)
-    _dress_glitches(rng, canvas, count=6)
+    _dress_glitches(rng, canvas, count=5)
   else:
     _dress_windows(rng, canvas, buildings, budget=0, lit=False)
     _dress_neon(rng, canvas, buildings, strips=2, bands=0, signs=0)
@@ -461,9 +486,10 @@ def city_layers(cols: int = 220, seed: int = 1701) -> SimpleNamespace:
   """Return the far and near skyline layers as HTML, plus the column count."""
   return SimpleNamespace(
     cols=cols,
+    stars=Markup(_stars(cols, STAR_ROWS, seed + 2)),
     far=Markup(_layer(cols, FAR_ROWS, seed + 1, near=False)),
     near=Markup(_layer(cols, NEAR_ROWS, seed, near=True)),
   )
 
 
-__all__ = ["ALLOWED_GLYPHS", "FAR_ROWS", "NEAR_ROWS", "city_layers"]
+__all__ = ["ALLOWED_GLYPHS", "FAR_ROWS", "NEAR_ROWS", "STAR_ROWS", "city_layers"]
