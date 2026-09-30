@@ -40,6 +40,15 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('href="mailto:hey@sarrthak.com">email</a>', home)
     self.assertNotIn('href="mailto:hey@sarrthak.com">email</a>', article)
 
+    for page in (home, archive, article):
+      footer = page[
+        page.index('<footer class="footer footer--city">') : page.index("</footer>")
+      ]
+      self.assertIn('<div class="city" aria-hidden="true" data-city', footer)
+      self.assertIn('<pre class="city__layer city__layer--near">', footer)
+      self.assertIn('<div class="city__ships"></div>', footer)
+      self.assertNotIn("<a ", footer)
+      self.assertNotIn("<img", footer)
     self.assertIn('rel="canonical" href="https://sarrthak.com/"', home)
     self.assertIn('property="og:type" content="website"', home)
     self.assertIn(

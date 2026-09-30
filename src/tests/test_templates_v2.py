@@ -255,10 +255,15 @@ class TestSharedLayout(TemplateRenderingTestCase):
     )
     self.assertIn('href="mailto:hey@sarrthak.com">email</a>', rail)
 
-    footer = html[html.index('<footer class="footer">') : html.index("</footer>")]
+    footer = html[
+      html.index('<footer class="footer footer--city">') : html.index("</footer>")
+    ]
     self.assertRegex(footer, r"© \d{4} sarthak tomar\. built with love\.")
+    self.assertIn('<div class="city" aria-hidden="true" data-city', footer)
+    self.assertIn('<pre class="city__layer city__layer--far">', footer)
+    self.assertIn('<div class="city__ships"></div>', footer)
+    self.assertIn('<pre class="city__layer city__layer--near">', footer)
     self.assertNotIn("<a ", footer)
-    self.assertNotIn("<pre", footer)
     self.assertNotIn("<img", footer)
     self.assertNotIn('aria-label="Footer navigation"', html)
 

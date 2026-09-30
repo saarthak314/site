@@ -7,6 +7,7 @@ from typing import Any
 from jinja2 import Environment
 from markupsafe import Markup
 
+from sitegen.city import city_layers
 from sitegen.marks import mark_svg
 
 HOME_TITLE = "sλrthak — systems, models, machines"
@@ -46,6 +47,7 @@ class TemplateRenderer:
     values.update(
       page=page,
       page_mark=Markup(mark_svg(page.route, 56)),
+      city=city_layers(),
       content=Markup(page.rendered.html),
       current_year=date.today().year,
       document_title=_document_title(page),
