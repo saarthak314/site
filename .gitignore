@@ -1,4 +1,5 @@
 __pycache__/
+.venv/
 *.egg-info/
 build/
 public/*
@@ -7,3 +8,6 @@ plans/
 file_events.log
 .vscode/
 AGENTS.md
+
+# lavish review artifacts
+.lavish/

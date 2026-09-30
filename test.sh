@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
-set -eu
+#!/usr/bin/env bash
+set -euo pipefail
 
-PYTHONPATH=src python3 -m unittest discover -s src -p 'test*.py'
+exec ./scripts/verify.sh
