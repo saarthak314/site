@@ -176,7 +176,7 @@ def to_html(cells: list[list[tuple[str, str]]], cols: int, label: str) -> str:
 def main() -> None:
   parser = argparse.ArgumentParser()
   parser.add_argument("--mode", choices=("shades", "quadrants"), default="quadrants")
-  parser.add_argument("--cols", type=int, default=120)
+  parser.add_argument("--cols", type=int, default=160)
   parser.add_argument("--output", type=Path, default=OUTPUT)
   args = parser.parse_args()
   rows = round(args.cols * 0.5)
