@@ -432,7 +432,7 @@ main {
   align-items: center;
   color: var(--ink-3);
   display: inline-flex;
-  min-height: 40px;
+  min-height: 28px;
   text-decoration: none;
 }
 
@@ -554,12 +554,12 @@ a.home-project__name,
 }
 
 .home-experience__logo {
-  border-radius: 3px;
+  border-radius: 4px;
   display: inline-block;
-  height: 15px;
-  margin-right: 6px;
-  vertical-align: -2px;
-  width: 15px;
+  height: 22px;
+  margin-right: 7px;
+  vertical-align: -6px;
+  width: 22px;
 }
 
 .home-project__tech,

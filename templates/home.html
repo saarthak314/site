@@ -14,7 +14,7 @@
         <li class="home-experience__item">
           <div class="home-experience__header">
             <div class="home-experience__position">
-              <strong>{{ item.role }}</strong>{% if item.company %}<span> @ </span>{% if item.company_logo is defined and item.company_logo %}<img class="home-experience__logo" src="{{ item.company_logo }}" alt="" width="16" height="16" loading="lazy" decoding="async" />{% endif %}{% if item.company_url %}<a class="home-experience__company" href="{{ item.company_url }}">{{ item.company }}</a>{% else %}<span>{{ item.company }}</span>{% endif %}{% endif %}
+              <strong>{{ item.role }}</strong>{% if item.company %}<span> @ </span>{% if item.company_logo is defined and item.company_logo %}<img class="home-experience__logo" src="{{ item.company_logo }}" alt="" width="22" height="22" loading="lazy" decoding="async" />{% endif %}{% if item.company_url %}<a class="home-experience__company" href="{{ item.company_url }}">{{ item.company }}</a>{% else %}<span>{{ item.company }}</span>{% endif %}{% endif %}
             </div>
             <span class="home-experience__period">{{ item.period }}</span>
           </div>
