@@ -502,7 +502,8 @@ class TestWritingsTemplate(TemplateRenderingTestCase):
 
     self.assertIn('<body class="writings-page">', html)
     self.assertIn('<h1 class="writings-heading">all writings</h1>', html)
-    self.assertIn("everything i've written, newest first.", html)
+    self.assertNotIn("everything i've written", html)
+    self.assertIn('<p class="writing-row__summary">systems notes</p>', html)
     self.assertIn('<h2 class="writings-year__heading" id="year-2026">2026</h2>', html)
     self.assertIn('<span class="writing-row__date">24 aug</span>', html)
     self.assertIn('href="/blogs/first/">first post</a>', html)
@@ -514,7 +515,7 @@ class TestWritingsTemplate(TemplateRenderingTestCase):
     self.assertIn('rel="next" href="/blogs/page/3/">next</a>', html)
     self.assertNotIn('class="tree"', html)
 
-  def test_writings_groups_years_newest_first_and_draws_a_site_map(self) -> None:
+  def test_writings_groups_years_newest_first(self) -> None:
     newer = page(
       title="newer post",
       route="/blogs/newer/",
@@ -548,17 +549,7 @@ class TestWritingsTemplate(TemplateRenderingTestCase):
     self.assertLess(html.index('id="year-2026"'), html.index('id="year-2025"'))
     self.assertNotIn('aria-label="Pagination"', html)
 
-    tree_start = html.index('<nav class="tree" aria-label="site map">')
-    tree = html[tree_start : html.index("</nav>", tree_start)]
-    self.assertIn("sarrthak.com", tree)
-    self.assertIn("2026/", tree)
-    self.assertIn("2025/", tree)
-    self.assertLess(tree.index("2026/"), tree.index("2025/"))
-    self.assertIn('href="/blogs/newer/">newer post</a>', tree)
-    self.assertIn('href="/blogs/older/">older post</a>', tree)
-    self.assertIn('<a href="/about/">about/</a>', tree)
-    self.assertIn('<a href="/feed.xml">feed.xml</a>', tree)
-    self.assertIn('<span aria-hidden="true">└── </span><a href="/feed.xml">', tree)
+    self.assertNotIn('class="tree"', html)
 
 
 class TestBlogTemplate(TemplateRenderingTestCase):

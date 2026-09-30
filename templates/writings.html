@@ -5,12 +5,11 @@
 <main id="main-content" tabindex="-1">
   <header class="writings-header">
     <h1 class="writings-heading">{{ page.title }}</h1>
-    <p class="writings-summary">everything i've written, newest first.</p>
   </header>
   {% for year, posts in items|groupby("date.year")|reverse %}
   <section class="writings-year" aria-labelledby="year-{{ year }}">
     <h2 class="writings-year__heading" id="year-{{ year }}">{{ year }}</h2>
-    {{ ledger(posts, "day") }}
+    {{ ledger(posts, "day", summaries=True) }}
   </section>
   {% endfor %}
   {% if total_pages > 1 %}
@@ -18,19 +17,6 @@
     {% if previous_url %}<a rel="prev" href="{{ previous_url }}">previous</a>{% endif %}
     <span>page {{ page_number }} of {{ total_pages }}</span>
     {% if next_url %}<a rel="next" href="{{ next_url }}">next</a>{% endif %}
-  </nav>
-  {% endif %}
-  {% if index is defined %}
-  <nav class="tree" aria-label="site map">
-<pre>sarrthak.com
-{% for year, posts in index.posts|groupby("date.year")|reverse -%}
-<span aria-hidden="true">├── </span>{{ year }}/
-{% for post in posts -%}
-<span aria-hidden="true">│   {% if loop.last %}└── {% else %}├── {% endif %}</span><a href="{{ post.route }}">{{ post.title }}</a>
-{% endfor -%}
-{% endfor -%}
-<span aria-hidden="true">├── </span><a href="/about/">about/</a>
-<span aria-hidden="true">└── </span><a href="/feed.xml">feed.xml</a></pre>
   </nav>
   {% endif %}
 </main>

@@ -1,4 +1,4 @@
-{% macro ledger(posts, dates="full") -%}
+{% macro ledger(posts, dates="full", summaries=False) -%}
 <ul class="writing-list">
   {% for post in posts %}
   <li class="writing-row">
@@ -6,6 +6,7 @@
     <span class="writing-row__mark">{{ post.route|mark(18) }}</span>
     <a class="writing-row__title" href="{{ post.route }}">{{ post.title }}</a>
     <span class="writing-row__time">{{ post.rendered.reading_time }}</span>
+    {% if summaries and post.description %}<p class="writing-row__summary">{{ post.description }}</p>{% endif %}
   </li>
   {% endfor %}
 </ul>

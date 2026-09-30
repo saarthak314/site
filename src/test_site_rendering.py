@@ -86,8 +86,8 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn(
       '<h2 class="writings-year__heading" id="year-2025">2025</h2>', archive
     )
-    self.assertIn('<nav class="tree" aria-label="site map">', archive)
-    self.assertIn("2025/", archive)
+    self.assertNotIn('class="tree"', archive)
+    self.assertIn('<p class="writing-row__summary">', archive)
     self.assertNotIn("&lt;- home", archive)
 
   def test_about_page_keeps_personal_details_and_setup_discoverable(self) -> None:

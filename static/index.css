@@ -219,7 +219,6 @@ h3 {
 .city__layer,
 .ship,
 .not-found-figlet,
-.tree pre,
 .figure--diagram pre {
   font-family: var(--art);
   font-variant-ligatures: none;
@@ -230,8 +229,7 @@ h3 {
 .portrait,
 .city__layer,
 .ship,
-.not-found-figlet,
-.tree pre {
+.not-found-figlet {
   user-select: none;
 }
 
@@ -636,6 +634,15 @@ a.home-project__name,
   text-decoration-color: var(--ink-3);
 }
 
+.writing-row__summary {
+  color: var(--ink-3);
+  font-size: 13px;
+  grid-column: 3 / 4;
+  line-height: 1.55;
+  margin: 3px 0 0;
+  max-width: 60ch;
+}
+
 /* article */
 
 .blog-header .mark {
@@ -957,26 +964,6 @@ blockquote p {
   min-height: 44px;
 }
 
-.tree {
-  margin-top: 56px;
-}
-
-.tree pre {
-  color: var(--ink-4);
-  font-size: 13px;
-  line-height: 1.5;
-  margin: 0;
-  overflow-x: auto;
-}
-
-.tree a {
-  color: var(--ink-3);
-  text-decoration: none;
-}
-
-.tree a:hover {
-  color: var(--ink);
-}
 
 /* about */
 
@@ -1572,9 +1559,14 @@ main,
     column-gap: 10px;
     grid-template-areas:
       "mark title"
+      "mark summary"
       "mark meta";
     grid-template-columns: 18px minmax(0, 1fr);
     row-gap: 2px;
+  }
+
+  .writing-row__summary {
+    grid-area: summary;
   }
 
   .writing-row__mark {
