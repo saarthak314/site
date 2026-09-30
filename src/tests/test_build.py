@@ -16,6 +16,7 @@ class FakeMarkdownRenderer:
       reading_time="1 min read",
       has_math=False,
       has_code=False,
+      headings=(),
     )
 
 

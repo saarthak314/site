@@ -23,12 +23,14 @@ def rendered(
   reading_time: str = "1 min read",
   has_math: bool = False,
   has_code: bool = False,
+  headings: tuple[tuple[int, str, str], ...] = (),
 ) -> SimpleNamespace:
   return namespace(
     html=html,
     reading_time=reading_time,
     has_math=has_math,
     has_code=has_code,
+    headings=headings,
   )
 
 

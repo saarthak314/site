@@ -33,6 +33,7 @@ class RenderedMarkdown:
   reading_time: str
   has_math: bool
   has_code: bool
+  headings: tuple[tuple[int, str, str], ...] = ()
 
 
 class MarkdownRenderer:
@@ -50,9 +51,10 @@ class MarkdownRenderer:
   def render(self, markdown: str) -> RenderedMarkdown:
     environment: dict[str, object] = {}
     tokens = self._markdown.parse(markdown, environment)
-    self._assign_heading_ids(tokens)
+    headings = self._assign_heading_ids(tokens)
     self._label_generic_links(tokens)
     self._add_image_attributes(tokens)
+    _mark_image_figures(tokens)
 
     return RenderedMarkdown(
       html=self._markdown.renderer.render(tokens, self._markdown.options, environment),
@@ -60,9 +62,11 @@ class MarkdownRenderer:
       reading_time=self._reading_time(tokens),
       has_math=any(token.type == "mathjax" for token in _walk_tokens(tokens)),
       has_code=any(
-        token.type in {"code_block", "code_inline", "fence"}
+        token.type in {"code_block", "code_inline"}
+        or (token.type == "fence" and not _is_diagram_fence(token))
         for token in _walk_tokens(tokens)
       ),
+      headings=headings,
     )
 
   def _create_markdown(self) -> MarkdownIt:
@@ -79,11 +83,15 @@ class MarkdownRenderer:
     markdown.add_render_rule("mathjax", _render_mathjax)
     markdown.add_render_rule("visually_hidden", _render_visually_hidden)
     markdown.add_render_rule("fence", _render_fence)
+    markdown.add_render_rule("image", _render_image)
     markdown.validateLink = _is_safe_link
     return markdown
 
-  def _assign_heading_ids(self, tokens: Sequence[Token]) -> None:
+  def _assign_heading_ids(
+    self, tokens: Sequence[Token]
+  ) -> tuple[tuple[int, str, str], ...]:
     counts: dict[str, int] = {}
+    headings: list[tuple[int, str, str]] = []
     for index, token in enumerate(tokens[:-1]):
       if token.type != "heading_open":
         continue
@@ -92,10 +100,14 @@ class MarkdownRenderer:
       if inline.type != "inline":
         continue
 
-      base = _slugify(_plain_text(inline.children or ()))
+      text = _normalize_whitespace(_plain_text(inline.children or ()))
+      base = _slugify(text)
       counts[base] = counts.get(base, 0) + 1
       suffix = "" if counts[base] == 1 else f"-{counts[base]}"
-      token.attrSet("id", f"{base}{suffix}")
+      heading_id = f"{base}{suffix}"
+      token.attrSet("id", heading_id)
+      headings.append((int(token.tag[1:]), text, heading_id))
+    return tuple(headings)
 
   def _label_generic_links(self, tokens: Sequence[Token]) -> None:
     for token in tokens:
@@ -161,7 +173,7 @@ class MarkdownRenderer:
       variants = _responsive_variants(image_path, source)
       if variants:
         token.attrSet("srcset", ", ".join([*variants, f"{source} {width}w"]))
-        token.attrSet("sizes", "(max-width: 640px) calc(100vw - 34px), 653px")
+        token.attrSet("sizes", "(max-width: 640px) calc(100vw - 40px), 660px")
 
   def _description(self, tokens: Sequence[Token]) -> str:
     for index, token in enumerate(tokens[:-1]):
@@ -272,6 +284,13 @@ def _render_fence(
 ) -> str:
   del renderer, options, environment
   token = tokens[index]
+  if _is_diagram_fence(token):
+    label = token.info.strip()[len("diagram") :].strip() or "diagram"
+    drawing = escapeHtml(token.content.rstrip("\n"))
+    return (
+      '<figure class="figure figure--diagram">'
+      f'<pre role="img" aria-label="{escapeHtml(label)}">{drawing}</pre></figure>\n'
+    )
   language = token.info.strip().split(maxsplit=1)[0] if token.info.strip() else "text"
   safe_language = re.sub(r"[^a-zA-Z0-9_+-]", "", language) or "text"
   try:
@@ -283,6 +302,48 @@ def _render_fence(
     f'<pre><code class="language-{escapeHtml(safe_language)}">'
     f"{highlighted}</code></pre>\n"
   )
+
+
+def _is_diagram_fence(token: Token) -> bool:
+  return token.type == "fence" and token.info.strip().split(maxsplit=1)[:1] == [
+    "diagram"
+  ]
+
+
+def _mark_image_figures(tokens: Sequence[Token]) -> None:
+  """Hide the paragraph around a lone image so it can render as a figure."""
+  for index, token in enumerate(tokens[:-2]):
+    if token.type != "paragraph_open" or tokens[index + 2].type != "paragraph_close":
+      continue
+    inline = tokens[index + 1]
+    if inline.type != "inline":
+      continue
+    content = [
+      child
+      for child in inline.children or ()
+      if not (child.type in {"text", "softbreak"} and not child.content.strip())
+    ]
+    if len(content) != 1 or content[0].type != "image":
+      continue
+    token.hidden = True
+    tokens[index + 2].hidden = True
+    content[0].meta["figure"] = True
+
+
+def _render_image(
+  renderer: RendererHTML,
+  tokens: Sequence[Token],
+  index: int,
+  options: dict[str, object],
+  environment: dict[str, object],
+) -> str:
+  image = RendererHTML.image(renderer, tokens, index, options, environment)
+  token = tokens[index]
+  if not token.meta.get("figure"):
+    return image
+  caption = token.attrGet("title")
+  figcaption = f"<figcaption>{escapeHtml(caption)}</figcaption>" if caption else ""
+  return f'<figure class="figure">{image}{figcaption}</figure>'
 
 
 def _is_safe_link(url: str) -> bool:
@@ -345,6 +406,8 @@ def _local_asset_path(static_dir: Path, source: str) -> Path | None:
 
 def image_dimensions(image_path: Path) -> tuple[int, int] | None:
   data = image_path.read_bytes()
+  if b"<svg" in data[:1024]:
+    return _svg_dimensions(data[:4096].decode("utf-8", "ignore"))
   if data.startswith(b"\x89PNG\r\n\x1a\n") and len(data) >= 24:
     return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
   if data.startswith((b"GIF87a", b"GIF89a")) and len(data) >= 10:
@@ -403,6 +466,23 @@ def image_dimensions(image_path: Path) -> tuple[int, int] | None:
       int.from_bytes(data[ispe_index + 8 : ispe_index + 12], "big"),
       int.from_bytes(data[ispe_index + 12 : ispe_index + 16], "big"),
     )
+  return None
+
+
+def _svg_dimensions(head: str) -> tuple[int, int] | None:
+  tag = re.search(r"<svg\b[^>]*>", head)
+  if tag is None:
+    return None
+  attributes = tag.group(0)
+  width = re.search(r'\swidth="(\d+)(?:px)?"', attributes)
+  height = re.search(r'\sheight="(\d+)(?:px)?"', attributes)
+  if width and height:
+    return int(width.group(1)), int(height.group(1))
+  view_box = re.search(
+    r'\sviewBox="[\d.\-]+[\s,]+[\d.\-]+[\s,]+([\d.]+)[\s,]+([\d.]+)"', attributes
+  )
+  if view_box:
+    return round(float(view_box.group(1))), round(float(view_box.group(2)))
   return None
 
 
