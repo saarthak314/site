@@ -1147,7 +1147,8 @@ blockquote p {
       transparent 60%
     ),
     linear-gradient(to top, rgb(143 127 196 / 0.07), transparent 55%),
-    linear-gradient(to right, rgb(0 0 0 / 0.35), transparent 22%, transparent 78%, rgb(0 0 0 / 0.35));
+    linear-gradient(to right, rgb(0 0 0 / 0.35), transparent 22%, transparent 78%, rgb(0 0 0 / 0.35)),
+    linear-gradient(to bottom, var(--bg) 0%, #1a1821 40%, #201d2a 75%, #262231 100%);
   inset: 0;
   position: absolute;
 }
