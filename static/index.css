@@ -815,14 +815,19 @@ code {
   margin-right: 14px;
 }
 
+.figure--diagram {
+  --pad: 16px;
+  container-type: inline-size;
+}
+
 .figure--diagram pre {
   border: 0;
   color: var(--ink-3);
-  font-size: 12.5px;
+  font-size: clamp(6px, calc((100cqw - 2 * var(--pad)) / (var(--cols, 62) * 0.6)), 12.5px);
   line-height: 1.35;
   margin: 0;
   overflow-x: auto;
-  padding: 18px 16px;
+  padding: 18px var(--pad);
 }
 
 mjx-container {
@@ -1629,9 +1634,12 @@ main,
     font-size: 12.5px;
   }
 
+  .figure--diagram {
+    --pad: 12px;
+  }
+
   .figure--diagram pre {
-    font-size: 11px;
-    padding: 14px 12px;
+    padding: 14px var(--pad);
   }
 
   .not-found {

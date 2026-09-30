@@ -170,11 +170,14 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
 
     self.assertIn(
       '<figure class="figure figure--diagram">'
-      '<pre role="img" aria-label="a die on a &lt;number&gt; line">├──┼──┤\n1  2  3</pre>'
+      '<pre role="img" aria-label="a die on a &lt;number&gt; line" style="--cols: 7">'
+      "├──┼──┤\n1  2  3</pre>"
       "</figure>",
       rendered.html,
     )
-    self.assertIn('<pre role="img" aria-label="diagram">~~~</pre>', rendered.html)
+    self.assertIn(
+      '<pre role="img" aria-label="diagram" style="--cols: 3">~~~</pre>', rendered.html
+    )
     self.assertFalse(rendered.has_code)
     self.assertNotIn("<code", rendered.html)
 

@@ -286,10 +286,13 @@ def _render_fence(
   token = tokens[index]
   if _is_diagram_fence(token):
     label = token.info.strip()[len("diagram") :].strip() or "diagram"
-    drawing = escapeHtml(token.content.rstrip("\n"))
+    content = token.content.rstrip("\n")
+    columns = max((len(line) for line in content.splitlines()), default=1)
+    drawing = escapeHtml(content)
     return (
       '<figure class="figure figure--diagram">'
-      f'<pre role="img" aria-label="{escapeHtml(label)}">{drawing}</pre></figure>\n'
+      f'<pre role="img" aria-label="{escapeHtml(label)}" style="--cols: {columns}">'
+      f"{drawing}</pre></figure>\n"
     )
   language = token.info.strip().split(maxsplit=1)[0] if token.info.strip() else "text"
   safe_language = re.sub(r"[^a-zA-Z0-9_+-]", "", language) or "text"
