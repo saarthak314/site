@@ -107,7 +107,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<h1 class="about-heading">about me</h1>', about)
     for marker in (
       "outside work",
-      "always playing",
+      "silence rarely wins",
       "current setup",
       "14-inch macbook pro with m5 pro",
       "dell s2725dc",
@@ -128,7 +128,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn(">about</a>", header)
     self.assertIn(">rss</a>", header)
     self.assertNotIn('rel="me"', header)
-    self.assertIn('<section class="about-elsewhere"', about)
+    self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', about)
     self.assertIn('rel="me">github</a>', about)
     self.assertIn("https://sarrthak.com/about/", locations)
     self.assertIn("[about](/about/)", llms)

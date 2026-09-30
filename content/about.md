@@ -7,28 +7,24 @@ hey, i'm sarthak. i like understanding things from first principles, building th
 
 ## outside work
 
-i'm into cooking, cars, lifting, sports, nonfiction, anime & manga.
-
-## always playing
-
-music is basically always on. silence rarely wins.
+cooking, cars, lifting, sports, nonfiction, anime & manga. music is basically always on; silence rarely wins.
 
 ## current setup
 
 ### hardware
 
-- **computer:** 14-inch macbook pro with m5 pro
-- **display:** dell s2725dc
-- **keyboard:** aula f75
-- **mouse:** razer deathadder essential
-- **audio:** airpods pro 2
+- **computer** 14-inch macbook pro with m5 pro
+- **display** dell s2725dc
+- **keyboard** aula f75
+- **mouse** razer deathadder essential
+- **audio** airpods pro 2
 
 ### software
 
-- **system:** macos + zsh
-- **browser:** zen
-- **editor:** zed
-- **terminal:** ghostty + tmux
-- **agent sessions:** herdr
-- **notes:** obsidian
-- **agents:** codex as primary, claude code as secondary
+- **system** macos + zsh
+- **browser** zen
+- **editor** zed
+- **terminal** ghostty + tmux
+- **agent sessions** herdr
+- **notes** obsidian
+- **agents** codex as primary, claude code as secondary

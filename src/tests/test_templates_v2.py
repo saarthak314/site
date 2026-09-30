@@ -749,9 +749,9 @@ class TestAboutTemplate(TemplateRenderingTestCase):
 
     self.assertIn('<h1 class="about-heading">about me</h1>', html)
     self.assertIn('<article class="about-article"><p>hey.</p></article>', html)
-    self.assertIn(
-      '<section class="about-elsewhere" aria-labelledby="elsewhere-title">', html
-    )
+    self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', html)
+    self.assertIn('<pre class="portrait" role="img"', html)
+    self.assertNotIn("about-elsewhere", html)
     self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', html)
     self.assertIn('href="mailto:hey@sarrthak.com">email</a>', html)
     self.assertIn('<a href="/about/" aria-current="page">about</a>', html)

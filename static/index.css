@@ -484,8 +484,7 @@ main {
 
 .home-writing,
 .home-projects,
-.home-experience,
-.about-elsewhere {
+.home-experience {
   margin-top: 0.5rem;
 }
 
@@ -967,26 +966,34 @@ blockquote p {
 
 /* about */
 
+.layout--about .about-header {
+  padding-top: 0;
+}
+
 .about-article {
-  margin-top: 2rem;
-  max-width: 68ch;
+  margin-top: 1.6rem;
+  max-width: 64ch;
 }
 
 .about-article > p:first-child {
   color: var(--ink);
   font-size: 1.04rem;
-  max-width: 64ch;
+  max-width: 60ch;
 }
 
 .about-article h2 {
-  font-size: 1.9rem;
-  margin: 2.75rem 0 0.85rem;
+  font-size: 1.45rem;
+  margin: 2.4rem 0 0.6rem;
   scroll-margin-top: 1.5rem;
 }
 
 .about-article h3 {
-  font-size: 1.45rem;
-  margin: 1.8rem 0 0.6rem;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin: 1.6rem 0 0.2rem;
   scroll-margin-top: 1.5rem;
 }
 
@@ -997,20 +1004,17 @@ blockquote p {
 }
 
 .about-article li {
+  border-bottom: 1px solid var(--line-soft);
+  column-gap: 16px;
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
   overflow-wrap: anywhere;
-  padding: 0.18rem 0 0.18rem 1.15rem;
-  position: relative;
+  padding: 7px 0;
 }
 
-.about-article li::before {
-  color: var(--ink-4);
-  content: "-";
-  left: 0;
-  position: absolute;
-}
-
-.about-elsewhere .socials {
-  margin-top: 0.4rem;
+.about-article li strong {
+  color: var(--ink-3);
+  font-weight: 400;
 }
 
 /* 404 */
