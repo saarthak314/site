@@ -1,0 +1,12 @@
+{% macro ledger(posts, dates="full") -%}
+<ul class="writing-list">
+  {% for post in posts %}
+  <li class="writing-row">
+    <span class="writing-row__date">{% if dates == "month" %}{{ post.date|month_year }}{% elif dates == "day" %}{{ post.date|day_month }}{% else %}{{ post.date|full_date }}{% endif %}</span>
+    <span class="writing-row__mark">{{ post.route|mark(18) }}</span>
+    <a class="writing-row__title" href="{{ post.route }}">{{ post.title }}</a>
+    <span class="writing-row__time">{{ post.rendered.reading_time }}</span>
+  </li>
+  {% endfor %}
+</ul>
+{%- endmacro %}

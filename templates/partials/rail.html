@@ -1,0 +1,15 @@
+{% set toc = [] %}
+{% for level, text, id in page.rendered.headings if level in (2, 3) %}{% set _ = toc.append((level, text, id)) %}{% endfor %}
+<nav class="rail rail--article" aria-label="contents">
+  {% if toc|length >= 2 %}
+  <details class="rail__fold" open>
+    <summary class="rail__summary">contents</summary>
+    <ol class="rail__list">
+      {% for level, text, id in toc %}
+      <li class="rail__item{% if level == 3 %} rail__item--sub{% endif %}"><a href="#{{ id }}">{{ text }}</a></li>
+      {% endfor %}
+    </ol>
+  </details>
+  {% endif %}
+  <a class="rail__back" href="/blogs/">&lt;- writing</a>
+</nav>

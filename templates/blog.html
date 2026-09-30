@@ -1,27 +1,29 @@
 {% extends "base.html" %}
 
 {% block main %}
-<main id="main-content" tabindex="-1">
-  <header class="blog-header">
-    <div class="blog-meta">
-      <a class="blog-back" href="/blogs/">&lt;- writing</a>
-      <time class="blog-date" datetime="{{ page.date|iso_date }}">{{ page.date|full_date }}</time>
-      <span class="blog-reading-time">{{ page.rendered.reading_time }}</span>
-    </div>
-    <h1 class="blog-heading">{{ page.title }}</h1>
-  </header>
-  <article class="blog-article">{{ content }}</article>
-  {% if page.tags %}
-  <nav class="blog-tags" aria-label="Article tags">
-    {% for tag in page.tags %}<a href="/tags/{{ tag|tag_slug }}/">{{ tag }}</a>{% endfor %}
-  </nav>
-  {% endif %}
-  <footer class="blog-footer">
-    {% if page.updated %}<p class="blog-updated">last updated <time datetime="{{ page.updated|iso_date }}">{{ page.updated|full_date }}</time></p>{% endif %}
+<div class="layout layout--article">
+  <main id="main-content" tabindex="-1">
+    <header class="blog-header">
+      {{ page_mark }}
+      <h1 class="blog-heading">{{ page.title }}</h1>
+      {% if page.description %}<p class="blog-deck">{{ page.description }}</p>{% endif %}
+      <p class="blog-meta">
+        <time class="blog-date" datetime="{{ page.date|iso_date }}">{{ page.date|full_date }}</time>
+        <span class="blog-reading-time">{{ page.rendered.reading_time }}</span>
+        {% if page.updated %}<span class="blog-updated">updated <time datetime="{{ page.updated|iso_date }}">{{ page.updated|full_date }}</time></span>{% endif %}
+      </p>
+    </header>
+    <article class="blog-article">{{ content }}</article>
+    {% if page.tags %}
+    <nav class="blog-tags" aria-label="Article tags">
+      {% for tag in page.tags %}<a href="/tags/{{ tag|tag_slug }}/">{{ tag }}</a>{% endfor %}
+    </nav>
+    {% endif %}
     <nav class="article-nav" aria-label="Article navigation">
       <a href="/blogs/">all writings</a>
       <a href="#main-content">top</a>
     </nav>
-  </footer>
-</main>
+  </main>
+  {% include "partials/rail.html" %}
+</div>
 {% endblock %}

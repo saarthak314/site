@@ -1,5 +1,9 @@
 # sλrthak
 
+    ┏━┓┏━┓┏━┓╺┳╸╻ ╻┏━┓╻┏
+    ┗━┓┣━┫┣┳┛ ┃ ┣━┫┣━┫┣┻┓
+    ┗━┛╹ ╹╹┗╸ ╹ ╹ ╹╹ ╹╹ ╹
+
 > personal notes on inference systems, high-performance computing, distributed systems, and things built along the way.
 
 ## navigation

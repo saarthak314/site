@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/socials.html" import socials %}
 
 {% block main %}
 <main class="about" id="main-content" tabindex="-1">
@@ -6,5 +7,9 @@
     <h1 class="about-heading">{{ page.title }}</h1>
   </header>
   <article class="about-article">{{ content }}</article>
+  <section class="about-elsewhere" aria-labelledby="elsewhere-title">
+    <h2 class="home-section-heading" id="elsewhere-title">elsewhere</h2>
+    {{ socials(config) }}
+  </section>
 </main>
 {% endblock %}

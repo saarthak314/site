@@ -31,6 +31,7 @@ uv run sitegen serve                    # serve once without dev tooling
 uv run sitegen new my-post --title "..." # scaffold a draft writing
 uv run python scripts/optimize_images.py # rebuild responsive images and icons
 uv run python scripts/subset_fonts.py    # rebuild the symbol font subset (box drawing, λ)
+uv run python scripts/generate_art.py    # regenerate the footer sea and dartboard svgs
 ./test.sh                                # run every local verification
 ```
 

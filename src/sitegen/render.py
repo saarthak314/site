@@ -7,6 +7,8 @@ from typing import Any
 from jinja2 import Environment
 from markupsafe import Markup
 
+from sitegen.marks import mark_svg
+
 HOME_TITLE = "sλrthak — systems, models, machines"
 HOME_DESCRIPTION = (
   "Sarthak Tomar writes about inference engineering, distributed systems, "
@@ -43,6 +45,7 @@ class TemplateRenderer:
       values.setdefault("next_url", None)
     values.update(
       page=page,
+      page_mark=Markup(mark_svg(page.route, 56)),
       content=Markup(page.rendered.html),
       current_year=date.today().year,
       document_title=_document_title(page),
@@ -76,6 +79,7 @@ class TemplateRenderer:
       reading_time="1 min read",
       has_math=False,
       has_code=False,
+      headings=(),
     )
     page = SimpleNamespace(
       title=tag.name,

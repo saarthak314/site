@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/ledger.html" import ledger %}
 
 {% block main %}
 <main id="main-content" tabindex="-1">
@@ -6,19 +7,30 @@
     <h1 class="writings-heading">{{ page.title }}</h1>
     <p class="writings-summary">everything i've written, newest first.</p>
   </header>
-  <ul class="writing-list">
-    {% for post in items %}
-    <li class="writing-row">
-      <span class="writing-row__date">{{ post.date|full_date }}</span>
-      <a class="writing-row__title" href="{{ post.route }}">{{ post.title }}</a>
-    </li>
-    {% endfor %}
-  </ul>
+  {% for year, posts in items|groupby("date.year")|reverse %}
+  <section class="writings-year" aria-labelledby="year-{{ year }}">
+    <h2 class="writings-year__heading" id="year-{{ year }}">{{ year }}</h2>
+    {{ ledger(posts, "day") }}
+  </section>
+  {% endfor %}
   {% if total_pages > 1 %}
   <nav class="pagination" aria-label="Pagination">
     {% if previous_url %}<a rel="prev" href="{{ previous_url }}">previous</a>{% endif %}
     <span>page {{ page_number }} of {{ total_pages }}</span>
     {% if next_url %}<a rel="next" href="{{ next_url }}">next</a>{% endif %}
+  </nav>
+  {% endif %}
+  {% if index is defined %}
+  <nav class="tree" aria-label="site map">
+<pre>sarrthak.com
+{% for year, posts in index.posts|groupby("date.year")|reverse -%}
+<span aria-hidden="true">├── </span>{{ year }}/
+{% for post in posts -%}
+<span aria-hidden="true">│   {% if loop.last %}└── {% else %}├── {% endif %}</span><a href="{{ post.route }}">{{ post.title }}</a>
+{% endfor -%}
+{% endfor -%}
+<span aria-hidden="true">├── </span><a href="/about/">about/</a>
+<span aria-hidden="true">└── </span><a href="/feed.xml">feed.xml</a></pre>
   </nav>
   {% endif %}
 </main>

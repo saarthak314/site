@@ -36,8 +36,9 @@ class TestSiteRendering(unittest.TestCase):
       self.assertIn('type="application/rss+xml"', page)
       self.assertIn('property="og:title"', page)
       self.assertIn('name="twitter:card" content="summary_large_image"', page)
-      self.assertIn('href="mailto:hey@sarrthak.com">email</a>', page)
       self.assertIn('href="/feed.xml">rss</a>', page)
+    self.assertIn('href="mailto:hey@sarrthak.com">email</a>', home)
+    self.assertNotIn('href="mailto:hey@sarrthak.com">email</a>', article)
 
     self.assertIn('rel="canonical" href="https://sarrthak.com/"', home)
     self.assertIn('property="og:type" content="website"', home)
@@ -64,12 +65,17 @@ class TestSiteRendering(unittest.TestCase):
     self.assertLess(home.index(">web server</span>"), home.index(">paimon</a>"))
     for removed_project in ("pixel editor", "redis clone", "rag pipeline", "cf-parser"):
       self.assertNotIn(removed_project, home)
-    self.assertLess(home.index('id="experience"'), home.index('id="projects"'))
-    self.assertLess(home.index('id="projects"'), home.index('id="writing"'))
+    self.assertLess(home.index('id="writing"'), home.index('id="projects"'))
+    self.assertLess(home.index('id="projects"'), home.index('id="experience"'))
     for slug in ("make_cool_stuff", "learn_ocaml", "randomness_impl"):
       self.assertIn(f'href="/blogs/{slug}/"', archive)
-    for published in ("30 aug 2025", "30 jul 2025", "19 jul 2025"):
-      self.assertIn(published, archive)
+    for published in ("30 aug", "30 jul", "19 jul"):
+      self.assertIn(f'<span class="writing-row__date">{published}</span>', archive)
+    self.assertIn(
+      '<h2 class="writings-year__heading" id="year-2025">2025</h2>', archive
+    )
+    self.assertIn('<nav class="tree" aria-label="site map">', archive)
+    self.assertIn("2025/", archive)
     self.assertNotIn("&lt;- home", archive)
 
   def test_about_page_keeps_personal_details_and_setup_discoverable(self) -> None:
@@ -78,7 +84,6 @@ class TestSiteRendering(unittest.TestCase):
 
     about = about_path.read_text()
     home = self.output_dir.joinpath("index.html").read_text()
-    css = self.output_dir.joinpath("index.css").read_text()
     llms = self.output_dir.joinpath("llms.txt").read_text()
     locations = [
       element.text
@@ -106,18 +111,15 @@ class TestSiteRendering(unittest.TestCase):
     ):
       self.assertIn(marker, about)
     self.assertIn('<a href="/about/">about</a>', home)
+    header = home[home.index('<header class="site-header">') : home.index("</header>")]
+    self.assertIn(">writing</a>", header)
+    self.assertIn(">about</a>", header)
+    self.assertIn(">rss</a>", header)
+    self.assertNotIn('rel="me"', header)
+    self.assertIn('<section class="about-elsewhere"', about)
+    self.assertIn('rel="me">github</a>', about)
     self.assertIn("https://sarrthak.com/about/", locations)
     self.assertIn("[about](/about/)", llms)
-    self.assertRegex(
-      css,
-      r"(?s)@media \(max-width: 640px\) \{.*?\.site-nav \{.*?"
-      r"grid-template-columns: repeat\(5, max-content\);",
-    )
-    self.assertRegex(
-      css,
-      r"(?s)@media \(max-width: 360px\) \{.*?\.site-nav \{.*?"
-      r"grid-template-columns: repeat\(3, max-content\);",
-    )
 
   def test_real_articles_preserve_accessibility_and_image_stability(self) -> None:
     ocaml = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
@@ -131,10 +133,13 @@ class TestSiteRendering(unittest.TestCase):
     )
     self.assertRegex(
       randomness,
-      r'<img src="/images/reddit-meme\.webp" alt="random number" loading="lazy" decoding="async" width="\d+" height="\d+"',
+      r'<figure class="figure"><img src="/images/reddit-meme\.webp" alt="random number" loading="lazy" decoding="async" width="\d+" height="\d+"[^>]*/>',
     )
     self.assertNotIn("highlight.min.js", randomness)
     self.assertIn('class="k">', randomness)
+    self.assertIn('<nav class="rail rail--article" aria-label="contents">', randomness)
+    self.assertIn('<details class="rail__fold" open>', randomness)
+    self.assertIn('<span class="blog-updated">updated', randomness)
 
   def test_legacy_writing_routes_redirect_to_the_blog_namespace(self) -> None:
     for slug in ("learn_ocaml", "make_cool_stuff", "randomness_impl"):
@@ -155,6 +160,7 @@ class TestSiteRendering(unittest.TestCase):
 
     self.assertIn('<body class="not-found-page">', not_found)
     self.assertIn('<main class="not-found"', not_found)
+    self.assertIn('<pre class="not-found-figlet" aria-hidden="true">', not_found)
     self.assertIn('<p class="not-found-code">404</p>', not_found)
     self.assertIn('<h1 class="not-found-heading"', not_found)
     self.assertIn('class="not-found-links"', not_found)
@@ -207,7 +213,9 @@ class TestSiteRendering(unittest.TestCase):
     )
     self.assertEqual(self.output_dir.joinpath("CNAME").read_text(), "sarrthak.com\n")
     self.assertIn("# sλrthak", llms)
+    self.assertIn("┏━┓┏━┓┏━┓", llms)
     self.assertIn("[all writings](/blogs/)", llms)
+    self.assertTrue(self.output_dir.joinpath("site.js").is_file())
     self.assertRegex(css, r"\.blog-article p \{\s+max-width: 68ch;")
     self.assertIn('font-family: "IBM Plex Mono";', css)
     self.assertIn("/fonts/instrument-serif-400.woff2", css)

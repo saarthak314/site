@@ -1,55 +1,61 @@
 {% extends "base.html" %}
+{% from "partials/ledger.html" import ledger %}
+{% from "partials/socials.html" import socials %}
 
 {% block main %}
-<main id="main-content" tabindex="-1">
-  <article class="home-intro">{{ content }}</article>
+<div class="layout layout--home">
+  <main id="main-content" tabindex="-1">
+    <article class="home-intro">{{ content }}</article>
 
-  <section class="home-experience" id="experience" aria-labelledby="experience-title">
-    <h2 class="home-section-heading" id="experience-title">experience</h2>
-    <ul class="home-experience-list">
-      {% for item in page.experience %}
-      <li class="home-experience__item">
-        <div class="home-experience__header">
-          <div class="home-experience__position">
-            <strong>{{ item.role }}</strong>{% if item.company %}<span> @ </span>{% if item.company_url %}<a class="home-experience__company" href="{{ item.company_url }}">{{ item.company }}</a>{% else %}<span>{{ item.company }}</span>{% endif %}{% endif %}
+    <section class="home-writing" id="writing" aria-labelledby="writing-title">
+      <h2 class="home-section-heading" id="writing-title">writing</h2>
+      {{ ledger(index.recent_posts, "month") }}
+      <a class="home-writing-all" href="/blogs/">all writings</a>
+    </section>
+
+    <section class="home-projects" id="projects" aria-labelledby="projects-title">
+      <h2 class="home-section-heading" id="projects-title">projects</h2>
+      <ul class="home-project-list">
+        {% for project in page.projects %}
+        <li class="home-project">
+          <div class="home-project__header">
+            {% if project.url %}<a class="home-project__name" href="{{ project.url }}">{{ project.name }}</a>{% else %}<span class="home-project__name">{{ project.name }}</span>{% endif %}
+            <span class="home-project__tech">{{ project.tech|join(' · ') }}</span>
           </div>
-          <span class="home-experience__period">{{ item.period }}</span>
-        </div>
-        {% for highlight in item.highlights %}
-        <span class="home-experience__description">{{ highlight }}</span>
+          <span class="home-project__description">{{ project.description }}</span>
+        </li>
         {% endfor %}
-      </li>
-      {% endfor %}
-    </ul>
-  </section>
+      </ul>
+      <a class="home-projects-all" href="https://github.com/saarthak314">all projects</a>
+    </section>
 
-  <section class="home-projects" id="projects" aria-labelledby="projects-title">
-    <h2 class="home-section-heading" id="projects-title">projects</h2>
-    <ul class="home-project-list">
-      {% for project in page.projects %}
-      <li class="home-project">
-        <div class="home-project__header">
-          {% if project.url %}<a class="home-project__name" href="{{ project.url }}">{{ project.name }}</a>{% else %}<span class="home-project__name">{{ project.name }}</span>{% endif %}
-          <span class="home-project__tech">{{ project.tech|join(' · ') }}</span>
-        </div>
-        <span class="home-project__description">{{ project.description }}</span>
-      </li>
-      {% endfor %}
-    </ul>
-    <a class="home-projects-all" href="https://github.com/saarthak314">all projects</a>
-  </section>
-
-  <section class="home-writing" id="writing" aria-labelledby="writing-title">
-    <h2 class="home-section-heading" id="writing-title">writing</h2>
-    <ul class="writing-list">
-      {% for post in index.recent_posts %}
-      <li class="writing-row">
-        <span class="writing-row__date">{{ post.date|month_year }}</span>
-        <a class="writing-row__title" href="{{ post.route }}">{{ post.title }}</a>
-      </li>
-      {% endfor %}
-    </ul>
-    <a class="home-writing-all" href="/blogs/">all writings</a>
-  </section>
-</main>
+    <section class="home-experience" id="experience" aria-labelledby="experience-title">
+      <h2 class="home-section-heading" id="experience-title">experience</h2>
+      <ul class="home-experience-list">
+        {% for item in page.experience %}
+        <li class="home-experience__item">
+          <div class="home-experience__header">
+            <div class="home-experience__position">
+              <strong>{{ item.role }}</strong>{% if item.company %}<span> @ </span>{% if item.company_url %}<a class="home-experience__company" href="{{ item.company_url }}">{{ item.company }}</a>{% else %}<span>{{ item.company }}</span>{% endif %}{% endif %}
+            </div>
+            <span class="home-experience__period">{{ item.period }}</span>
+          </div>
+          {% for highlight in item.highlights %}
+          <span class="home-experience__description">{{ highlight }}</span>
+          {% endfor %}
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+  <aside class="rail rail--home" aria-label="elsewhere">
+    <pre class="lambda" aria-hidden="true">╲
+ ╲
+  ╲
+  ╱╲
+ ╱  ╲
+╱    ╲</pre>
+    {{ socials(config) }}
+  </aside>
+</div>
 {% endblock %}
