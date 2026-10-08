@@ -108,6 +108,18 @@ class TestContentRepository(unittest.TestCase):
     self.assertTrue(index.posts[0].noindex)
     self.assertFalse(index.posts[1].noindex)
 
+  def test_home_page_lists_up_to_five_recent_posts(self) -> None:
+    for number in range(4):
+      self._write_post(
+        f"extra{number}", f"title: extra{number}\ndate: 2026-09-0{number + 1}"
+      )
+
+    index = ContentRepository(self.config, self.renderer).discover()
+
+    self.assertEqual(len(index.posts), 8)
+    self.assertEqual(len(index.recent_posts), 5)
+    self.assertEqual(index.recent_posts, index.posts[:5])
+
   def test_carries_structured_homepage_sections_to_the_home_page(self) -> None:
     self.root.joinpath("content/_index.md").write_text(
       "title: home\n"

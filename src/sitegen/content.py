@@ -119,7 +119,7 @@ class ContentRepository:
     return ContentIndex(
       pages=tuple(pages),
       posts=posts,
-      recent_posts=posts[:3],
+      recent_posts=posts[:5],
       pagination=pagination,
       tags=tags,
       digest=digest,
