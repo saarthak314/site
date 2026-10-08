@@ -20,6 +20,12 @@ ARTICLE_IMAGES = (
   "gojo.jpeg",
   "reddit-meme.jpg",
   "lain-meme.jpeg",
+  "amazon-ml-third.png",
+  "amazon-ml-submission.jpg",
+  "amazon-ml-workflow.png",
+  "amazon-ml-system.png",
+  "amazon-ml-timeline.png",
+  "amazon-ml-journey.png",
 )
 
 

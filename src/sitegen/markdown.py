@@ -24,6 +24,7 @@ _WORD_RE = re.compile(r"\b[\w']+\b", re.UNICODE)
 _CONTROL_RE = re.compile(r"[\x00-\x20\x7f]+")
 _DANGEROUS_SCHEMES = {"data", "file", "javascript", "vbscript"}
 _GENERIC_LINK_LABELS = {"here", "link", "more", "this"}
+_VIDEO_SUFFIXES = (".mp4", ".webm")
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,12 +156,19 @@ class MarkdownRenderer:
     for token in _walk_tokens(tokens):
       if token.type != "image":
         continue
+      source = token.attrGet("src") or ""
+      if _is_video_source(source):
+        token.meta["video"] = True
+        if self.static_dir is not None:
+          poster = _local_asset_path(self.static_dir, _poster_source(source))
+          if poster is not None and poster.is_file():
+            token.meta["poster"] = _poster_source(source)
+        continue
       token.attrSet("loading", "lazy")
       token.attrSet("decoding", "async")
 
       if self.static_dir is None:
         continue
-      source = token.attrGet("src") or ""
       image_path = _local_asset_path(self.static_dir, source)
       if image_path is None or not image_path.is_file():
         continue
@@ -340,13 +348,37 @@ def _render_image(
   options: dict[str, object],
   environment: dict[str, object],
 ) -> str:
-  image = RendererHTML.image(renderer, tokens, index, options, environment)
   token = tokens[index]
+  if token.meta.get("video"):
+    media = _render_video(renderer, token)
+    figure_class = "figure figure--video"
+  else:
+    media = RendererHTML.image(renderer, tokens, index, options, environment)
+    figure_class = "figure"
   if not token.meta.get("figure"):
-    return image
+    return media
   caption = token.attrGet("title")
   figcaption = f"<figcaption>{escapeHtml(caption)}</figcaption>" if caption else ""
-  return f'<figure class="figure">{image}{figcaption}</figure>'
+  return f'<figure class="{figure_class}">{media}{figcaption}</figure>'
+
+
+def _render_video(renderer: RendererHTML, token: Token) -> str:
+  source = escapeHtml(token.attrGet("src") or "")
+  label = escapeHtml(renderer.renderInlineAsText(token.children or [], {}, {}))
+  poster = token.meta.get("poster")
+  poster_attribute = f' poster="{escapeHtml(poster)}"' if poster else ""
+  return (
+    f'<video controls playsinline preload="metadata" src="{source}"'
+    f'{poster_attribute} aria-label="{label}"></video>'
+  )
+
+
+def _is_video_source(source: str) -> bool:
+  return urlsplit(source).path.lower().endswith(_VIDEO_SUFFIXES)
+
+
+def _poster_source(source: str) -> str:
+  return source.rsplit(".", 1)[0] + ".jpg"
 
 
 def _is_safe_link(url: str) -> bool:

@@ -206,6 +206,33 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
       rendered.html,
     )
 
+  def test_renders_video_sources_as_video_figures_with_a_sibling_poster(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      static_dir = Path(temp_dir)
+      static_dir.joinpath("video").mkdir()
+      static_dir.joinpath("video", "clip.mp4").write_bytes(b"")
+      static_dir.joinpath("video", "clip.jpg").write_bytes(b"")
+
+      rendered = MarkdownRenderer(static_dir=static_dir).render(
+        '![the pipeline](/video/clip.mp4 "at a glance")\n\n'
+        "![no poster](/video/other.webm)"
+      )
+
+    self.assertIn(
+      '<figure class="figure figure--video">'
+      '<video controls playsinline preload="metadata" src="/video/clip.mp4" '
+      'poster="/video/clip.jpg" aria-label="the pipeline"></video>'
+      "<figcaption>at a glance</figcaption></figure>",
+      rendered.html,
+    )
+    self.assertIn(
+      '<video controls playsinline preload="metadata" src="/video/other.webm" '
+      'aria-label="no poster"></video>',
+      rendered.html,
+    )
+    self.assertNotIn('loading="lazy" decoding="async" src="/video', rendered.html)
+    self.assertNotIn("<img", rendered.html)
+
   def test_reads_svg_dimensions_from_attributes_or_viewbox(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       sized = Path(temp_dir) / "sized.svg"
