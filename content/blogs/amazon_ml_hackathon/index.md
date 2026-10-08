@@ -1,5 +1,6 @@
 title: "how to get #3 in amazon ml hackathon under 24 hrs w/ free compute"
 date: 2026-10-08
+draft: true
 description: "linking 24.2m business records on a macbook and free colab. the pipeline, the workflow constraints that kept the laptop usable, and the climb from rank ~200 to #3."
 -----
 

@@ -189,7 +189,6 @@ class TestSiteRendering(unittest.TestCase):
     self.assertEqual(
       [item.findtext("title") for item in items],
       [
-        "how to get #3 in amazon ml hackathon under 24 hrs w/ free compute",
         "make cool stuff",
         "why you should learn ocaml",
         "on randomness and its implementation",
@@ -207,7 +206,6 @@ class TestSiteRendering(unittest.TestCase):
         "https://sarrthak.com/",
         "https://sarrthak.com/blogs/",
         "https://sarrthak.com/about/",
-        "https://sarrthak.com/blogs/amazon_ml_hackathon/",
         "https://sarrthak.com/blogs/learn_ocaml/",
         "https://sarrthak.com/blogs/make_cool_stuff/",
         "https://sarrthak.com/blogs/randomness_impl/",
