@@ -153,6 +153,18 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<details class="rail__fold" open>', randomness)
     self.assertIn('<span class="blog-updated">updated', randomness)
 
+  def test_drafts_publish_with_a_notice_but_stay_out_of_feed_and_sitemap(self) -> None:
+    draft = self.output_dir.joinpath("blogs/amazon_ml_hackathon/index.html").read_text()
+    home = self.output_dir.joinpath("index.html").read_text()
+    feed = self.output_dir.joinpath("feed.xml").read_text()
+    sitemap = self.output_dir.joinpath("sitemap.xml").read_text()
+
+    self.assertIn('<p class="blog-draft" role="note">', draft)
+    self.assertIn('name="robots" content="noindex, nofollow"', draft)
+    self.assertIn('<span class="writing-row__draft">draft</span>', home)
+    self.assertNotIn("amazon_ml_hackathon", feed)
+    self.assertNotIn("amazon_ml_hackathon", sitemap)
+
   def test_legacy_writing_routes_redirect_to_the_blog_namespace(self) -> None:
     for slug in ("learn_ocaml", "make_cool_stuff", "randomness_impl"):
       redirect = self.output_dir.joinpath(f"writeups/{slug}/index.html").read_text()

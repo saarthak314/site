@@ -674,6 +674,34 @@ a.home-project__name,
   margin: 22px 0 0;
 }
 
+.blog-draft {
+  border: 1px solid rgb(180 163 230 / 0.35);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 22px 0 0;
+  max-width: 60ch;
+  padding: 10px 14px;
+}
+
+.blog-draft strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.writing-row__draft {
+  border: 1px solid rgb(180 163 230 / 0.4);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  margin-left: 8px;
+  padding: 1px 6px;
+  position: relative;
+  top: -3px;
+  white-space: nowrap;
+}
+
 .blog-meta > * + *::before {
   color: var(--ink-4);
   content: "·";

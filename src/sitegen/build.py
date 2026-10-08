@@ -23,7 +23,7 @@ class BuildError(RuntimeError):
 
 @dataclass(frozen=True)
 class BuildOptions:
-  include_drafts: bool = False
+  include_drafts: bool = True
   incremental: bool = True
 
 

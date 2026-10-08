@@ -20,7 +20,9 @@ uv sync --dev
 uv run sitegen dev --open
 ```
 
-`dev` includes drafts, rebuilds on source changes, hot-swaps css, reloads changed pages, and keeps the last valid build visible when something breaks. use `--no-drafts` when needed.
+`dev` rebuilds on source changes, hot-swaps css, reloads changed pages, and keeps the last valid build visible when something breaks.
+
+drafts (`draft: true` in front matter) publish like any other post but carry a draft notice, a badge in the lists, `noindex`, and stay out of the feed and sitemap. pass `--no-drafts` to any command to leave them out entirely.
 
 ## useful bits
 

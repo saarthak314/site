@@ -4,7 +4,7 @@
   <li class="writing-row">
     <span class="writing-row__date">{% if dates == "month" %}{{ post.date|month_year }}{% elif dates == "day" %}{{ post.date|day_month }}{% else %}{{ post.date|full_date }}{% endif %}</span>
     <span class="writing-row__mark">{{ post.route|mark(18) }}</span>
-    <a class="writing-row__title" href="{{ post.route }}">{{ post.title }}</a>
+    <a class="writing-row__title" href="{{ post.route }}">{{ post.title }}{% if post.draft %} <span class="writing-row__draft">draft</span>{% endif %}</a>
     <span class="writing-row__time">{{ post.rendered.reading_time }}</span>
     {% if summaries and post.description %}<p class="writing-row__summary">{{ post.description }}</p>{% endif %}
   </li>

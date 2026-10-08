@@ -41,13 +41,7 @@ def create_parser() -> argparse.ArgumentParser:
   serve_parser.add_argument("--port", type=int, default=8888)
 
   dev_parser = commands.add_parser("dev", help="serve with local development tools")
-  dev_parser.set_defaults(drafts=True)
-  dev_parser.add_argument(
-    "--no-drafts",
-    action="store_false",
-    dest="drafts",
-    help="exclude draft content",
-  )
+  _add_drafts_option(dev_parser)
   dev_parser.add_argument("--host", default="127.0.0.1")
   dev_parser.add_argument("--port", type=int, default=8888)
   dev_parser.add_argument(
@@ -65,10 +59,12 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def _add_drafts_option(parser: argparse.ArgumentParser) -> None:
+  parser.set_defaults(drafts=True)
   parser.add_argument(
-    "--drafts",
-    action="store_true",
-    help="include draft content",
+    "--no-drafts",
+    action="store_false",
+    dest="drafts",
+    help="exclude draft content (drafts publish with a notice by default)",
   )
 
 

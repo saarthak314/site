@@ -18,11 +18,12 @@ def render_rss(index: ContentIndex, site_url: str) -> str:
     "systems, and things built along the way."
   )
   ET.SubElement(channel, "language").text = "en-us"
-  if index.posts:
-    latest = max(post.updated or post.date for post in index.posts)
+  published = [post for post in index.posts if not post.draft]
+  if published:
+    latest = max(post.updated or post.date for post in published)
     ET.SubElement(channel, "lastBuildDate").text = _rss_date(latest)
 
-  for post in index.posts:
+  for post in published:
     item = ET.SubElement(channel, "item")
     ET.SubElement(item, "title").text = post.title
     ET.SubElement(item, "link").text = post.canonical_url

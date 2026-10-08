@@ -119,7 +119,7 @@ class CliTestCase(unittest.TestCase):
 
 
 class TestBuildCommand(CliTestCase):
-  def test_build_defaults_to_incremental_without_drafts(self) -> None:
+  def test_build_defaults_to_incremental_with_drafts(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
       with import_sitegen_module("sitegen.cli") as cli:
@@ -129,25 +129,25 @@ class TestBuildCommand(CliTestCase):
     self.assertEqual(RecordingBuilder.instances[0].project_root, project_root)
     self.assertEqual(
       RecordingBuilder.instances[0].options,
-      [FakeBuildOptions(include_drafts=False, incremental=True)],
+      [FakeBuildOptions(include_drafts=True, incremental=True)],
     )
     self.assertIn("built 3 page(s), reused 2", stdout)
     self.assertIn(str(project_root / "docs"), stdout)
 
-  def test_build_flags_enable_drafts_and_disable_incremental(self) -> None:
+  def test_build_flags_exclude_drafts_and_disable_incremental(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
       with import_sitegen_module("sitegen.cli") as cli:
         exit_code, _, _ = self.run_cli(
           cli,
-          ["build", "--drafts", "--no-incremental"],
+          ["build", "--no-drafts", "--no-incremental"],
           project_root,
         )
 
     self.assertEqual(exit_code, 0)
     self.assertEqual(
       RecordingBuilder.instances[0].options,
-      [FakeBuildOptions(include_drafts=True, incremental=False)],
+      [FakeBuildOptions(include_drafts=False, incremental=False)],
     )
 
   def test_build_error_returns_nonzero_and_reports_the_failure(self) -> None:
@@ -187,14 +187,14 @@ class TestCheckCommand(CliTestCase):
       with import_sitegen_module("sitegen.cli") as cli:
         exit_code, stdout, stderr = self.run_cli(
           cli,
-          ["check", "--drafts"],
+          ["check", "--no-drafts"],
           project_root,
         )
 
     self.assertEqual(exit_code, 0, stdout + stderr)
     self.assertEqual(
       RecordingBuilder.instances[0].options,
-      [FakeBuildOptions(include_drafts=True, incremental=True)],
+      [FakeBuildOptions(include_drafts=False, incremental=True)],
     )
     self.assertEqual(RecordingValidator.instances, [])
 
@@ -292,7 +292,7 @@ class TestServeCommand(CliTestCase):
           cli,
           [
             "serve",
-            "--drafts",
+            "--no-drafts",
             "--watch",
             "--host",
             "0.0.0.0",
@@ -309,7 +309,7 @@ class TestServeCommand(CliTestCase):
       [
         (
           project_root,
-          FakeBuildOptions(include_drafts=True, incremental=True),
+          FakeBuildOptions(include_drafts=False, incremental=True),
           "0.0.0.0",
           4321,
           True,

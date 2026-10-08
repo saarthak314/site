@@ -54,7 +54,7 @@ class ContentRepository:
     self.config = config
     self.renderer = renderer
 
-  def discover(self, include_drafts: bool = False) -> ContentIndex:
+  def discover(self, include_drafts: bool = True) -> ContentIndex:
     content_dir = self.config.content_dir
     home_path = content_dir / "_index.md"
     blogs_dir = content_dir / "blogs"
@@ -175,7 +175,7 @@ class ContentRepository:
       rendered=rendered,
       is_post=is_post,
       aliases=metadata.aliases,
-      noindex=metadata.noindex,
+      noindex=metadata.noindex or metadata.draft,
       experience=metadata.experience,
       projects=metadata.projects,
     )

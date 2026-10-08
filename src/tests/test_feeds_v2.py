@@ -9,7 +9,9 @@ from sitegen.feeds import render_rss, render_sitemap
 from sitegen.models import Page
 
 
-def make_page(title: str, route: str, published: date, *, post: bool) -> Page:
+def make_page(
+  title: str, route: str, published: date, *, post: bool, draft: bool = False
+) -> Page:
   return Page(
     source_path=Path(f"content{route}index.md"),
     output_path=Path(route.strip("/")) / "index.html"
@@ -20,7 +22,8 @@ def make_page(title: str, route: str, published: date, *, post: bool) -> Page:
     title=title,
     date=published,
     updated=None,
-    draft=False,
+    draft=draft,
+    noindex=draft,
     slug=title.replace(" ", "-"),
     permalink=None,
     description=f"description for {title}",
@@ -36,7 +39,6 @@ def make_page(title: str, route: str, published: date, *, post: bool) -> Page:
     ),
     is_post=post,
     aliases=(),
-    noindex=False,
   )
 
 
@@ -104,3 +106,25 @@ class TestFeeds(unittest.TestCase):
 
 if __name__ == "__main__":
   unittest.main()
+
+
+class TestDraftFeeds(unittest.TestCase):
+  def test_drafts_stay_out_of_the_feed_and_sitemap(self) -> None:
+    draft = make_page("wip", "/blogs/wip/", date(2026, 9, 1), post=True, draft=True)
+    done = make_page("done", "/blogs/done/", date(2026, 8, 1), post=True)
+    index = ContentIndex(
+      pages=(draft, done),
+      posts=(draft, done),
+      recent_posts=(draft, done),
+      pagination=(),
+      tags=(),
+      digest="x",
+    )
+
+    rss = render_rss(index, "https://example.com")
+    sitemap = render_sitemap(index, "https://example.com")
+
+    self.assertNotIn("wip", rss)
+    self.assertIn("done", rss)
+    self.assertNotIn("/blogs/wip/", sitemap)
+    self.assertIn("/blogs/done/", sitemap)

@@ -15,6 +15,7 @@
 
 ## writings
 
+- [winning #3 in amazon ml challenge](/blogs/amazon_ml_hackathon/) (draft): how to get #3 in amazon ml hackathon under 24 hrs w/ free compute.
 - [make cool stuff](/blogs/make_cool_stuff/): building soulful projects, escaping tutorial hell, and learning from first principles.
 - [why you should learn ocaml](/blogs/learn_ocaml/): functional programming, immutability, type systems, and why ocaml changes how you think.
 - [on randomness and its implementation](/blogs/randomness_impl/): pseudorandom numbers, random number generators, and monte carlo integration.

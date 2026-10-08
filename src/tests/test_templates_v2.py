@@ -47,6 +47,7 @@ def page(
   social_image_height: int = 630,
   social_image_type: str = "image/png",
   noindex: bool = False,
+  draft: bool = False,
   tags: tuple[str, ...] = (),
   experience: tuple[SimpleNamespace, ...] = (),
   projects: tuple[SimpleNamespace, ...] = (),
@@ -64,6 +65,7 @@ def page(
     social_image_height=social_image_height,
     social_image_type=social_image_type,
     noindex=noindex,
+    draft=draft,
     tags=tags,
     experience=experience,
     projects=projects,
@@ -659,6 +661,43 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     self.assertNotIn("rail__fold", html)
     self.assertNotIn('href="#only"', html)
     self.assertIn('<a class="rail__back" href="/blogs/">&lt;- writing</a>', html)
+
+
+class TestDraftTemplates(TemplateRenderingTestCase):
+  def test_draft_articles_carry_a_notice_and_ledger_rows_a_badge(self) -> None:
+    draft = page(
+      title="unfinished",
+      route="/blogs/unfinished/",
+      template="blog.html",
+      draft=True,
+    )
+    finished = page(title="done", route="/blogs/done/", template="blog.html")
+    home = page(
+      title="home",
+      route="/",
+      template="home.html",
+      body=rendered("<p>hi</p>"),
+    )
+
+    draft_html = self.render(draft, namespace(config=config()))
+    finished_html = self.render(finished, namespace(config=config()))
+    home_html = self.render(
+      home,
+      namespace(
+        config=config(),
+        index=namespace(posts=(draft, finished), recent_posts=(draft, finished)),
+      ),
+    )
+
+    self.assertIn(
+      '<p class="blog-draft" role="note"><strong>draft.</strong>', draft_html
+    )
+    self.assertNotIn("blog-draft", finished_html)
+    self.assertIn(
+      'href="/blogs/unfinished/">unfinished <span class="writing-row__draft">draft</span></a>',
+      home_html,
+    )
+    self.assertIn('href="/blogs/done/">done</a>', home_html)
 
 
 class TestTagsTemplate(TemplateRenderingTestCase):

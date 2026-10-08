@@ -74,7 +74,7 @@ class TestContentRepository(unittest.TestCase):
     post_dir.joinpath("index.md").write_text(f"{metadata}\n-----\n{directory} body")
 
   def test_discovers_typed_pages_once_and_builds_views(self) -> None:
-    index = ContentRepository(self.config, self.renderer).discover()
+    index = ContentRepository(self.config, self.renderer).discover(include_drafts=False)
 
     self.assertEqual([post.title for post in index.posts], ["alpha", "beta", "gamma"])
     self.assertEqual(
@@ -99,11 +99,14 @@ class TestContentRepository(unittest.TestCase):
     self.assertEqual([post.title for post in systems.items], ["alpha", "beta"])
     self.assertTrue(index.digest)
 
-  def test_can_include_drafts(self) -> None:
-    index = ContentRepository(self.config, self.renderer).discover(include_drafts=True)
+  def test_includes_drafts_by_default_and_keeps_them_out_of_search(self) -> None:
+    index = ContentRepository(self.config, self.renderer).discover()
 
     self.assertEqual(index.posts[0].title, "draft")
     self.assertEqual(len(index.posts), 4)
+    self.assertTrue(index.posts[0].draft)
+    self.assertTrue(index.posts[0].noindex)
+    self.assertFalse(index.posts[1].noindex)
 
   def test_carries_structured_homepage_sections_to_the_home_page(self) -> None:
     self.root.joinpath("content/_index.md").write_text(
