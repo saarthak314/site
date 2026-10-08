@@ -211,7 +211,12 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
       static_dir = Path(temp_dir)
       static_dir.joinpath("video").mkdir()
       static_dir.joinpath("video", "clip.mp4").write_bytes(b"")
-      static_dir.joinpath("video", "clip.jpg").write_bytes(b"")
+      static_dir.joinpath("video", "clip.jpg").write_bytes(
+        b"\x89PNG\r\n\x1a\n"
+        + b"\x00" * 8
+        + (16).to_bytes(4, "big")
+        + (9).to_bytes(4, "big")
+      )
 
       rendered = MarkdownRenderer(static_dir=static_dir).render(
         '![the pipeline](/video/clip.mp4 "at a glance")\n\n'
@@ -220,13 +225,13 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
 
     self.assertIn(
       '<figure class="figure figure--video">'
-      '<video controls playsinline preload="metadata" src="/video/clip.mp4" '
-      'poster="/video/clip.jpg" aria-label="the pipeline"></video>'
+      '<video controls playsinline preload="none" src="/video/clip.mp4" '
+      'poster="/video/clip.jpg" width="16" height="9" aria-label="the pipeline"></video>'
       "<figcaption>at a glance</figcaption></figure>",
       rendered.html,
     )
     self.assertIn(
-      '<video controls playsinline preload="metadata" src="/video/other.webm" '
+      '<video controls playsinline preload="none" src="/video/other.webm" '
       'aria-label="no poster"></video>',
       rendered.html,
     )

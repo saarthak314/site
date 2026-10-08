@@ -163,6 +163,9 @@ class MarkdownRenderer:
           poster = _local_asset_path(self.static_dir, _poster_source(source))
           if poster is not None and poster.is_file():
             token.meta["poster"] = _poster_source(source)
+            dimensions = image_dimensions(poster)
+            if dimensions is not None:
+              token.meta["dimensions"] = dimensions
         continue
       token.attrSet("loading", "lazy")
       token.attrSet("decoding", "async")
@@ -367,9 +370,13 @@ def _render_video(renderer: RendererHTML, token: Token) -> str:
   label = escapeHtml(renderer.renderInlineAsText(token.children or [], {}, {}))
   poster = token.meta.get("poster")
   poster_attribute = f' poster="{escapeHtml(poster)}"' if poster else ""
+  dimensions = token.meta.get("dimensions")
+  size_attributes = (
+    f' width="{dimensions[0]}" height="{dimensions[1]}"' if dimensions else ""
+  )
   return (
-    f'<video controls playsinline preload="metadata" src="{source}"'
-    f'{poster_attribute} aria-label="{label}"></video>'
+    f'<video controls playsinline preload="none" src="{source}"'
+    f'{poster_attribute}{size_attributes} aria-label="{label}"></video>'
   )
 
 
