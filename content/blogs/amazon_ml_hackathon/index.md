@@ -105,11 +105,8 @@ to sum our journey throughout the challenge:
 
 ![the journey from rank ~200 to #3](/images/amazon-ml-journey.webp "the whole journey")
 
+## agents used
 
+only claude opus 5.5 on high reasoning was used throughout. i'm on the max plan but it barely hit my limits. the workflow was simple: i used `/goal` throughout with *a lot* of steering, as you can clearly tell.
 
-
-### agents used
-
-only claude opus 5.5 on high reasoning is used throughout the time. im on max plan but it barely hit my limits. workflow was simple, i used `/goal` throughout with *A LOT* of steeerings as you can clearly tell.
-
-for formatting thsi article, 6.1 sol was used.
+for formatting this article, 6.1 sol was used.
