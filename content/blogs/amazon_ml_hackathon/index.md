@@ -1,6 +1,5 @@
 title: "winning #3 in amazon ml challenge"
 date: 2026-10-08
-draft: true
 description: "how to get #3 in amazon ml hackathon under 24 hrs w/ free compute"
 -----
 
@@ -105,3 +104,12 @@ and at last, i think this challenge was an amazing exp for competitive spirit, l
 to sum our journey throughout the challenge:
 
 ![the journey from rank ~200 to #3](/images/amazon-ml-journey.webp "the whole journey")
+
+
+
+
+### agents used
+
+only claude opus 5.5 on high reasoning is used throughout the time. im on max plan but it barely hit my limits. workflow was simple, i used `/goal` throughout with *A LOT* of steeerings as you can clearly tell.
+
+for formatting thsi article, 6.1 sol was used.

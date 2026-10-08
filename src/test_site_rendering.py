@@ -154,16 +154,24 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<span class="blog-updated">updated', randomness)
 
   def test_drafts_publish_with_a_notice_but_stay_out_of_feed_and_sitemap(self) -> None:
-    draft = self.output_dir.joinpath("blogs/amazon_ml_hackathon/index.html").read_text()
-    home = self.output_dir.joinpath("index.html").read_text()
-    feed = self.output_dir.joinpath("feed.xml").read_text()
-    sitemap = self.output_dir.joinpath("sitemap.xml").read_text()
+    draft_dir = self.project_root / "content" / "blogs" / "wip"
+    draft_dir.mkdir()
+    draft_dir.joinpath("index.md").write_text(
+      "title: wip\ndate: 2026-10-09\ndraft: true\n-----\nstill writing."
+    )
+    output_dir = (
+      SiteBuilder(self.project_root).build(BuildOptions(incremental=False)).output_dir
+    )
+    draft = output_dir.joinpath("blogs/wip/index.html").read_text()
+    home = output_dir.joinpath("index.html").read_text()
+    feed = output_dir.joinpath("feed.xml").read_text()
+    sitemap = output_dir.joinpath("sitemap.xml").read_text()
 
     self.assertIn('<p class="blog-draft" role="note">', draft)
     self.assertIn('name="robots" content="noindex, nofollow"', draft)
     self.assertIn('<span class="writing-row__draft">draft</span>', home)
-    self.assertNotIn("amazon_ml_hackathon", feed)
-    self.assertNotIn("amazon_ml_hackathon", sitemap)
+    self.assertNotIn("/blogs/wip/", feed)
+    self.assertNotIn("/blogs/wip/", sitemap)
 
   def test_legacy_writing_routes_redirect_to_the_blog_namespace(self) -> None:
     for slug in ("learn_ocaml", "make_cool_stuff", "randomness_impl"):
@@ -201,6 +209,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertEqual(
       [item.findtext("title") for item in items],
       [
+        "winning #3 in amazon ml challenge",
         "make cool stuff",
         "why you should learn ocaml",
         "on randomness and its implementation",
@@ -218,6 +227,7 @@ class TestSiteRendering(unittest.TestCase):
         "https://sarrthak.com/",
         "https://sarrthak.com/blogs/",
         "https://sarrthak.com/about/",
+        "https://sarrthak.com/blogs/amazon_ml_hackathon/",
         "https://sarrthak.com/blogs/learn_ocaml/",
         "https://sarrthak.com/blogs/make_cool_stuff/",
         "https://sarrthak.com/blogs/randomness_impl/",
