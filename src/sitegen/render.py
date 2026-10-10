@@ -10,7 +10,7 @@ from markupsafe import Markup
 from sitegen.city import city_layers
 from sitegen.marks import mark_svg
 
-HOME_TITLE = "sλrthak · systems, models, machines"
+HOME_TITLE = "sλrthak // systems, models, machines"
 
 
 class TemplateRenderer:
@@ -173,7 +173,7 @@ def _normalize_tag(values: dict[str, Any]) -> None:
 def _document_title(page: Any) -> str:
   if page.route == "/":
     return HOME_TITLE
-  return f"{page.title} · sλrthak"
+  return f"{page.title} // sλrthak"
 
 
 def _meta_description(page: Any) -> str:

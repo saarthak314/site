@@ -196,7 +196,7 @@ class TestSharedLayout(TemplateRenderingTestCase):
 
   def test_shared_layout_preserves_metadata_navigation_and_footer(self) -> None:
     home = page(
-      title="sλrthak · systems, models, machines",
+      title="sλrthak // systems, models, machines",
       route="/",
       template="home.html",
       description="systems, models, and machines",
@@ -209,7 +209,7 @@ class TestSharedLayout(TemplateRenderingTestCase):
 
     html = self.render(home, context)
 
-    self.assertIn("<title>sλrthak · systems, models, machines</title>", html)
+    self.assertIn("<title>sλrthak // systems, models, machines</title>", html)
     self.assertIn('<link rel="canonical" href="https://sarrthak.com/"', html)
     self.assertIn('<meta property="og:type" content="website"', html)
     self.assertIn('<meta property="og:site_name" content="sλrthak"', html)
@@ -392,7 +392,7 @@ class TestHomeTemplate(TemplateRenderingTestCase):
       published=date(2025, 7, 19),
     )
     home = page(
-      title="sλrthak · systems, models, machines",
+      title="sλrthak // systems, models, machines",
       route="/",
       template="home.html",
       body=rendered("<p>trusted <strong>intro</strong>.</p>"),
@@ -574,7 +574,7 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     html = self.render(article, namespace(config=config()))
 
     self.assertIn('<body class="blog-page">', html)
-    self.assertIn("<title>strict templates · sλrthak</title>", html)
+    self.assertIn("<title>strict templates // sλrthak</title>", html)
     self.assertIn('<meta property="og:type" content="article"', html)
     self.assertIn('<meta property="article:published_time" content="2026-08-24"', html)
     self.assertIn('<meta property="article:modified_time" content="2026-08-25"', html)
