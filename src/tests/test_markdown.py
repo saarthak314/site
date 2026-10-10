@@ -63,7 +63,8 @@ class TestMarkdownRenderer(unittest.TestCase):
 
     self.assertIn("&lt;script&gt;alert(&quot;nope&quot;)&lt;/script&gt;", rendered.html)
     self.assertIn('alt="the &quot;quote&quot; &amp; more"', rendered.html)
-    self.assertIn('title="title &amp; more"', rendered.html)
+    self.assertIn("<figcaption>title &amp; more</figcaption>", rendered.html)
+    self.assertNotIn("title=", rendered.html)
     self.assertNotIn("</img>", rendered.html)
 
   def test_assigns_deterministic_unique_heading_ids(self) -> None:
@@ -190,7 +191,7 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
 
     self.assertIn(
       '<figure class="figure"><img src="/images/die.webp" alt="a die" '
-      'title="six faces, one line" loading="lazy" decoding="async" />'
+      'loading="lazy" decoding="async" />'
       "<figcaption>six faces, one line</figcaption></figure>",
       rendered.html,
     )

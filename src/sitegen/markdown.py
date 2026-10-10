@@ -352,6 +352,9 @@ def _render_image(
   environment: dict[str, object],
 ) -> str:
   token = tokens[index]
+  caption = token.attrGet("title") if token.meta.get("figure") else None
+  if caption:
+    token.attrs.pop("title", None)
   if token.meta.get("video"):
     media = _render_video(renderer, token)
     figure_class = "figure figure--video"
@@ -360,7 +363,6 @@ def _render_image(
     figure_class = "figure"
   if not token.meta.get("figure"):
     return media
-  caption = token.attrGet("title")
   figcaption = f"<figcaption>{escapeHtml(caption)}</figcaption>" if caption else ""
   return f'<figure class="{figure_class}">{media}{figcaption}</figure>'
 
