@@ -4,18 +4,18 @@
     ┗━┓┣━┫┣┳┛ ┃ ┣━┫┣━┫┣┻┓
     ┗━┛╹ ╹╹┗╸ ╹ ╹ ╹╹ ╹╹ ╹
 
-> personal notes on inference systems, high-performance computing, distributed systems, and things built along the way.
+> notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
 
 ## navigation
 
-- [home](/): about sarthak, current interests, experience, and projects.
-- [about](/about/): personal interests, current equipment, and daily tools.
-- [all writings](/blogs/): every article, ordered newest first.
-- [rss feed](/feed.xml): the latest writing in rss 2.0 format.
+- [home](/): who i am, what i'm into, experience, projects.
+- [about](/about/): interests and my setup.
+- [all writings](/blogs/): everything i've written, newest first.
+- [rss feed](/feed.xml): rss feed.
 
 ## writings
 
 - [winning #3 in amazon ml challenge](/blogs/amazon_ml_hackathon/): how to get #3 in amazon ml hackathon under 24 hrs w/ free compute.
-- [make cool stuff](/blogs/make_cool_stuff/): building soulful projects, escaping tutorial hell, and learning from first principles.
-- [why you should learn ocaml](/blogs/learn_ocaml/): functional programming, immutability, type systems, and why ocaml changes how you think.
-- [on randomness and its implementation](/blogs/randomness_impl/): pseudorandom numbers, random number generators, and monte carlo integration.
+- [make cool stuff](/blogs/make_cool_stuff/): escape tutorial hell by building weird, useful, constrained, and genuinely personal projects.
+- [why you should learn ocaml](/blogs/learn_ocaml/): a case for learning ocaml, functional programming, and a cleaner way to reason about software.
+- [on randomness and its implementation](/blogs/randomness_impl/): how deterministic computers fake randomness, from rand and seeds to monte carlo integration.

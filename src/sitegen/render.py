@@ -11,13 +11,6 @@ from sitegen.city import city_layers
 from sitegen.marks import mark_svg
 
 HOME_TITLE = "sλrthak · systems, models, machines"
-HOME_DESCRIPTION = (
-  "Sarthak Tomar writes about inference engineering, distributed systems, "
-  "high-performance computing, and the things he builds along the way."
-)
-WRITINGS_DESCRIPTION = (
-  "All writing by Sarthak Tomar, collected in one place and ordered newest first."
-)
 
 
 class TemplateRenderer:
@@ -184,10 +177,6 @@ def _document_title(page: Any) -> str:
 
 
 def _meta_description(page: Any) -> str:
-  if page.route == "/":
-    return HOME_DESCRIPTION
-  if page.template == "writings.html":
-    return WRITINGS_DESCRIPTION
   return page.description
 
 

@@ -3,11 +3,11 @@ date: 2026-10-08
 description: "how to get #3 in amazon ml hackathon under 24 hrs w/ free compute"
 -----
 
-![final public leaderboard with our team in third place](/images/amazon-ml-third.webp "third place on the public leaderboard")
+![final public leaderboard with our team in third place](/images/amazon-ml-third.webp)
 
 title is neither a joke nor me being cocky (debatable), but the competition is not that hard that you need to rent big boy GPUs or break into your university lab to access them. efficiency opens doors that bruteforcing can't even fathom of.
 
-![our latest submission on the competition page](/images/amazon-ml-submission.webp "our latest submission, 10 mins prior to the deadline")
+![our latest submission on the competition page](/images/amazon-ml-submission.webp "ps: this is our latest submission, 10 mins before the deadline")
 
 pretty sure if you are here then you dont need any introduction to the competition but to put out the context clearly so we can get to the same page.
 
@@ -25,7 +25,7 @@ not exact, but design in a nutshell:
 
 after completing the competition, i asked claude to make a proper video that we can use in the presentation if needed for the whole pipeline at a glance and i think rather than me rawdogging on excalidraw and handwriting latex, its better we see what we can achieve w/ good prompting + manim (thanks 3b1b).
 
-![the whole pipeline, animated](/video/pipeline-overview.mp4 "the pipeline at a glance. no need to thank me for my goated music taste.")
+![the whole pipeline, animated](/video/pipeline-overview.mp4 "ps: no need to thank me for my goated music taste.")
 
 ## workflow setup
 
@@ -56,19 +56,19 @@ that was exactly the plan. gdrive was the middleman here. (again fk u colab)
 
 colab did only three jobs:
 
-- **step 6, e5 kNN** (`01_encoder_knn.ipynb`): fine-tune e5-small, embed all 24.2M records, exact per-country nearest-neighbour search.
-- **step 13, cross-encoder v2** (`02_cross_encoder.ipynb`): e5-small (118M params), two fold models, A100.
-- **step 13b, cross-encoder v3** (`02_cross_encoder.ipynb`): e5-base (278M params), two fold models, A100.
+- **Step 6, e5 kNN** (`01_encoder_knn.ipynb`): fine-tune e5-small, embed all 24.2M records, exact per-country nearest-neighbour search.
+- **Step 13, cross-encoder v2** (`02_cross_encoder.ipynb`): e5-small (118M params), two fold models, A100.
+- **Step 13b, cross-encoder v3** (`02_cross_encoder.ipynb`): e5-base (278M params), two fold models, A100.
 
 ps: pls refer to these steps in the diagrams below.
 
 rough sketch of the pipeline:
 
-![workflow diagram of the local and colab steps](/images/amazon-ml-workflow.webp "rough sketch of the pipeline")
+![workflow diagram of the local and colab steps](/images/amazon-ml-workflow.webp)
 
 for the nerds or if you want to know how the whole pipeline mapped around the whole problem + repo system:
 
-![system diagram mapping the pipeline onto the problem and the repo](/images/amazon-ml-system.webp "the pipeline mapped onto the problem and the repo")
+![system diagram mapping the pipeline onto the problem and the repo](/images/amazon-ml-system.webp)
 
 now i think this is pretty much self explanatory, i dont know if i can share my whole solution publicly as of now, so holding that off for now. but soon it'll be posted, so do wtv u want w/ this info.
 
@@ -86,7 +86,7 @@ we could measure US/India scores through our local verifiers but for France, we 
 
 all of these gains combined + structured as a timeline:
 
-![timeline of score gains over the 24 hours](/images/amazon-ml-timeline.webp "every gain, in order")
+![timeline of score gains over the 24 hours](/images/amazon-ml-timeline.webp)
 
 but these were not in a straight timeline, there were few detours and weird ideas that we dropped along the way, such as:
 
@@ -103,10 +103,10 @@ and at last, i think this challenge was an amazing exp for competitive spirit, l
 
 to sum our journey throughout the challenge:
 
-![the journey from rank ~200 to #3](/images/amazon-ml-journey.webp "the whole journey")
+![the journey from rank ~200 to #3](/images/amazon-ml-journey.webp)
 
 ## agents used
 
-only claude opus 5.5 on high reasoning was used throughout. i'm on the max plan but it barely hit my limits. the workflow was simple: i used `/goal` throughout with *a lot* of steering, as you can clearly tell.
+only claude opus 5.5 on high reasoning, throughout. i'm on the max plan and it barely hit my limits. workflow was simple: `/goal` with *A LOT* of steering, as you can clearly tell.
 
-for formatting this article, 6.1 sol was used.
+6.1 sol formatted this article.

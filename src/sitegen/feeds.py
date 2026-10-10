@@ -14,8 +14,8 @@ def render_rss(index: ContentIndex, site_url: str) -> str:
   ET.SubElement(channel, "title").text = "sλrthak · writing"
   ET.SubElement(channel, "link").text = normalized_site_url
   ET.SubElement(channel, "description").text = (
-    "writing on inference systems, high-performance computing, distributed "
-    "systems, and things built along the way."
+    "notes on inference systems, high-performance computing, distributed "
+    "systems, and whatever i'm building next."
   )
   ET.SubElement(channel, "language").text = "en-us"
   published = [post for post in index.posts if not post.draft]

@@ -321,7 +321,7 @@ let us solve a interesting problem that involves randomness to approximate the v
 
 imagine that you have a dartboard hanging on your wall that consists of a circle painted on a square backdrop, as in the following diagram:
 
-![a square dartboard with an inscribed circle and 180 random darts](/images/diagrams/dartboard.svg "monte carlo: 4 × darts inside / darts thrown, an estimate of pi")
+![a square dartboard with an inscribed circle and 180 random darts](/images/diagrams/dartboard.svg "4 × darts inside / darts thrown, an estimate of pi")
 
 what happens if you throw a whole bunch of darts completely randomly, ignoring any darts that miss the board altogether? some of the darts will fall inside the gray circle, but some will be outside the circle in the white corners of the square. if the throws are random, the ratio of the number of darts landing inside the circle to the total number of darts hitting the square should be approximately equal to the ratio between the two areas. the ratio of the areas is independent of the actual size of the dartboard, as illustrated by the formula:
 

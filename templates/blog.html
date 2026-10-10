@@ -12,7 +12,7 @@
         <span class="blog-reading-time">{{ page.rendered.reading_time }}</span>
         {% if page.updated %}<span class="blog-updated">updated <time datetime="{{ page.updated|iso_date }}">{{ page.updated|full_date }}</time></span>{% endif %}
       </p>
-      {% if page.draft %}<p class="blog-draft" role="note"><strong>draft.</strong> this is still being written. numbers, claims, and structure may change, and it is not in the feed yet.</p>{% endif %}
+      {% if page.draft %}<p class="blog-draft" role="note"><strong>draft.</strong> still being written, so things will change.</p>{% endif %}
     </header>
     <article class="blog-article">{{ content }}</article>
     {% if page.tags %}
