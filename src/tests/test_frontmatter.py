@@ -79,7 +79,7 @@ class TestFrontMatter(unittest.TestCase):
         "    company: morph labs\n"
         "    company_url: https://morph.so\n"
         "    company_logo: /images/logos/morph.png\n"
-        "    period: jun 2026 — present\n"
+        "    period: jun 2026 to present\n"
         "    highlights:\n"
         "      - agentic workflows and cloud inference systems\n"
         "projects:\n"
@@ -101,7 +101,7 @@ class TestFrontMatter(unittest.TestCase):
       self.assertEqual(experience.company, "morph labs")
       self.assertEqual(experience.company_url, "https://morph.so")
       self.assertEqual(experience.company_logo, "/images/logos/morph.png")
-      self.assertEqual(experience.period, "jun 2026 — present")
+      self.assertEqual(experience.period, "jun 2026 to present")
       self.assertEqual(
         experience.highlights,
         ("agentic workflows and cloud inference systems",),

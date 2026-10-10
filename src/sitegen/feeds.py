@@ -11,7 +11,7 @@ def render_rss(index: ContentIndex, site_url: str) -> str:
   normalized_site_url = site_url.rstrip("/")
   rss = ET.Element("rss", {"version": "2.0"})
   channel = ET.SubElement(rss, "channel")
-  ET.SubElement(channel, "title").text = "sλrthak — writing"
+  ET.SubElement(channel, "title").text = "sλrthak · writing"
   ET.SubElement(channel, "link").text = normalized_site_url
   ET.SubElement(channel, "description").text = (
     "writing on inference systems, high-performance computing, distributed "

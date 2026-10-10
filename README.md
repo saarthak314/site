@@ -4,12 +4,12 @@ the source behind [sarrthak.com](https://sarrthak.com): personal site, writings,
 
 ## map
 
-- `content/` — pages and writings
-- `assets/` — source images used to generate published variants
-- `templates/` — jinja layouts and partials
-- `static/` — css, images, and public files
-- `src/sitegen/` — the generator itself
-- `.github/workflows/` — checks and deployment
+- `content/`: pages and writings
+- `assets/`: source images used to generate published variants
+- `templates/`: jinja layouts and partials
+- `static/`: css, images, and public files
+- `src/sitegen/`: the generator itself
+- `.github/workflows/`: checks and deployment
 
 ## run it
 
@@ -35,6 +35,7 @@ uv run python scripts/optimize_images.py # rebuild responsive images and icons
 uv run python scripts/subset_fonts.py    # rebuild the symbol font subset (box drawing, λ)
 uv run python scripts/generate_art.py    # regenerate the dartboard svg
 uv run python scripts/generate_portrait.py # regenerate the home-page ascii portrait
+uv run python scripts/generate_social_card.py # redraw the social preview card from the portrait
 ./test.sh                                # run every local verification
 ```
 

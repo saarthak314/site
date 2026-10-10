@@ -128,7 +128,7 @@ class TestContentRepository(unittest.TestCase):
       "  - role: systems engineer\n"
       "    company: morph labs\n"
       "    company_url: https://morph.so\n"
-      "    period: jun 2026 — present\n"
+      "    period: jun 2026 to present\n"
       "    highlights: [agentic workflows and cloud inference systems]\n"
       "projects:\n"
       "  - name: paimon\n"

@@ -4,7 +4,6 @@ from sitegen.image_pipeline import (
   optimize_image,
   write_favicon,
   write_responsive_variants,
-  write_social_card,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -36,9 +35,6 @@ def main() -> None:
     optimize_image(source, output, max_width=1200)
     write_responsive_variants(source, output)
 
-  write_social_card(
-    SOURCE_IMAGE_DIR / "ritsuko.png", OUTPUT_IMAGE_DIR / "social-card.jpg"
-  )
   write_favicon(
     SOURCE_IMAGE_DIR / "favicon.png",
     OUTPUT_IMAGE_DIR / "favicon.ico",

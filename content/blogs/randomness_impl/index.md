@@ -327,7 +327,7 @@ what happens if you throw a whole bunch of darts completely randomly, ignoring a
 
 $\frac{\text{darts falling inside the circle}}{\text{darts falling inside the square}}$ = $\frac{\text{area inside the circle}}{\text{area inside the square}}$ = $\frac{\pi r^2}{4r^2}$ = $\frac{\pi}{4}$  
 
-to simulate this process in a program, imagine that the dart board is drawn on the standard cartesian coordinate plane with its center at the origin and a radius of 1 unit. the process of throwing a dart randomly at the square can be modeled by generating two random numbers, x and y, each of which lies between –1 and +1. this (x, y) point always lies somewhere inside the square. the point (x, y) lies inside the circle if
+to simulate this process in a program, imagine that the dart board is drawn on the standard cartesian coordinate plane with its center at the origin and a radius of 1 unit. the process of throwing a dart randomly at the square can be modeled by generating two random numbers, x and y, each of which lies between -1 and +1. this (x, y) point always lies somewhere inside the square. the point (x, y) lies inside the circle if
 
 $\sqrt{x^2 + y^2} < 1$ 
 

@@ -7,11 +7,11 @@ experience:
     company: math.inc
     company_url: https://www.math.inc
     company_logo: /images/logos/mathinc.png
-    period: jun 2026 — present
+    period: jun 2026 to present
     highlights:
       - working across agentic workflows, autoresearch, and inference systems on cloud runtimes
   - role: freelance swe
-    period: may 2025 — apr 2026
+    period: may 2025 to apr 2026
     highlights:
       - built backend systems including a risk moderation engine and secure file-sharing system
 projects:
