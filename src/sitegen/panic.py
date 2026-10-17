@@ -149,16 +149,32 @@ def _near(rng: random.Random) -> tuple[Canvas, list[Wire]]:
     row = next((r for r in range(ROWS) if canvas.glyph(r, col) in "─_"), None)
     if row and canvas.glyph(row - 1, col) == " ":
       canvas.put(row - 1, col, "v", "bird")
+  _hum(rng, canvas, count=10)
   return canvas, spans
 
 
+def _hum(rng: random.Random, canvas: Canvas, *, count: int) -> None:
+  """Mark short stretches of wire that flicker on their own cycle."""
+  placed, attempts = 0, 0
+  while placed < count and attempts < 400:
+    attempts += 1
+    row, col = rng.randint(5, 14), rng.randint(0, canvas.cols - 12)
+    length = rng.randint(5, 11)
+    if any(canvas.cls(row, c) != "wire" for c in range(col, col + length)):
+      continue
+    for c in range(col, col + length):
+      canvas.put(row, c, canvas.glyph(row, c), "wire wire--hum", f"--i: {placed}")
+    placed += 1
+
+
 def _glitch_patches(rng: random.Random, canvas: Canvas, count: int) -> int:
+  """Lag patches over the wire rows, so the shaking lands on the lines."""
   placed, attempts = 0, 0
   taken: list[tuple[int, int, int, int]] = []
-  while placed < count and attempts < 2000:
+  while placed < count and attempts < 3000:
     attempts += 1
-    height, width = rng.randint(4, 7), rng.randint(20, 34)
-    row0 = rng.randint(6, canvas.rows - 2 - height)
+    height, width = rng.randint(3, 6), rng.randint(18, 34)
+    row0 = rng.randint(5, 15 - height)
     col0 = rng.randint(0, canvas.cols - width)
     row1, col1 = row0 + height, col0 + width
     if any(
@@ -167,7 +183,7 @@ def _glitch_patches(rng: random.Random, canvas: Canvas, count: int) -> int:
     ):
       continue
     cells = [canvas.cells[r][c] for r in range(row0, row1) for c in range(col0, col1)]
-    if sum(1 for cell in cells if cell[0] != " ") < len(cells) // 5:
+    if sum(1 for cell in cells if cell[0] != " ") < len(cells) // 12:
       continue
     style = f"--i: {placed}"
     for r in range(row0, row1):
@@ -202,7 +218,7 @@ def panic_layers(panels: tuple[str, ...], seed: int = 413) -> SimpleNamespace:
   rng = random.Random(seed)
   far = _far(rng)
   near, spans = _near(rng)
-  patches = _glitch_patches(rng, near, 3)
+  patches = _glitch_patches(rng, near, 6)
   return SimpleNamespace(
     cols=COLS,
     rows=ROWS,

@@ -42,7 +42,8 @@ class TestPanicScene(unittest.TestCase):
       self.assertRegex(near, rf'class="(glitch )?{cls}"')
     self.assertRegex(far, r'class="(glitch )?lamp"')
     self.assertRegex(far, r'class="(glitch )?star"')
-    self.assertEqual(scene.patches, 3)
+    self.assertEqual(scene.patches, 6)
+    self.assertGreaterEqual(near.count("wire--hum"), 8)
     lanes = scene.wires.split(";")
     self.assertEqual(len(lanes), 3)
     for lane in lanes:

@@ -600,7 +600,10 @@ class TestBlogTemplate(TemplateRenderingTestCase):
       '<meta name="twitter:image" content="https://sarrthak.com/images/templates.png"',
       html,
     )
-    self.assertIn('<a class="rail__back" href="/blogs/">&lt;- writing</a>', html)
+    self.assertRegex(
+      html, r'<pre class="rail__progress" aria-hidden="true" data-minutes="\d+"></pre>'
+    )
+    self.assertNotIn("rail__back", html)
     self.assertNotIn('class="blog-back"', html)
     self.assertIn(
       '<time class="blog-date" datetime="2026-08-24">24 aug 2026</time>', html
@@ -660,7 +663,10 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     self.assertIn('<li class="rail__item"><a href="#second">second</a></li>', html)
     self.assertNotIn('href="#title"', html)
     self.assertNotIn('href="#deep"', html)
-    self.assertIn('<a class="rail__back" href="/blogs/">&lt;- writing</a>', html)
+    self.assertRegex(
+      html, r'<pre class="rail__progress" aria-hidden="true" data-minutes="\d+"></pre>'
+    )
+    self.assertNotIn("rail__back", html)
 
   def test_blog_rail_skips_the_fold_for_a_single_heading(self) -> None:
     article = page(
@@ -674,7 +680,10 @@ class TestBlogTemplate(TemplateRenderingTestCase):
 
     self.assertNotIn("rail__fold", html)
     self.assertNotIn('href="#only"', html)
-    self.assertIn('<a class="rail__back" href="/blogs/">&lt;- writing</a>', html)
+    self.assertRegex(
+      html, r'<pre class="rail__progress" aria-hidden="true" data-minutes="\d+"></pre>'
+    )
+    self.assertNotIn("rail__back", html)
 
 
 class TestDraftTemplates(TemplateRenderingTestCase):

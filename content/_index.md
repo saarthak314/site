@@ -2,6 +2,18 @@ title: sλrthak
 date: 2025-12-22
 updated: 2026-08-29
 description: notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
+annotations: true
+stamp: "circular code 413x"
+bracket:
+  - "id: [mirror // - _ - ]"
+  - "0x8054C8A2 // asuka"
+# placeholder vitals: the browser replaces every number on each visit
+rail_readout:
+  - "node 03 // sarthak-mbp"
+  - "uptime since 2006-02-28"
+  - "load 0.42 0.38 0.41"
+  - "mem ▓▓▓▓▓▓▓░░░ 68%  swap ░░░░ 0%"
+  - "cpu ▓▓░░░░░░░░ 21%  temp 41c"
 experience:
   - role: systems engineer
     company: math.inc

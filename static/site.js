@@ -80,6 +80,40 @@
     headings.forEach((heading) => observer.observe(heading));
   }
 
+  // Reading meter: how far down the article the reader is, in the rail's register.
+  const progress = document.querySelector(".rail__progress");
+  const article = document.querySelector(".blog-article");
+  if (progress && article) {
+    const minutes = parseInt(progress.dataset.minutes, 10) || 0;
+    const words = (article.textContent || "").trim().split(/\s+/).length;
+    const count = words >= 1000 ? (words / 1000).toFixed(1) + "k" : String(words);
+    const cells = 12;
+    const meter = document.createElement("span");
+    const stats = document.createElement("span");
+    meter.className = "progress__meter";
+    stats.className = "progress__hi";
+    progress.append("read ", meter, "\n", stats);
+    let queued = false;
+    const paint = () => {
+      queued = false;
+      const rect = article.getBoundingClientRect();
+      const line = window.innerHeight * 0.35;
+      const fraction = Math.min(1, Math.max(0, (line - rect.top) / Math.max(1, rect.height)));
+      const filled = Math.round(fraction * cells);
+      meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled) + " " + Math.round(fraction * 100) + "%";
+      const left = Math.max(0, Math.ceil(minutes * (1 - fraction)));
+      stats.textContent = (left ? left + " min left" : "done") + " // " + count + " words";
+    };
+    const request = () => {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(paint);
+    };
+    window.addEventListener("scroll", request, { passive: true });
+    window.addEventListener("resize", request);
+    paint();
+  }
+
   // Now playing: a worker answers /now with the spotify track playing (or the
   // last one played); this prints it in the rail and keeps the meter moving.
   document.querySelectorAll("[data-now]").forEach((box) => {
@@ -564,7 +598,7 @@
         .filter(Boolean)
         .map((lane) => lane.split(",").map(Number));
       const packets = Boolean(city.querySelector(".city__packets")) && wires.length > 0;
-      const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0, shakeTimer: 0 };
+      const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0, shakeTimer: 0, fizzTimer: 0 };
       const maxShips = () => (packets ? 1 : window.innerWidth > 1400 ? 3 : 2);
       const spawnPacket = () => {
         const [r0, c0, r1, c1, sag] = wires[Math.floor(Math.random() * wires.length)];
@@ -622,7 +656,36 @@
           window.setTimeout(() => city.classList.toggle("city--glitch", index % 2 === 0), delay);
         });
         window.setTimeout(() => city.classList.remove("city--glitch"), 180);
-        state.glitchTimer = window.setTimeout(jolt, between(100000, 200000));
+        state.glitchTimer = window.setTimeout(jolt, packets ? between(40000, 90000) : between(100000, 200000));
+      };
+
+      // Static on the lines: a few wire runs turn to noise for a few frames,
+      // twice in quick succession, then read as wire again.
+      const runs = packets ? Array.from(city.querySelectorAll(".city__layer--near .wire")) : [];
+      const noise = "\u2571\u2572\u2500_\u2592\u2591\u25aa ";
+      const scramble = (text) =>
+        Array.from(text)
+          .map((glyph) => (glyph === " " ? " " : noise[Math.floor(Math.random() * noise.length)]))
+          .join("");
+      const fizz = () => {
+        state.fizzTimer = 0;
+        if (state.paused || !state.visible || !runs.length) return;
+        const chosen = [];
+        for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i += 1) {
+          chosen.push(runs[Math.floor(Math.random() * runs.length)]);
+        }
+        const originals = chosen.map((run) => run.textContent);
+        const burst = (delay, scrambled) =>
+          window.setTimeout(() => {
+            chosen.forEach((run, index) => {
+              run.textContent = scrambled ? scramble(originals[index]) : originals[index];
+            });
+          }, delay);
+        burst(0, true);
+        burst(160, false);
+        burst(320, true);
+        burst(460, false);
+        state.fizzTimer = window.setTimeout(fizz, between(5000, 11000));
       };
 
       // Lag patches: one random rectangle of the skyline shakes for 600 ms, then
@@ -640,7 +703,7 @@
         const group = patches.get(patchKeys[Math.floor(Math.random() * patchKeys.length)]);
         group.forEach((segment) => segment.classList.add("glitch--on"));
         window.setTimeout(() => group.forEach((segment) => segment.classList.remove("glitch--on")), 700);
-        state.shakeTimer = window.setTimeout(shake, between(8000, 14000));
+        state.shakeTimer = window.setTimeout(shake, packets ? between(4000, 8000) : between(8000, 14000));
       };
       const schedule = (delay) => {
         if (state.timer) window.clearTimeout(state.timer);
@@ -654,6 +717,7 @@
           if (lane && !state.timer) schedule(state.alive ? between(5000, 9000) : 1500);
           if (!state.glitchTimer) state.glitchTimer = window.setTimeout(jolt, between(100000, 200000));
           if (!state.shakeTimer) state.shakeTimer = window.setTimeout(shake, between(3000, 8000));
+          if (packets && !state.fizzTimer) state.fizzTimer = window.setTimeout(fizz, between(2000, 6000));
           if (!state.budgeted && document.getAnimations) {
             state.budgeted = true;
             if (document.getAnimations().length > 100) city.classList.add("city--lean");
@@ -662,9 +726,11 @@
           if (state.timer) window.clearTimeout(state.timer);
           if (state.glitchTimer) window.clearTimeout(state.glitchTimer);
           if (state.shakeTimer) window.clearTimeout(state.shakeTimer);
+          if (state.fizzTimer) window.clearTimeout(state.fizzTimer);
           state.timer = 0;
           state.glitchTimer = 0;
           state.shakeTimer = 0;
+          state.fizzTimer = 0;
         }
       };
       new IntersectionObserver(

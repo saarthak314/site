@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% from "partials/ledger.html" import ledger %}
-{% from "partials/socials.html" import socials %}
 
 {% block main %}
 <div class="layout layout--home">
@@ -48,12 +47,6 @@
       <a class="home-projects-all" href="https://github.com/saarthak314">all projects</a>
     </section>
   </main>
-  <aside class="rail rail--home" aria-label="elsewhere">
-    {% include "partials/portrait.html" %}
-    {{ socials(config) }}
-    {% if page.now_playing is defined and page.now_playing %}
-    {% include "partials/now.html" %}
-    {% endif %}
-  </aside>
+  {% include "partials/elsewhere.html" %}
 </div>
 {% endblock %}

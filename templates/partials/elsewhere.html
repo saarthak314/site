@@ -1,0 +1,25 @@
+{% from "partials/socials.html" import socials %}
+{% set annotated = page.annotations is defined and page.annotations %}
+<aside class="rail rail--home{% if annotated %} rail--annotated{% endif %}" aria-label="elsewhere">
+  {% if annotated %}
+  <div class="portrait-frame">
+    {% include "partials/portrait.html" %}
+    <pre class="portrait-bracket" aria-hidden="true">{{ bracket }}</pre>
+  </div>
+  {% else %}
+  {% include "partials/portrait.html" %}
+  {% endif %}
+  {{ socials(config) }}
+  {% if annotated %}
+  <span class="rail__tag" aria-hidden="true">errorCode</span>
+  {% if page.stamp %}
+  <span class="rail__stamp" aria-hidden="true">{{ page.stamp }}</span>
+  {% endif %}
+  {% endif %}
+  {% if page.now_playing is defined and page.now_playing %}
+  {% include "partials/now.html" %}
+  {% endif %}
+  {% if readout %}
+  <pre class="rail__readout" aria-hidden="true">{{ readout }}</pre>
+  {% endif %}
+</aside>
