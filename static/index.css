@@ -629,24 +629,13 @@ a.home-project__name,
 }
 
 .writing-row__title {
-  align-items: baseline;
   color: var(--ink);
-  display: flex;
   font-family: var(--serif);
   font-size: 1.25rem;
-  gap: 12px;
   grid-area: title;
   line-height: 1.2;
   min-width: 0;
   text-decoration: none;
-}
-
-.writing-row__title::after {
-  border-bottom: 1px dotted var(--ink-4);
-  content: "";
-  flex: 1;
-  min-width: 24px;
-  transform: translateY(-5px);
 }
 
 .writing-row__title:hover {
@@ -2276,10 +2265,6 @@ main,
       "mark summary";
     grid-template-columns: 18px minmax(0, 1fr);
     row-gap: 2px;
-  }
-
-  .writing-row__title::after {
-    display: none;
   }
 
   .writing-row__mark {
