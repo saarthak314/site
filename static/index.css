@@ -1981,6 +1981,69 @@ blockquote p {
   }
 }
 
+/* now playing: a worker answers with the spotify track, the browser prints it */
+
+.now {
+  margin-top: 22px;
+}
+
+.now__pre {
+  color: var(--ink-4);
+  font-family: var(--art);
+  font-size: 10.5px;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  line-height: 1.75;
+  margin: 0;
+  overflow: hidden;
+  white-space: pre;
+}
+
+.now__state {
+  color: var(--ink-3);
+}
+
+.now__title {
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.now__title:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.now__meter {
+  color: var(--accent-2);
+}
+
+.now__eq {
+  color: var(--accent);
+  display: inline-block;
+}
+
+.now__eq span {
+  animation: now-eq calc(0.9s + var(--i, 0) * 0.17s) ease-in-out calc(var(--i, 0) * -0.3s) infinite alternate;
+  display: inline-block;
+  transform-origin: bottom;
+}
+
+@keyframes now-eq {
+  from {
+    transform: scaleY(0.3);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .now__eq span {
+    animation: none;
+  }
+}
+
 /* motion */
 
 @keyframes rise {

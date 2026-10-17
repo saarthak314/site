@@ -80,6 +80,154 @@
     headings.forEach((heading) => observer.observe(heading));
   }
 
+  // Now playing: a worker answers /now with the spotify track playing (or the
+  // last one played); this prints it in the rail and keeps the meter moving.
+  document.querySelectorAll("[data-now]").forEach((box) => {
+    const endpoint = box.dataset.now;
+    const pre = box.querySelector(".now__pre");
+    if (!endpoint || !pre || !window.fetch) return;
+    const width = 36;
+    const cells = 12;
+    const lower = (value) => String(value || "").toLowerCase();
+    const clip = (text) => (text.length > width ? text.slice(0, width - 2).trimEnd() + ".." : text);
+    const clock = (ms) => {
+      const seconds = Math.max(0, Math.floor(ms / 1000));
+      return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
+    };
+    const ago = (iso) => {
+      const minutes = Math.max(1, Math.round((Date.now() - Date.parse(iso)) / 60000));
+      if (minutes < 60) return minutes + "m ago";
+      const hours = Math.round(minutes / 60);
+      if (hours < 48) return hours + "h ago";
+      return Math.round(hours / 24) + "d ago";
+    };
+    const node = (tag, className, text) => {
+      const element = document.createElement(tag);
+      if (className) element.className = className;
+      element.textContent = text;
+      return element;
+    };
+    let state = null;
+    let meter = null;
+    let timeLabel = null;
+    let ticker = 0;
+    let poller = 0;
+    let failures = 0;
+    let visible = false;
+
+    const elapsed = () => {
+      if (!state || !state.data.playing || state.data.progress_ms == null) return 0;
+      const duration = state.data.track.duration_ms || 0;
+      return Math.min(duration, state.data.progress_ms + (Date.now() - state.receivedAt));
+    };
+    const tick = () => {
+      if (!state || !meter) return;
+      const duration = state.data.track.duration_ms || 0;
+      const done = elapsed();
+      const filled = duration ? Math.round((done / duration) * cells) : 0;
+      meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled);
+      timeLabel.textContent = "  " + clock(done) + " / " + clock(duration) + "  ";
+      if (duration && done >= duration) load();
+    };
+    const render = () => {
+      const data = state && state.data;
+      if (!data || !data.track) {
+        box.hidden = true;
+        return;
+      }
+      const track = data.track;
+      pre.replaceChildren();
+      const head = data.playing
+        ? "spotify // playing"
+        : data.played_at
+          ? "spotify // last played " + ago(data.played_at)
+          : "spotify // paused";
+      pre.append(node("span", "now__state", head), "\n");
+      const title = node(track.url ? "a" : "span", "now__title", clip(lower(track.title)));
+      if (track.url) {
+        title.href = track.url;
+        title.rel = "noopener";
+      }
+      pre.append(title, "\n");
+      const artists = lower((track.artists || []).join(", "));
+      pre.append(node("span", "now__meta", clip(artists + (track.album ? " // " + lower(track.album) : ""))));
+      meter = null;
+      if (data.playing && data.progress_ms != null && track.duration_ms) {
+        meter = node("span", "now__meter", "");
+        timeLabel = node("span", "", "");
+        const eq = node("span", "now__eq", "");
+        "\u2582\u2585\u2583\u2587\u2584".split("").forEach((glyph, index) => {
+          const bar = node("span", "", glyph);
+          bar.style.setProperty("--i", index);
+          eq.append(bar);
+        });
+        pre.append("\n", meter, timeLabel, eq);
+        tick();
+      }
+      box.hidden = false;
+    };
+    const stop = () => {
+      if (ticker) window.clearInterval(ticker);
+      if (poller) window.clearTimeout(poller);
+      ticker = 0;
+      poller = 0;
+    };
+    const schedule = () => {
+      if (poller) window.clearTimeout(poller);
+      poller = 0;
+      if (!visible || document.hidden) return;
+      const playing = Boolean(state && state.data.playing);
+      poller = window.setTimeout(load, playing ? 30000 : 120000);
+      if (playing && !ticker) ticker = window.setInterval(tick, 1000);
+      if (!playing && ticker) {
+        window.clearInterval(ticker);
+        ticker = 0;
+      }
+    };
+    const load = async () => {
+      if (poller) window.clearTimeout(poller);
+      poller = 0;
+      try {
+        const response = await fetch(endpoint, { mode: "cors" });
+        if (!response.ok) throw new Error(String(response.status));
+        state = { data: await response.json(), receivedAt: Date.now() };
+        failures = 0;
+        render();
+      } catch {
+        failures += 1;
+        if (failures >= 2) {
+          box.hidden = true;
+          stop();
+          return;
+        }
+      }
+      schedule();
+    };
+    const sync = () => {
+      if (visible && !document.hidden) {
+        if (!state) load();
+        else schedule();
+      } else {
+        stop();
+      }
+    };
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            visible = entry.isIntersecting;
+          });
+          sync();
+        },
+        { rootMargin: "120px 0px" },
+      ).observe(box.parentElement || box); // the box is hidden until data arrives
+    } else {
+      visible = true;
+      sync();
+    }
+    document.addEventListener("visibilitychange", sync);
+  });
+
   // Ships over the footer city. Each ship is one CSS transform animation on its
   // own element; this scheduler only decides when and where the next one appears.
   const cities = Array.from(document.querySelectorAll("[data-city]"));

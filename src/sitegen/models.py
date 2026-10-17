@@ -51,6 +51,7 @@ class PageMetadata:
   annotations: bool = False
   stamp: str | None = None
   bracket: tuple[str, ...] = ()
+  now_playing: str | None = None
 
 
 @dataclass(frozen=True)
@@ -91,3 +92,4 @@ class Page:
   annotations: bool = False
   stamp: str | None = None
   bracket: tuple[str, ...] = ()
+  now_playing: str | None = None

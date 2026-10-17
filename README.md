@@ -26,6 +26,8 @@ drafts (`draft: true` in front matter) publish like any other post but carry a d
 
 a page can swap the footer scene with `footer: panic` (the default is `city`) and override the © plate with `copyright:`. `annotations: true` adds the hex-dump gutters, the portrait bracket (labels from `bracket:`), the errorCode tags, and an optional `stamp:`; `rail_readout:` is a list of short lines (36 characters or fewer, blank lines allowed) printed under the social links. the stop-error panels in the panic footer read their copy from `content/_panic.txt`, one panel per block separated by a `---` line.
 
+`now_playing: https://.../now` on the home or about page prints the spotify track playing right now (or the last one played) under the social links, fetched in the browser from the worker in `worker/spotify/`; the block stays hidden until the worker answers.
+
 ## useful bits
 
 ```sh

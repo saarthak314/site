@@ -51,6 +51,9 @@
   <aside class="rail rail--home" aria-label="elsewhere">
     {% include "partials/portrait.html" %}
     {{ socials(config) }}
+    {% if page.now_playing is defined and page.now_playing %}
+    {% include "partials/now.html" %}
+    {% endif %}
   </aside>
 </div>
 {% endblock %}

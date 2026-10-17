@@ -184,6 +184,7 @@ class ContentRepository:
       annotations=metadata.annotations,
       stamp=metadata.stamp,
       bracket=metadata.bracket,
+      now_playing=metadata.now_playing,
     )
 
   def _ensure_unique_routes(self, pages: list[Page]) -> None:
@@ -275,6 +276,7 @@ class ContentRepository:
           "annotations": page.annotations,
           "stamp": page.stamp,
           "bracket": page.bracket,
+          "now_playing": page.now_playing,
           "experience": [
             {
               "role": item.role,

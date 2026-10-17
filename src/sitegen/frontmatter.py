@@ -67,6 +67,9 @@ def parse_document(path: Path) -> ParsedDocument:
   bracket = _lines_value(path, raw.get("bracket"), "bracket")
   if len(bracket) > 2:
     raise ContentError(f"{path}: bracket takes at most two labels")
+  now_playing = _optional_string(path, raw, "now_playing")
+  if now_playing:
+    _validate_http_url(path, now_playing, "now_playing")
   metadata = PageMetadata(
     title=title,
     date=published,
@@ -88,6 +91,7 @@ def parse_document(path: Path) -> ParsedDocument:
     annotations=annotations,
     stamp=_optional_string(path, raw, "stamp"),
     bracket=bracket,
+    now_playing=now_playing,
   )
   return ParsedDocument(metadata=metadata, body=body)
 

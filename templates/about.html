@@ -28,6 +28,9 @@
     {% if readout %}
     <pre class="rail__readout" aria-hidden="true">{{ readout }}</pre>
     {% endif %}
+    {% if page.now_playing is defined and page.now_playing %}
+    {% include "partials/now.html" %}
+    {% endif %}
   </aside>
 </div>
 {% endblock %}

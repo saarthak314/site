@@ -58,8 +58,10 @@ def page(
   annotations: bool = False,
   stamp: str | None = None,
   bracket: tuple[str, ...] = (),
+  now_playing: str | None = None,
 ) -> SimpleNamespace:
   return namespace(
+    now_playing=now_playing,
     footer=footer,
     copyright=copyright,
     rail_readout=rail_readout,
@@ -854,3 +856,34 @@ class TestAboutTemplate(TemplateRenderingTestCase):
     )
     self.assertIn('<div class="gutters" aria-hidden="true">', html)
     self.assertIn('<pre class="gutter gutter--left">8054c8a0 ', html)
+    self.assertNotIn("data-now", html)
+
+  def test_rails_print_the_now_playing_box_only_when_an_endpoint_is_set(self) -> None:
+    about = page(
+      title="about me",
+      route="/about/",
+      template="about.html",
+      body=rendered("<p>hey.</p>"),
+      now_playing="https://sarrthak-now.example.workers.dev/now",
+    )
+    home = page(
+      title="home",
+      route="/",
+      template="home.html",
+      body=rendered("<p>hey.</p>"),
+      now_playing="https://sarrthak-now.example.workers.dev/now",
+    )
+
+    about_html = self.render(about, namespace(config=config()))
+    home_html = self.render(
+      home, namespace(config=config(), index=namespace(recent_posts=()))
+    )
+
+    for html in (about_html, home_html):
+      self.assertIn(
+        '<div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
+        html,
+      )
+      self.assertIn(
+        '<pre class="now__pre" aria-label="playing on spotify"></pre>', html
+      )

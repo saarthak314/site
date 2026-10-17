@@ -176,8 +176,22 @@ class TestFrontMatter(unittest.TestCase):
       self.assertEqual(defaults.rail_readout, ())
       self.assertEqual(defaults.bracket, ())
 
+  def test_parses_now_playing_as_an_absolute_url(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      path = Path(temp_dir) / "about.md"
+      path.write_text(
+        "title: about me\ndate: 2026-08-30\n"
+        "now_playing: https://sarrthak-now.example.workers.dev/now\n-----\n\nhey."
+      )
+
+      self.assertEqual(
+        parse_document(path).metadata.now_playing,
+        "https://sarrthak-now.example.workers.dev/now",
+      )
+
   def test_rejects_unknown_footers_and_malformed_annotation_keys(self) -> None:
     cases = (
+      ("now_playing: /now\n", "now_playing must be an absolute http(s) URL"),
       ("footer: skyline\n", "footer must be one of city, panic"),
       ("annotations: yes please\n", "annotations must be true or false"),
       ("rail_readout: not a list\n", "rail_readout must be a list of strings"),

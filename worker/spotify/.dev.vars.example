@@ -1,0 +1,4 @@
+# copy to .dev.vars for `npx wrangler dev`; never commit .dev.vars
+SPOTIFY_CLIENT_ID=
+SPOTIFY_CLIENT_SECRET=
+SPOTIFY_REFRESH_TOKEN=

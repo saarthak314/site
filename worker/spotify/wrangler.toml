@@ -1,0 +1,10 @@
+name = "sarrthak-now"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Origins allowed to read /now from a browser. Add a dev origin if you need one.
+ALLOWED_ORIGINS = "https://sarrthak.com,http://127.0.0.1:8888,http://localhost:8888"
+
+[observability]
+enabled = true

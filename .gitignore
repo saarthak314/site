@@ -11,3 +11,8 @@ AGENTS.md
 
 # lavish review artifacts
 .lavish/
+
+# cloudflare worker
+worker/spotify/node_modules/
+worker/spotify/.wrangler/
+worker/spotify/.dev.vars
