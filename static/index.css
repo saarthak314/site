@@ -1803,10 +1803,6 @@ blockquote p {
     var(--bg);
 }
 
-.gutters {
-  display: none;
-}
-
 .rail--annotated {
   position: relative;
 }
@@ -1889,63 +1885,61 @@ blockquote p {
   display: inline-block;
 }
 
-@media (min-width: 1400px) {
-  .gutters {
-    --gutter-gap: 40px;
-    --gutter-w: min(200px, calc(50vw - 540px - var(--gutter-gap) - 16px));
-    display: block;
+/* hex-dump glitches: a small patch of memory flashes in a margin now and then */
+
+.hexpatch {
+  animation: hexpatch var(--hold, 1.5s) steps(1, end) 1 both;
+  color: rgb(180 163 230 / 0.34);
+  font-family: var(--art);
+  font-size: 10px;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  line-height: 1.5;
+  margin: 0;
+  pointer-events: none;
+  position: fixed;
+  user-select: none;
+  white-space: pre;
+  will-change: opacity, transform;
+  z-index: 0;
+}
+
+@keyframes hexpatch {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0);
   }
 
-  .gutter {
-    bottom: 0;
-    color: rgb(242 240 234 / 0.17);
-    font-family: var(--art);
-    font-size: 10px;
-    font-variant-ligatures: none;
-    letter-spacing: 0;
-    line-height: 1.5;
-    margin: 0;
-    mask-image: linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);
-    overflow: hidden;
-    pointer-events: none;
-    position: fixed;
-    top: 0;
-    user-select: none;
-    white-space: pre;
-    width: var(--gutter-w);
-    z-index: 0;
+  8% {
+    opacity: 0.35;
+    transform: translate(2px, 0);
   }
 
-  .gutter--left {
-    left: calc(50vw - 540px - var(--gutter-gap) - var(--gutter-w));
+  14%,
+  70% {
+    opacity: 1;
+    transform: none;
   }
 
-  .gutter--right {
-    right: calc(50vw - 540px - var(--gutter-gap) - var(--gutter-w));
+  78% {
+    opacity: 0.3;
+    transform: translate(3px, 0);
   }
 
-  .gutter__tag {
-    background: rgb(22 21 26 / 0.9);
-    border: 1px solid var(--line-soft);
-    color: rgb(242 240 234 / 0.4);
-    font-family: var(--art);
-    font-size: 11px;
-    line-height: 1.5;
-    padding: 1px 6px;
-    pointer-events: none;
-    position: fixed;
-    user-select: none;
+  84%,
+  92% {
+    opacity: 1;
+    transform: none;
   }
 
-  .gutter__tag--left {
-    left: calc(50vw - 540px - var(--gutter-gap) - var(--gutter-w) + 10px);
-    top: 63vh;
+  100% {
+    opacity: 0;
   }
+}
 
-  .gutter__tag--right {
-    right: calc(50vw - 540px - var(--gutter-gap) - var(--gutter-w) + 10px);
-    top: 19vh;
+@media (prefers-reduced-motion: reduce) {
+  .hexpatch {
+    display: none;
   }
 }
 
@@ -2000,12 +1994,15 @@ blockquote p {
 /* now playing: a worker answers with the spotify track, the browser prints it */
 
 .now {
+  background: rgb(143 127 196 / 0.09);
+  border: 1px solid rgb(180 163 230 / 0.28);
   margin-top: 26px;
+  padding: 11px 12px 12px;
 }
 
 .now__label {
   align-items: center;
-  color: var(--ink-3);
+  color: var(--accent-2);
   display: flex;
   font-family: var(--mono);
   font-size: 12.5px;
@@ -2016,17 +2013,17 @@ blockquote p {
 }
 
 .now__label::after {
-  border-top: 1px solid var(--line-soft);
+  border-top: 1px solid rgb(180 163 230 / 0.3);
   content: "";
   flex: 1;
 }
 
 .now--playing .now__state {
-  color: var(--accent);
+  color: var(--accent-soft);
 }
 
 .now__pre {
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-family: var(--art);
   font-size: 12.5px;
   font-variant-ligatures: none;
@@ -2038,7 +2035,7 @@ blockquote p {
 }
 
 .now__mark {
-  color: var(--accent);
+  color: var(--accent-soft);
 }
 
 .now__title {
@@ -2051,15 +2048,15 @@ blockquote p {
 }
 
 .now__meta {
-  color: var(--ink-3);
+  color: var(--ink-2);
 }
 
 .now__meter {
-  color: var(--accent-2);
+  color: var(--accent);
 }
 
 .now__eq {
-  color: var(--accent);
+  color: var(--accent-soft);
   display: inline-block;
 }
 

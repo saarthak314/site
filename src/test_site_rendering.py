@@ -121,7 +121,6 @@ class TestSiteRendering(unittest.TestCase):
       "circular code 413x",
       'class="city city--panic"',
       'class="rail__readout"',
-      'class="gutters"',
       'class="portrait-bracket"',
       "PAGE_FAULT_IN_NONPAGED_AREA",
       "obsidian",

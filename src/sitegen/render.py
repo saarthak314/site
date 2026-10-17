@@ -10,7 +10,7 @@ from markupsafe import Markup
 
 from sitegen.city import city_layers
 from sitegen.marks import mark_svg
-from sitegen.panic import hexdump, load_panels, panic_layers
+from sitegen.panic import load_panels, panic_layers
 
 HOME_TITLE = "sλrthak // systems, models, machines"
 
@@ -59,8 +59,6 @@ class TemplateRenderer:
       or f"© {date.today().year} sarthak tomar. {footer_phrase}",
       readout=_readout_markup(getattr(page, "rail_readout", ())),
       bracket=_bracket(getattr(page, "bracket", ())) if annotated else "",
-      gutter_left=hexdump(2, 160, 0x8054C8A0) if annotated else "",
-      gutter_right=hexdump(3, 160, 0x80400000) if annotated else "",
       structured_data=_structured_data(page, values.get("config")),
     )
     output = self.environment.get_template(page.template).render(**values)

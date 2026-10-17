@@ -90,10 +90,9 @@
     // Characters per line follow the rail's width and the block's font size.
     const columns = () => {
       const size = parseFloat(window.getComputedStyle(pre).fontSize) || 12;
-      const span = box.parentElement ? box.parentElement.clientWidth : pre.clientWidth;
-      return Math.max(20, Math.min(60, Math.floor(span / (size * 0.6))));
+      return Math.max(20, Math.min(60, Math.floor(pre.clientWidth / (size * 0.6))));
     };
-    const cells = 10;
+    const cells = 8;
     const lower = (value) => String(value || "").toLowerCase();
     const clip = (text, width) =>
       text.length > width ? text.slice(0, width - 2).trimEnd() + ".." : text;
@@ -143,8 +142,9 @@
         return;
       }
       const track = data.track;
-      const width = columns();
+      box.hidden = false;
       pre.replaceChildren();
+      const width = columns();
       label.textContent = data.playing
         ? "spotify // playing"
         : data.played_at
@@ -166,7 +166,7 @@
         meter = node("span", "now__meter", "");
         timeLabel = node("span", "", "");
         const eq = node("span", "now__eq", "");
-        "\u2582\u2585\u2583\u2587\u2584".split("").forEach((glyph, index) => {
+        "\u2582\u2585\u2583\u2587".split("").forEach((glyph, index) => {
           const bar = node("span", "", glyph);
           bar.style.setProperty("--i", index);
           eq.append(bar);
@@ -237,6 +237,88 @@
     }
     document.addEventListener("visibilitychange", sync);
   });
+
+  // The rail readout's vitals change on every visit: uptime days, load averages,
+  // the meter percentages (bars redrawn to match) and the temperature.
+  document.querySelectorAll(".rail__readout").forEach((readout) => {
+    const between = (low, high) => low + Math.floor(Math.random() * (high - low + 1));
+    const load = () => (0.08 + Math.random() * 1.4).toFixed(2);
+    const ranges = { mem: [38, 86], swap: [0, 9], cpu: [3, 57] };
+    const walker = document.createTreeWalker(readout, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach((node) => {
+      let text = node.nodeValue;
+      text = text.replace(/uptime (\d+)y(?: \d+d)?/g, (_, years) => "uptime " + years + "y " + between(1, 29) + "d");
+      text = text.replace(/load \d+\.\d+ \d+\.\d+ \d+\.\d+/g, () => "load " + load() + " " + load() + " " + load());
+      text = text.replace(/temp \d+c/g, () => "temp " + between(34, 61) + "c");
+      text = text.replace(/(\w+) ([\u2593\u2591]+) (\d+)%/g, (_, word, bar) => {
+        const range = ranges[word] || [5, 95];
+        const percent = between(range[0], range[1]);
+        const filled = Math.round((percent / 100) * bar.length);
+        return word + " " + "\u2593".repeat(filled) + "\u2591".repeat(bar.length - filled) + " " + percent + "%";
+      });
+      if (text !== node.nodeValue) node.nodeValue = text;
+    });
+  });
+
+  // Hex-dump glitches: on annotated pages a small patch of memory dump flashes in
+  // a side margin for a second or two every so often. Never over the text, never
+  // on narrow screens, never under reduced motion, and nothing while hidden.
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+  if (document.body.classList.contains("page--annotated") && !calm.matches) {
+    const rand = (n) => Math.floor(Math.random() * n);
+    const hex = (digits) => {
+      let out = "";
+      for (let i = 0; i < digits; i += 1) out += "0123456789abcdef"[rand(16)];
+      return out;
+    };
+    const glyphs = "..........MZ.@#$%&*+=-_/|<>?!~^";
+    const dump = (lines, cols) => {
+      let address = 0x80400000 + rand(0x4000) * 8;
+      const rows = [];
+      for (let i = 0; i < lines; i += 1) {
+        let ascii = "";
+        for (let c = 0; c < 8; c += 1) ascii += glyphs[rand(glyphs.length)];
+        const row = address.toString(16).padStart(8, "0") + " " + hex(4) + " " + hex(4) + " " + hex(4) + " " + hex(4) + " " + ascii;
+        rows.push(row.slice(0, cols));
+        address += 8;
+      }
+      return rows.join("\n");
+    };
+    let timer = 0;
+    const flash = () => {
+      timer = 0;
+      if (document.hidden) return;
+      const margin = (window.innerWidth - 1080) / 2;
+      if (margin >= 96) {
+        const width = Math.min(220, margin - 28);
+        const lines = 5 + rand(5);
+        const height = lines * 15;
+        const patch = document.createElement("pre");
+        patch.className = "hexpatch";
+        patch.setAttribute("aria-hidden", "true");
+        patch.textContent = dump(lines, Math.floor(width / 6));
+        const slack = Math.max(1, margin - width - 28);
+        const left = Math.random() < 0.5 ? 14 + rand(slack) : window.innerWidth - margin + 14 + rand(slack);
+        patch.style.left = left + "px";
+        patch.style.top = 40 + rand(Math.max(1, window.innerHeight - height - 80)) + "px";
+        patch.style.setProperty("--hold", (1 + Math.random()).toFixed(2) + "s");
+        patch.addEventListener("animationend", () => patch.remove());
+        document.body.appendChild(patch);
+      }
+      timer = window.setTimeout(flash, 6000 + rand(8000));
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        if (timer) window.clearTimeout(timer);
+        timer = 0;
+      } else if (!timer) {
+        timer = window.setTimeout(flash, 2000 + rand(4000));
+      }
+    });
+    timer = window.setTimeout(flash, 3000 + rand(5000));
+  }
 
   // Ships over the footer city. Each ship is one CSS transform animation on its
   // own element; this scheduler only decides when and where the next one appears.

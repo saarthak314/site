@@ -811,7 +811,6 @@ class TestAboutTemplate(TemplateRenderingTestCase):
     self.assertIn('class="city" aria-hidden="true" data-city', html)
     self.assertNotIn("city--panic", html)
     self.assertNotIn("rail__readout", html)
-    self.assertNotIn('class="gutters"', html)
 
   def test_about_can_switch_to_the_panic_footer_with_annotations(self) -> None:
     about = page(
@@ -854,8 +853,7 @@ class TestAboutTemplate(TemplateRenderingTestCase):
       '$ <span class="readout__cursor">_</span></pre>',
       html,
     )
-    self.assertIn('<div class="gutters" aria-hidden="true">', html)
-    self.assertIn('<pre class="gutter gutter--left">8054c8a0 ', html)
+    self.assertNotIn("gutter", html)
     self.assertNotIn("data-now", html)
 
   def test_rails_print_the_now_playing_box_only_when_an_endpoint_is_set(self) -> None:

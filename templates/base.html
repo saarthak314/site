@@ -69,13 +69,5 @@
     {% block main %}{% endblock %}
 
     {% include "partials/footer.html" %}
-    {% if page.annotations is defined and page.annotations %}
-    <div class="gutters" aria-hidden="true">
-      <pre class="gutter gutter--left">{{ gutter_left }}</pre>
-      <pre class="gutter gutter--right">{{ gutter_right }}</pre>
-      <span class="gutter__tag gutter__tag--left">errorCode</span>
-      <span class="gutter__tag gutter__tag--right">errorCode</span>
-    </div>
-    {% endif %}
   </body>
 </html>
