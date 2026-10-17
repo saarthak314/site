@@ -149,8 +149,10 @@
         title.rel = "noopener";
       }
       pre.append(title, "\n");
+      // Artists always; the album only when the whole line fits the rail.
       const artists = lower((track.artists || []).join(", "));
-      pre.append(node("span", "now__meta", clip(artists + (track.album ? " // " + lower(track.album) : ""))));
+      const withAlbum = track.album ? artists + " // " + lower(track.album) : artists;
+      pre.append(node("span", "now__meta", clip(withAlbum.length <= width ? withAlbum : artists)));
       meter = null;
       if (data.playing && data.progress_ms != null && track.duration_ms) {
         meter = node("span", "now__meter", "");
