@@ -151,6 +151,7 @@
           ? "spotify // last played " + ago(data.played_at)
           : "spotify // paused";
       box.classList.toggle("now--playing", Boolean(data.playing));
+      document.dispatchEvent(new CustomEvent("now-playing", { detail: { playing: Boolean(data.playing) } }));
       const title = node(track.url ? "a" : "span", "now__title", clip(lower(track.title), width - 2));
       if (track.url) {
         title.href = track.url;
@@ -238,28 +239,151 @@
     document.addEventListener("visibilitychange", sync);
   });
 
-  // The rail readout's vitals change on every visit: uptime days, load averages,
-  // the meter percentages (bars redrawn to match) and the temperature.
+  // The rail readout is alive. Its vitals follow what the visitor does on the
+  // page (scrolling, moving, typing, clicking), drift on their own, spike on
+  // random events, and the music process follows the spotify block. Only text
+  // nodes change, every two seconds, and only while the readout is on screen.
   document.querySelectorAll(".rail__readout").forEach((readout) => {
-    const between = (low, high) => low + Math.floor(Math.random() * (high - low + 1));
-    const load = () => (0.08 + Math.random() * 1.4).toFixed(2);
-    const ranges = { mem: [38, 86], swap: [0, 9], cpu: [3, 57] };
+    const between = (low, high) => low + Math.random() * (high - low);
+    const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
+    const calmer = window.matchMedia("(prefers-reduced-motion: reduce)");
     const walker = document.createTreeWalker(readout, NodeFilter.SHOW_TEXT);
     const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach((node) => {
-      let text = node.nodeValue;
-      text = text.replace(/uptime (\d+)y(?: \d+d)?/g, (_, years) => "uptime " + years + "y " + between(1, 29) + "d");
-      text = text.replace(/load \d+\.\d+ \d+\.\d+ \d+\.\d+/g, () => "load " + load() + " " + load() + " " + load());
-      text = text.replace(/temp \d+c/g, () => "temp " + between(34, 61) + "c");
-      text = text.replace(/(\w+) ([\u2593\u2591]+) (\d+)%/g, (_, word, bar) => {
-        const range = ranges[word] || [5, 95];
-        const percent = between(range[0], range[1]);
-        const filled = Math.round((percent / 100) * bar.length);
-        return word + " " + "\u2593".repeat(filled) + "\u2591".repeat(bar.length - filled) + " " + percent + "%";
+    while (walker.nextNode()) nodes.push({ node: walker.currentNode, source: walker.currentNode.nodeValue });
+    const days = Math.floor(between(1, 30));
+    const vitals = {
+      activity: between(0, 2),
+      cpu: between(6, 28),
+      load: [0, 0, 0],
+      mem: between(44, 72),
+      swap: between(0, 4),
+      temp: 0,
+    };
+    vitals.load = vitals.load.map(() => (vitals.cpu / 100) * 2.2 + between(-0.1, 0.1));
+    vitals.temp = 36 + vitals.cpu * 0.22;
+    const states = {};
+    const original = {};
+    nodes.forEach(({ source }) => {
+      source.replace(/^\d{3}\s+(\S+)\s+(running|sleeping)$/gm, (_, name, state) => {
+        original[name] = state;
+        return _;
       });
-      if (text !== node.nodeValue) node.nodeValue = text;
     });
+    const meters = { mem: () => vitals.mem, swap: () => vitals.swap, cpu: () => vitals.cpu };
+    const bar = (length, percent) => {
+      const filled = Math.round((percent / 100) * length);
+      return "\u2593".repeat(filled) + "\u2591".repeat(length - filled);
+    };
+    const paint = () => {
+      nodes.forEach(({ node, source }) => {
+        const text = source
+          .replace(/uptime (\d+)y(?: \d+d)?/g, (_, years) => "uptime " + years + "y " + days + "d")
+          .replace(/load \d+\.\d+ \d+\.\d+ \d+\.\d+/g, () => "load " + vitals.load.map((value) => value.toFixed(2)).join(" "))
+          .replace(/temp \d+c/g, () => "temp " + Math.round(vitals.temp) + "c")
+          .replace(/(\w+) ([\u2593\u2591]+) (\d+)%/g, (match, word, cells) => {
+            const meter = meters[word];
+            if (!meter) return match;
+            const percent = clamp(Math.round(meter()), 0, 99);
+            return word + " " + bar(cells.length, percent) + " " + percent + "%";
+          })
+          .replace(/^(\d{3}\s+)(\S+)(\s+)(running|sleeping|killed|panicked)$/gm, (match, pid, name, gap) =>
+            states[name] ? pid + name + gap + states[name] : match,
+          );
+        if (node.nodeValue !== text) node.nodeValue = text;
+      });
+    };
+
+    // Activity: a decaying score fed by the visitor's input.
+    const bump = (weight) => {
+      vitals.activity = Math.min(12, vitals.activity + weight);
+    };
+    let lastMove = 0;
+    window.addEventListener("scroll", () => bump(0.5), { passive: true });
+    document.addEventListener(
+      "pointermove",
+      () => {
+        const now = Date.now();
+        if (now - lastMove > 150) {
+          lastMove = now;
+          bump(0.25);
+        }
+      },
+      { passive: true },
+    );
+    document.addEventListener("keydown", () => bump(1.2));
+    document.addEventListener("pointerdown", () => bump(1.5));
+    document.addEventListener("now-playing", (event) => {
+      states["music.service"] = event.detail && event.detail.playing ? "running" : "sleeping";
+      paint();
+    });
+
+    let lastTick = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      const seconds = Math.min(5, (now - lastTick) / 1000);
+      lastTick = now;
+      vitals.activity *= Math.pow(0.55, seconds);
+      const target = 6 + Math.min(72, vitals.activity * 9) + between(-3, 3);
+      vitals.cpu += (target - vitals.cpu) * 0.5;
+      if (Math.random() < 0.06) vitals.cpu += between(15, 35); // a random event
+      vitals.cpu = clamp(vitals.cpu, 2, 99);
+      const busy = (vitals.cpu / 100) * 2.2;
+      vitals.load[0] += (busy - vitals.load[0]) * 0.35;
+      vitals.load[1] += (busy - vitals.load[1]) * 0.12;
+      vitals.load[2] += (busy - vitals.load[2]) * 0.04;
+      vitals.mem = clamp(vitals.mem + between(-0.6, 0.9) + (vitals.activity > 2 ? 0.4 : 0), 35, 92);
+      vitals.swap = clamp(vitals.swap + between(-0.3, 0.3) + (vitals.mem > 82 ? 0.5 : -0.15), 0, 14);
+      vitals.temp += (36 + vitals.cpu * 0.22 - vitals.temp) * 0.2;
+      paint();
+    };
+
+    // Random events: a process flips state for a while, then settles back.
+    const names = Object.keys(original).filter((name) => name !== "music.service");
+    let flipTimer = 0;
+    const flip = () => {
+      flipTimer = 0;
+      if (!names.length) return;
+      const name = names[Math.floor(Math.random() * names.length)];
+      states[name] = original[name] === "running" ? "sleeping" : "running";
+      paint();
+      window.setTimeout(() => {
+        delete states[name];
+        paint();
+      }, 4000 + Math.random() * 10000);
+      flipTimer = window.setTimeout(flip, 15000 + Math.random() * 30000);
+    };
+
+    let timer = 0;
+    let visible = false;
+    const sync = () => {
+      const running = visible && !document.hidden;
+      if (running && !timer) {
+        lastTick = Date.now();
+        timer = window.setInterval(tick, calmer.matches ? 10000 : 2000);
+        if (!flipTimer) flipTimer = window.setTimeout(flip, 8000 + Math.random() * 20000);
+      } else if (!running && timer) {
+        window.clearInterval(timer);
+        window.clearTimeout(flipTimer);
+        timer = 0;
+        flipTimer = 0;
+      }
+    };
+    paint();
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            visible = entry.isIntersecting;
+          });
+          sync();
+        },
+        { rootMargin: "80px 0px" },
+      ).observe(readout);
+    } else {
+      visible = true;
+      sync();
+    }
+    document.addEventListener("visibilitychange", sync);
   });
 
   // Hex-dump glitches: on annotated pages a small patch of memory dump flashes in
