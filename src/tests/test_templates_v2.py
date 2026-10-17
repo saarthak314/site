@@ -884,6 +884,7 @@ class TestAboutTemplate(TemplateRenderingTestCase):
         '<div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
         html,
       )
+      self.assertIn('<p class="now__label"><span class="now__state"></span></p>', html)
       self.assertIn(
         '<pre class="now__pre" aria-label="playing on spotify"></pre>', html
       )

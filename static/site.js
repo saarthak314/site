@@ -85,11 +85,18 @@
   document.querySelectorAll("[data-now]").forEach((box) => {
     const endpoint = box.dataset.now;
     const pre = box.querySelector(".now__pre");
-    if (!endpoint || !pre || !window.fetch) return;
-    const width = 36;
-    const cells = 12;
+    const label = box.querySelector(".now__state");
+    if (!endpoint || !pre || !label || !window.fetch) return;
+    // Characters per line follow the rail's width and the block's font size.
+    const columns = () => {
+      const size = parseFloat(window.getComputedStyle(pre).fontSize) || 12;
+      const span = box.parentElement ? box.parentElement.clientWidth : pre.clientWidth;
+      return Math.max(20, Math.min(60, Math.floor(span / (size * 0.6))));
+    };
+    const cells = 10;
     const lower = (value) => String(value || "").toLowerCase();
-    const clip = (text) => (text.length > width ? text.slice(0, width - 2).trimEnd() + ".." : text);
+    const clip = (text, width) =>
+      text.length > width ? text.slice(0, width - 2).trimEnd() + ".." : text;
     const clock = (ms) => {
       const seconds = Math.max(0, Math.floor(ms / 1000));
       return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
@@ -126,7 +133,7 @@
       const done = elapsed();
       const filled = duration ? Math.round((done / duration) * cells) : 0;
       meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled);
-      timeLabel.textContent = "  " + clock(done) + " / " + clock(duration) + "  ";
+      timeLabel.textContent = " " + clock(done) + " / " + clock(duration) + " ";
       if (duration && done >= duration) load();
     };
     const render = () => {
@@ -136,23 +143,24 @@
         return;
       }
       const track = data.track;
+      const width = columns();
       pre.replaceChildren();
-      const head = data.playing
+      label.textContent = data.playing
         ? "spotify // playing"
         : data.played_at
           ? "spotify // last played " + ago(data.played_at)
           : "spotify // paused";
-      pre.append(node("span", "now__state", head), "\n");
-      const title = node(track.url ? "a" : "span", "now__title", clip(lower(track.title)));
+      box.classList.toggle("now--playing", Boolean(data.playing));
+      const title = node(track.url ? "a" : "span", "now__title", clip(lower(track.title), width - 2));
       if (track.url) {
         title.href = track.url;
         title.rel = "noopener";
       }
-      pre.append(title, "\n");
+      pre.append(node("span", "now__mark", data.playing ? "\u25b6 " : "\u25b7 "), title, "\n");
       // Artists always; the album only when the whole line fits the rail.
       const artists = lower((track.artists || []).join(", "));
       const withAlbum = track.album ? artists + " // " + lower(track.album) : artists;
-      pre.append(node("span", "now__meta", clip(withAlbum.length <= width ? withAlbum : artists)));
+      pre.append("  ", node("span", "now__meta", clip(withAlbum.length <= width - 2 ? withAlbum : artists, width - 2)));
       meter = null;
       if (data.playing && data.progress_ms != null && track.duration_ms) {
         meter = node("span", "now__meter", "");
@@ -163,7 +171,7 @@
           bar.style.setProperty("--i", index);
           eq.append(bar);
         });
-        pre.append("\n", meter, timeLabel, eq);
+        pre.append("\n  ", meter, timeLabel, eq);
         tick();
       }
       box.hidden = false;

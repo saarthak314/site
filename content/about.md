@@ -3,7 +3,6 @@ date: 2026-08-30
 description: more about sarthak outside work, including interests, equipment, and daily tools.
 footer: panic
 now_playing: https://sarrthak-now.shinero-voldemort.workers.dev/now
-copyright: "© 2026 sarthak tomar // systemworks // circular code 413x"
 annotations: true
 stamp: "circular code 413x"
 bracket:
