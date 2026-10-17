@@ -835,7 +835,10 @@ class TestAboutTemplate(TemplateRenderingTestCase):
     self.assertIn(
       'class="city city--panic" aria-hidden="true" data-city data-scene="panic"', html
     )
-    self.assertIn('class="panic__screen panic__screen--lap"', html)
+    self.assertIn('<pre class="city__layer city__layer--far">', html)
+    self.assertIn('<div class="city__packets"></div>', html)
+    self.assertIn('data-wires="', html)
+    self.assertNotIn("panic__screen", html)
     self.assertIn(
       '<div class="panic__chrome">s<span class="lam">λ</span>rthak</div>', html
     )

@@ -1,14 +1,13 @@
 <footer class="footer footer--city footer--panic">
   <p class="footer__copy"><span>{{ footer_line }}</span></p>
-  <div class="city city--panic" aria-hidden="true" data-city data-scene="panic" style="--city-cols: {{ panic.cols }}">
+  <div class="city city--panic" aria-hidden="true" data-city data-scene="panic" data-wires="{{ panic.wires }}" style="--city-cols: {{ panic.cols }}; --city-rows: {{ panic.rows }}">
     <div class="city__sky"></div>
     {% for panel in panic.panels %}
     <pre class="panic__panel panic__panel--{{ loop.index }}" style="--i: {{ loop.index0 }}.5">{{ panel }}<span class="panic__cover"></span></pre>
     {% endfor %}
+    <pre class="city__layer city__layer--far">{{ panic.far }}</pre>
+    <div class="city__packets"></div>
     <pre class="city__layer city__layer--near">{{ panic.near }}</pre>
-    <div class="panic__screen panic__screen--crt" style="{{ panic.crt }}"><pre>{{ panic.crt_text }}</pre></div>
-    <div class="panic__screen panic__screen--lap" style="{{ panic.lap }}"><pre>{% include "partials/portrait-mini.html" %}</pre></div>
-    <pre class="panic__hexes">{{ panic.hexes }}</pre>
     <span class="panic__tag" style="--i: 0; left: 12%; top: 58%">errorCode</span>
     <span class="panic__tag" style="--i: 1; left: 63%; top: 24%">errorCode</span>
     <span class="panic__tag" style="--i: 2; left: 42%; top: 66%">errorCode</span>

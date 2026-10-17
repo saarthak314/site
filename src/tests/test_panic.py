@@ -2,18 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sitegen.panic import (
-  ALLOWED_GLYPHS,
-  COLS,
-  CRT_SCREEN,
-  LAPTOP,
-  LAPTOP_SCREEN,
-  PC,
-  ROWS,
-  hexdump,
-  load_panels,
-  panic_layers,
-)
+from sitegen.panic import ALLOWED_GLYPHS, COLS, ROWS, load_panels, panic_layers
 
 PANELS = (
   "first panel\n\nPAGE_FAULT_IN_NONPAGED_AREA\n\n*** STOP: 0x00000050",
@@ -27,42 +16,43 @@ class TestPanicScene(unittest.TestCase):
     second = panic_layers(PANELS)
 
     self.assertEqual(str(first.near), str(second.near))
-    self.assertEqual(first.crt, second.crt)
-    self.assertEqual(first.gutter_left, second.gutter_left)
+    self.assertEqual(str(first.far), str(second.far))
+    self.assertEqual(first.wires, second.wires)
 
-  def test_near_layer_has_the_expected_shape_and_only_shipped_glyphs(self) -> None:
+  def test_layers_have_the_expected_shape_and_only_shipped_glyphs(self) -> None:
     scene = panic_layers(PANELS)
-    text = str(scene.near)
-    plain = _strip_tags(text)
-    rows = plain.split("\n")
+    for layer in (scene.near, scene.far):
+      plain = _strip_tags(str(layer))
+      rows = plain.split("\n")
 
+      self.assertEqual(len(rows), ROWS)
+      self.assertTrue(all(len(row) == COLS for row in rows))
+      unexpected = {glyph for glyph in plain if ord(glyph) > 127} - ALLOWED_GLYPHS
+      self.assertFalse(unexpected, f"glyphs outside the font subset: {unexpected}")
     self.assertEqual(scene.cols, COLS)
     self.assertEqual(scene.rows, ROWS)
-    self.assertEqual(len(rows), ROWS)
-    self.assertTrue(all(len(row) == COLS for row in rows))
-    unexpected = {glyph for glyph in plain if ord(glyph) > 127} - ALLOWED_GLYPHS
-    self.assertFalse(unexpected, f"glyphs outside the font subset: {unexpected}")
 
-  def test_scene_places_machines_screens_and_lag_patches(self) -> None:
+  def test_scene_has_poles_wires_birds_packet_lanes_and_lag_patches(self) -> None:
     scene = panic_layers(PANELS)
-    text = str(scene.near)
+    near = str(scene.near)
+    far = str(scene.far)
 
-    self.assertIn('class="disc"', text)
-    self.assertEqual(text.count('class="led"'), scene.leds)
-    self.assertEqual(scene.leds, 4)
+    self.assertIn('class="pole"', near)
+    self.assertIn('class="ins"', near)
+    self.assertIn('class="can"', near)
+    self.assertIn('class="wire"', near)
+    self.assertIn('class="wire wire--fan"', near)
+    self.assertIn('class="bird"', near)
+    self.assertIn('class="lamp"', far)
+    self.assertIn('class="star"', far)
     self.assertEqual(scene.patches, 3)
-    self.assertRegex(scene.crt, r"^--c: \d+; --r: \d+; --w: 20; --h: 6$")
-    self.assertRegex(scene.lap, r"^--c: \d+; --r: \d+; --w: 36; --h: 11$")
-    self.assertEqual(len(scene.crt_text.split("\n")), 30)
-
-  def test_machine_sprites_are_rectangular_with_screens_inside(self) -> None:
-    for art, (row, col, width, height) in ((PC, CRT_SCREEN), (LAPTOP, LAPTOP_SCREEN)):
-      lines = art.splitlines()
-      for offset in range(height):
-        line = lines[row + offset]
-        self.assertEqual(line[col : col + width], " " * width)
-        self.assertNotEqual(line[col - 1], " ")
-        self.assertNotEqual(line[col + width], " ")
+    lanes = scene.wires.split(";")
+    self.assertGreaterEqual(len(lanes), 6)
+    for lane in lanes:
+      r0, c0, r1, c1, sag = lane.split(",")
+      self.assertLess(int(c0), int(c1))
+      self.assertTrue(0 <= int(r0) < ROWS and 0 <= int(r1) < ROWS)
+      self.assertGreater(float(sag), 0)
 
   def test_panels_are_escaped_and_stop_codes_marked(self) -> None:
     scene = panic_layers(("<script>PAGE_FAULT_IN_NONPAGED_AREA\n*** STOP: 0x50",))
@@ -81,16 +71,6 @@ class TestPanicScene(unittest.TestCase):
       (content_dir / "_panic.txt").write_text("one\nline two\n---\n\ntwo\n---\n")
 
       self.assertEqual(load_panels(content_dir), ("one\nline two", "two"))
-
-  def test_hexdump_is_plain_ascii_with_addresses(self) -> None:
-    dump = hexdump(1, 4, 0x80400000)
-    rows = dump.split("\n")
-
-    self.assertEqual(len(rows), 4)
-    self.assertTrue(rows[0].startswith("80400000 "))
-    self.assertTrue(rows[1].startswith("80400008 "))
-    self.assertTrue(dump.isascii())
-    self.assertEqual(hexdump(1, 4, 0x80400000), dump)
 
 
 def _strip_tags(text: str) -> str:

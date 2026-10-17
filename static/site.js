@@ -556,13 +556,44 @@
     const between = (low, high) => low + Math.random() * (high - low);
 
     cities.forEach((city) => {
-      // Scenes without a ship lane (the kernel panic) keep the lag patches and jolts.
-      const lane = city.querySelector(".city__ships");
+      // The city spawns ships in its lane; the panic scene spawns packets that
+      // ride its wires. Scenes with neither keep the lag patches and jolts.
+      const lane = city.querySelector(".city__ships") || city.querySelector(".city__packets");
+      const wires = (city.dataset.wires || "")
+        .split(";")
+        .filter(Boolean)
+        .map((lane) => lane.split(",").map(Number));
+      const packets = Boolean(city.querySelector(".city__packets")) && wires.length > 0;
       const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0, shakeTimer: 0 };
-      const maxShips = () => (window.innerWidth > 1400 ? 3 : 2);
+      const maxShips = () => (packets ? 1 : window.innerWidth > 1400 ? 3 : 2);
+      const spawnPacket = () => {
+        const [r0, c0, r1, c1, sag] = wires[Math.floor(Math.random() * wires.length)];
+        const packet = document.createElement("span");
+        const backwards = Math.random() < 0.5;
+        packet.className = "packet";
+        packet.setAttribute("aria-hidden", "true");
+        packet.textContent = "\u25aa";
+        packet.style.setProperty("--r0", backwards ? r1 : r0);
+        packet.style.setProperty("--c0", backwards ? c1 : c0);
+        packet.style.setProperty("--r1", backwards ? r0 : r1);
+        packet.style.setProperty("--c1", backwards ? c0 : c1);
+        packet.style.setProperty("--sag", sag);
+        packet.style.setProperty("--dur", between(9, 14).toFixed(1) + "s");
+        packet.addEventListener("animationend", () => {
+          packet.remove();
+          state.alive -= 1;
+        });
+        lane.appendChild(packet);
+        state.alive += 1;
+      };
       const spawn = () => {
         state.timer = 0;
         if (!lane || state.paused || !state.visible) return;
+        if (packets) {
+          if (state.alive < maxShips()) spawnPacket();
+          schedule(between(10000, 18000));
+          return;
+        }
         if (state.alive < maxShips()) {
           const ship = document.createElement("pre");
           const left = Math.random() < 0.5;
