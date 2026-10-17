@@ -1,6 +1,7 @@
 import hashlib
 from collections.abc import Mapping
 from datetime import date
+from html import escape
 from types import SimpleNamespace
 from typing import Any
 
@@ -9,6 +10,7 @@ from markupsafe import Markup
 
 from sitegen.city import city_layers
 from sitegen.marks import mark_svg
+from sitegen.panic import hexdump, load_panels, panic_layers
 
 HOME_TITLE = "sλrthak // systems, models, machines"
 
@@ -37,19 +39,28 @@ class TemplateRenderer:
       values.setdefault("total_pages", 1)
       values.setdefault("previous_url", None)
       values.setdefault("next_url", None)
+    footer_phrase = (
+      "built by hand." if page.template == "blog.html" else "built with love."
+    )
+    annotated = bool(getattr(page, "annotations", False))
     values.update(
       page=page,
       page_mark=Markup(mark_svg(page.route, 56)),
       city=city_layers(),
+      panic=self._panic() if getattr(page, "footer", "city") == "panic" else None,
       content=Markup(page.rendered.html),
       current_year=date.today().year,
       document_title=_document_title(page),
       meta_description=_meta_description(page),
       og_type="article" if page.template == "blog.html" else "website",
-      body_class=_body_class(page.template),
-      footer_phrase=(
-        "built by hand." if page.template == "blog.html" else "built with love."
-      ),
+      body_class=_body_class(page.template) + (" page--annotated" if annotated else ""),
+      footer_phrase=footer_phrase,
+      footer_line=getattr(page, "copyright", None)
+      or f"© {date.today().year} sarthak tomar. {footer_phrase}",
+      readout=_readout_markup(getattr(page, "rail_readout", ())),
+      bracket=_bracket(getattr(page, "bracket", ())) if annotated else "",
+      gutter_left=hexdump(2, 160, 0x8054C8A0) if annotated else "",
+      gutter_right=hexdump(3, 160, 0x80400000) if annotated else "",
       structured_data=_structured_data(page, values.get("config")),
     )
     output = self.environment.get_template(page.template).render(**values)
@@ -124,6 +135,11 @@ class TemplateRenderer:
       raise ValueError("archive and tag rendering require a site configuration")
     return self.config
 
+  def _panic(self) -> Any:
+    content_dir = getattr(self.config, "content_dir", None)
+    panels = load_panels(content_dir) if content_dir is not None else ()
+    return panic_layers(panels)
+
   def _site_url(self) -> str:
     return self._config().site_url.rstrip("/")
 
@@ -178,6 +194,38 @@ def _document_title(page: Any) -> str:
 
 def _meta_description(page: Any) -> str:
   return page.description
+
+
+BRACKET_COLS = 38
+BRACKET_ROWS = 17
+
+
+def _readout_markup(lines: Any) -> Markup:
+  """The rail readout: escaped lines, log lines brightened, a blinking prompt."""
+  rendered: list[str] = []
+  for line in lines:
+    text = escape(line, quote=False)
+    if line == "$ _":
+      text = '$ <span class="readout__cursor">_</span>'
+    elif line.startswith(("+ ", "*** ")):
+      text = f'<span class="readout__hi">{text}</span>'
+    rendered.append(text)
+  return Markup("\n".join(rendered))
+
+
+def _bracket(labels: Any) -> str:
+  """A box-drawing frame for the portrait with up to two labels set in its rules."""
+  top_label, bottom_label = (tuple(labels) + ("", ""))[:2]
+  inner = BRACKET_COLS - 2
+  top = f" {top_label} " if top_label else ""
+  bottom = f" {bottom_label} " if bottom_label else ""
+  top_rule = (top + "─" * inner)[:inner]
+  bottom_rule = ("─" * inner)[: max(0, inner - len(bottom) - 1)] + bottom + "─"
+  bottom_rule = bottom_rule[-inner:]
+  rows = [f"┌{top_rule}┐"]
+  rows += [f"│{' ' * inner}│"] * (BRACKET_ROWS - 2)
+  rows.append(f"└{bottom_rule}┘")
+  return "\n".join(rows)
 
 
 def _body_class(template_name: str) -> str:

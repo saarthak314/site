@@ -45,6 +45,12 @@ class PageMetadata:
   noindex: bool = False
   experience: tuple[ExperienceItem, ...] = ()
   projects: tuple[ProjectItem, ...] = ()
+  footer: str = "city"
+  copyright: str | None = None
+  rail_readout: tuple[str, ...] = ()
+  annotations: bool = False
+  stamp: str | None = None
+  bracket: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -79,3 +85,9 @@ class Page:
   noindex: bool
   experience: tuple[ExperienceItem, ...] = ()
   projects: tuple[ProjectItem, ...] = ()
+  footer: str = "city"
+  copyright: str | None = None
+  rail_readout: tuple[str, ...] = ()
+  annotations: bool = False
+  stamp: str | None = None
+  bracket: tuple[str, ...] = ()

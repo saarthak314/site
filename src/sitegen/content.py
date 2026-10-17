@@ -178,6 +178,12 @@ class ContentRepository:
       noindex=metadata.noindex or metadata.draft,
       experience=metadata.experience,
       projects=metadata.projects,
+      footer=metadata.footer,
+      copyright=metadata.copyright,
+      rail_readout=metadata.rail_readout,
+      annotations=metadata.annotations,
+      stamp=metadata.stamp,
+      bracket=metadata.bracket,
     )
 
   def _ensure_unique_routes(self, pages: list[Page]) -> None:
@@ -263,6 +269,12 @@ class ContentRepository:
           "template": page.template,
           "aliases": page.aliases,
           "noindex": page.noindex,
+          "footer": page.footer,
+          "copyright": page.copyright,
+          "rail_readout": page.rail_readout,
+          "annotations": page.annotations,
+          "stamp": page.stamp,
+          "bracket": page.bracket,
           "experience": [
             {
               "role": item.role,

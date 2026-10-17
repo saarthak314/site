@@ -141,7 +141,10 @@ def render_quadrants(
   return cells
 
 
-def to_html(cells: list[list[tuple[str, str]]], cols: int, label: str) -> str:
+def to_html(
+  cells: list[list[tuple[str, str]]], cols: int, label: str, *, bare: bool = False
+) -> str:
+  """Markup for the cells: a labelled ``<pre>``, or just its rows when ``bare``."""
   palette = {color: f"p{index}" for index, color in enumerate((*INK, *LAVENDER))}
   lines = []
   for row in cells:
@@ -167,6 +170,8 @@ def to_html(cells: list[list[tuple[str, str]]], cols: int, label: str) -> str:
       )
     lines.append("".join(parts).rstrip())
   body = "\n".join(lines)
+  if bare:
+    return body + "\n"
   return (
     f'<pre class="portrait" role="img" aria-label="{html.escape(label)}" '
     f'style="--cols: {cols}">{body}</pre>\n'
@@ -178,6 +183,15 @@ def main() -> None:
   parser.add_argument("--mode", choices=("shades", "quadrants"), default="quadrants")
   parser.add_argument("--cols", type=int, default=160)
   parser.add_argument("--output", type=Path, default=OUTPUT)
+  parser.add_argument(
+    "--crop",
+    help="keep only rows START:END of the portrait (for the laptop screen)",
+  )
+  parser.add_argument(
+    "--bare",
+    action="store_true",
+    help="emit the rows without the <pre> wrapper (to include inside a screen)",
+  )
   args = parser.parse_args()
   rows = round(args.cols * 0.5)
   cells = (
@@ -185,10 +199,14 @@ def main() -> None:
     if args.mode == "shades"
     else render_quadrants(args.cols, rows)
   )
+  if args.crop:
+    start, end = (int(part) for part in args.crop.split(":"))
+    cells = cells[start:end]
   markup = to_html(
     cells,
     args.cols,
     "ascii portrait of asuka langley soryu, chin on her hand, unimpressed",
+    bare=args.bare,
   )
   args.output.write_text(markup)
   spans = markup.count("<span")

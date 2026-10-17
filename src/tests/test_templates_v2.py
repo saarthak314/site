@@ -52,8 +52,20 @@ def page(
   experience: tuple[SimpleNamespace, ...] = (),
   projects: tuple[SimpleNamespace, ...] = (),
   body: SimpleNamespace | None = None,
+  footer: str = "city",
+  copyright: str | None = None,
+  rail_readout: tuple[str, ...] = (),
+  annotations: bool = False,
+  stamp: str | None = None,
+  bracket: tuple[str, ...] = (),
 ) -> SimpleNamespace:
   return namespace(
+    footer=footer,
+    copyright=copyright,
+    rail_readout=rail_readout,
+    annotations=annotations,
+    stamp=stamp,
+    bracket=bracket,
     title=title,
     date=published,
     updated=updated,
@@ -794,3 +806,51 @@ class TestAboutTemplate(TemplateRenderingTestCase):
     self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', html)
     self.assertIn('href="mailto:hey@sarrthak.com">email</a>', html)
     self.assertIn('<a href="/about/" aria-current="page">about</a>', html)
+    self.assertIn('class="city" aria-hidden="true" data-city', html)
+    self.assertNotIn("city--panic", html)
+    self.assertNotIn("rail__readout", html)
+    self.assertNotIn('class="gutters"', html)
+
+  def test_about_can_switch_to_the_panic_footer_with_annotations(self) -> None:
+    about = page(
+      title="about me",
+      route="/about/",
+      template="about.html",
+      body=rendered("<p>hey.</p>"),
+      footer="panic",
+      copyright="© 2026 sarthak tomar // systemworks // circular code 413x",
+      rail_readout=("node 03 // sarthak-mbp", "", "+ memory fragments", "<b>", "$ _"),
+      annotations=True,
+      stamp="circular code 413x",
+      bracket=("id: [mirror // - _ - ]", "0x8054C8A2 // asuka"),
+    )
+
+    html = self.render(about, namespace(config=config()))
+
+    self.assertIn('<body class="about-page page--annotated">', html)
+    self.assertIn('<footer class="footer footer--city footer--panic">', html)
+    self.assertIn("© 2026 sarthak tomar // systemworks // circular code 413x", html)
+    self.assertNotIn("built with love.", html)
+    self.assertIn(
+      'class="city city--panic" aria-hidden="true" data-city data-scene="panic"', html
+    )
+    self.assertIn('class="panic__screen panic__screen--lap"', html)
+    self.assertIn(
+      '<div class="panic__chrome">s<span class="lam">λ</span>rthak</div>', html
+    )
+    self.assertIn(
+      '<pre class="portrait-bracket" aria-hidden="true">┌ id: [mirror // - _ - ] ', html
+    )
+    self.assertIn(" 0x8054C8A2 // asuka ─┘", html)
+    self.assertIn(
+      '<span class="rail__stamp" aria-hidden="true">circular code 413x</span>', html
+    )
+    self.assertIn('<span class="rail__tag" aria-hidden="true">errorCode</span>', html)
+    self.assertIn(
+      '<pre class="rail__readout" aria-hidden="true">node 03 // sarthak-mbp\n\n'
+      '<span class="readout__hi">+ memory fragments</span>\n&lt;b&gt;\n'
+      '$ <span class="readout__cursor">_</span></pre>',
+      html,
+    )
+    self.assertIn('<div class="gutters" aria-hidden="true">', html)
+    self.assertIn('<pre class="gutter gutter--left">8054c8a0 ', html)

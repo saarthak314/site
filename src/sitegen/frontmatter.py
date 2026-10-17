@@ -13,6 +13,7 @@ from sitegen.models import (
   ProjectItem,
 )
 
+FOOTERS = frozenset({"city", "panic"})
 LEGACY_DELIMITER = re.compile(r"(?m)^-----[ \t]*$")
 YAML_DELIMITER = re.compile(r"(?m)^---[ \t]*$")
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:[-_][a-z0-9]+)*$")
@@ -57,6 +58,15 @@ def parse_document(path: Path) -> ParsedDocument:
   noindex = raw.get("noindex", False)
   if not isinstance(noindex, bool):
     raise ContentError(f"{path}: noindex must be true or false")
+  footer = raw.get("footer", "city")
+  if footer not in FOOTERS:
+    raise ContentError(f"{path}: footer must be one of {', '.join(sorted(FOOTERS))}")
+  annotations = raw.get("annotations", False)
+  if not isinstance(annotations, bool):
+    raise ContentError(f"{path}: annotations must be true or false")
+  bracket = _lines_value(path, raw.get("bracket"), "bracket")
+  if len(bracket) > 2:
+    raise ContentError(f"{path}: bracket takes at most two labels")
   metadata = PageMetadata(
     title=title,
     date=published,
@@ -72,6 +82,12 @@ def parse_document(path: Path) -> ParsedDocument:
     noindex=noindex,
     experience=_experience_value(path, raw.get("experience")),
     projects=_projects_value(path, raw.get("projects")),
+    footer=footer,
+    copyright=_optional_string(path, raw, "copyright"),
+    rail_readout=_lines_value(path, raw.get("rail_readout"), "rail_readout"),
+    annotations=annotations,
+    stamp=_optional_string(path, raw, "stamp"),
+    bracket=bracket,
   )
   return ParsedDocument(metadata=metadata, body=body)
 
@@ -291,6 +307,22 @@ def _string_list(path: Path, value: object, label: str) -> tuple[str, ...]:
     if normalized not in items:
       items.append(normalized)
   return tuple(items)
+
+
+def _lines_value(path: Path, value: object, label: str) -> tuple[str, ...]:
+  """A list of display lines; blank lines are allowed so groups can be spaced."""
+  if value is None:
+    return ()
+  if not isinstance(value, list):
+    raise ContentError(f"{path}: {label} must be a list of strings")
+  lines: list[str] = []
+  for candidate in value:
+    if candidate is None:
+      candidate = ""
+    if not isinstance(candidate, str):
+      raise ContentError(f"{path}: every {label} value must be a string")
+    lines.append(candidate.rstrip())
+  return tuple(lines)
 
 
 def _validate_http_url(path: Path, value: str, label: str) -> None:

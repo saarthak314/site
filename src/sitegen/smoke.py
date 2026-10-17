@@ -18,7 +18,7 @@ class RouteExpectation:
 
 DEFAULT_EXPECTATIONS = (
   RouteExpectation("/", 200, ("systems, models, machines",)),
-  RouteExpectation("/about/", 200, ("about me", "current setup")),
+  RouteExpectation("/about/", 200, ("about me", "current setup", "circular code 413x")),
   RouteExpectation("/blogs/", 200, ("all writings",)),
   RouteExpectation("/blogs/make_cool_stuff/", 200, ("make cool stuff",)),
   RouteExpectation("/feed.xml", 200, ("<rss",)),

@@ -176,13 +176,13 @@
     const between = (low, high) => low + Math.random() * (high - low);
 
     cities.forEach((city) => {
+      // Scenes without a ship lane (the kernel panic) keep the lag patches and jolts.
       const lane = city.querySelector(".city__ships");
-      if (!lane) return;
       const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0, shakeTimer: 0 };
       const maxShips = () => (window.innerWidth > 1400 ? 3 : 2);
       const spawn = () => {
         state.timer = 0;
-        if (state.paused || !state.visible) return;
+        if (!lane || state.paused || !state.visible) return;
         if (state.alive < maxShips()) {
           const ship = document.createElement("pre");
           const left = Math.random() < 0.5;
@@ -240,7 +240,7 @@
         state.paused = !running;
         city.classList.toggle("city--paused", !running);
         if (running) {
-          if (!state.timer) schedule(state.alive ? between(5000, 9000) : 1500);
+          if (lane && !state.timer) schedule(state.alive ? between(5000, 9000) : 1500);
           if (!state.glitchTimer) state.glitchTimer = window.setTimeout(jolt, between(100000, 200000));
           if (!state.shakeTimer) state.shakeTimer = window.setTimeout(shake, between(3000, 8000));
           if (!state.budgeted && document.getAnimations) {

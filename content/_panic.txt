@@ -1,0 +1,57 @@
+a problem has been detected and sarthak has been
+shut down to prevent damage to your evening.
+
+PAGE_FAULT_IN_NONPAGED_AREA
+
+if this is the first time you have seen this screen,
+restart. if it appears again, follow these steps:
+
+check that any new hardware or software is properly
+installed. if this is a new installation, ask the
+manufacturer for any updates you might need.
+
+if problems continue, disable or remove any newly
+installed hardware or software. disable memory
+options such as caching or shadowing.
+
+technical information:
+
+*** STOP: 0x00000050 (0xBAD0B148, 0x00000001,
+0x8054C8A2, 0x00000000)
+
+*** matmul.sys // address 8054C8A2 base at
+80400000 // datestamp 2026
+---
+a problem has been detected and
+sarthak has been shut down.
+
+IRQL_NOT_LESS_OR_EQUAL
+
+technical information:
+
+*** STOP: 0x0000000A (0x00000016,
+0x00000002, 0x00000000, 0x804F5A2B)
+
+*** ocaml.sys // address 804F5A2B
+base at 80400000 // datestamp 2026
+
+beginning dump of physical memory
+physical memory dump complete.
+contact your system administrator
+for further assistance.
+---
+a problem has been detected and
+sarthak has been shut down.
+
+KMODE_EXCEPTION_NOT_HANDLED
+
+technical information:
+
+*** STOP: 0x0000001E (0xC0000005,
+0x8054C8A2, 0x00000000, 0x00000000)
+
+*** cooking.sys // address 8054C8A2
+base at 80400000 // datestamp 2026
+
+beginning dump of physical memory
+physical memory dump complete.

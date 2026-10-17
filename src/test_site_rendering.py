@@ -103,7 +103,7 @@ class TestSiteRendering(unittest.TestCase):
       if element.tag.endswith("loc")
     ]
 
-    self.assertIn('<body class="about-page">', about)
+    self.assertIn('<body class="about-page page--annotated">', about)
     self.assertIn('<h1 class="about-heading">about me</h1>', about)
     for marker in (
       "outside work",
@@ -118,6 +118,12 @@ class TestSiteRendering(unittest.TestCase):
       "zed",
       "ghostty + tmux",
       "herdr",
+      "circular code 413x",
+      'class="city city--panic"',
+      'class="rail__readout"',
+      'class="gutters"',
+      'class="portrait-bracket"',
+      "PAGE_FAULT_IN_NONPAGED_AREA",
       "obsidian",
       "codex as primary, claude code as secondary",
     ):
@@ -128,7 +134,11 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn(">about</a>", header)
     self.assertIn(">rss</a>", header)
     self.assertNotIn('rel="me"', header)
-    self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', about)
+    self.assertIn(
+      '<aside class="rail rail--home rail--annotated" aria-label="elsewhere">', about
+    )
+    self.assertIn('class="city" aria-hidden="true" data-city', home)
+    self.assertNotIn("city--panic", home)
     self.assertIn('rel="me">github</a>', about)
     self.assertIn("https://sarrthak.com/about/", locations)
     self.assertIn("[about](/about/)", llms)

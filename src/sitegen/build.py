@@ -102,6 +102,8 @@ class SiteBuilder:
         raise ContentError(f"{config.static_dir}: static directory not found")
       shutil.copytree(config.static_dir, staging_dir, dirs_exist_ok=True)
       config_digest = _config_digest(config, options)
+      panic_path = config.content_dir / "_panic.txt"
+      panic_digest = panic_path.read_bytes() if panic_path.is_file() else b""
 
       archive_page = index.page_for_route("/blogs/")
       for page in index.pages:
@@ -115,6 +117,7 @@ class SiteBuilder:
           context_digest,
           page.source_path.read_bytes(),
           page.rendered.html,
+          panic_digest if page.footer == "panic" else b"",
         )
         if page.route == "/blogs/":
           pagination = index.pagination[0]
