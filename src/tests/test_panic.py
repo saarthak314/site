@@ -5,6 +5,10 @@ from pathlib import Path
 from sitegen.panic import (
   ALLOWED_GLYPHS,
   COLS,
+  CRT_SCREEN,
+  LAPTOP,
+  LAPTOP_SCREEN,
+  PC,
   ROWS,
   hexdump,
   load_panels,
@@ -44,11 +48,21 @@ class TestPanicScene(unittest.TestCase):
     text = str(scene.near)
 
     self.assertIn('class="disc"', text)
-    self.assertEqual(text.count('class="led"'), 2)
+    self.assertEqual(text.count('class="led"'), scene.leds)
+    self.assertEqual(scene.leds, 4)
     self.assertEqual(scene.patches, 3)
-    self.assertRegex(scene.crt, r"^--c: \d+; --r: \d+; --w: 16; --h: 5$")
+    self.assertRegex(scene.crt, r"^--c: \d+; --r: \d+; --w: 20; --h: 6$")
     self.assertRegex(scene.lap, r"^--c: \d+; --r: \d+; --w: 36; --h: 11$")
     self.assertEqual(len(scene.crt_text.split("\n")), 30)
+
+  def test_machine_sprites_are_rectangular_with_screens_inside(self) -> None:
+    for art, (row, col, width, height) in ((PC, CRT_SCREEN), (LAPTOP, LAPTOP_SCREEN)):
+      lines = art.splitlines()
+      for offset in range(height):
+        line = lines[row + offset]
+        self.assertEqual(line[col : col + width], " " * width)
+        self.assertNotEqual(line[col - 1], " ")
+        self.assertNotEqual(line[col + width], " ")
 
   def test_panels_are_escaped_and_stop_codes_marked(self) -> None:
     scene = panic_layers(("<script>PAGE_FAULT_IN_NONPAGED_AREA\n*** STOP: 0x50",))

@@ -11,7 +11,8 @@ bracket:
 # placeholder readout: every line below is yours to rewrite (max 36 characters each)
 rail_readout:
   - "node 03 // sarthak-mbp"
-  - "uptime 20y // load 0.42 0.38 0.41"
+  - "uptime since 2006-02-28"
+  - "load 0.42 0.38 0.41"
   - "mem ▓▓▓▓▓▓▓░░░ 68%  swap ░░░░ 0%"
   - "cpu ▓▓░░░░░░░░ 21%  temp 41c"
   - ""

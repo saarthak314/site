@@ -250,7 +250,23 @@
     const walker = document.createTreeWalker(readout, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push({ node: walker.currentNode, source: walker.currentNode.nodeValue });
-    const days = Math.floor(between(1, 30));
+    // "uptime since YYYY-MM-DD" becomes the exact calendar span to today.
+    const uptime = (iso) => {
+      const [year, month, day] = iso.split("-").map(Number);
+      const now = new Date();
+      let years = now.getFullYear() - year;
+      let months = now.getMonth() + 1 - month;
+      let days = now.getDate() - day;
+      if (days < 0) {
+        months -= 1;
+        days += new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+      }
+      if (months < 0) {
+        years -= 1;
+        months += 12;
+      }
+      return years + "y " + months + "mo " + days + "d";
+    };
     const vitals = {
       activity: between(0, 2),
       cpu: between(6, 28),
@@ -277,7 +293,7 @@
     const paint = () => {
       nodes.forEach(({ node, source }) => {
         const text = source
-          .replace(/uptime (\d+)y(?: \d+d)?/g, (_, years) => "uptime " + years + "y " + days + "d")
+          .replace(/uptime since (\d{4}-\d{2}-\d{2})/g, (_, iso) => "uptime " + uptime(iso))
           .replace(/load \d+\.\d+ \d+\.\d+ \d+\.\d+/g, () => "load " + vitals.load.map((value) => value.toFixed(2)).join(" "))
           .replace(/temp \d+c/g, () => "temp " + Math.round(vitals.temp) + "c")
           .replace(/(\w+) ([\u2593\u2591]+) (\d+)%/g, (match, word, cells) => {

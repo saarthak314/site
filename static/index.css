@@ -1994,15 +1994,15 @@ blockquote p {
 /* now playing: a worker answers with the spotify track, the browser prints it */
 
 .now {
-  background: rgb(143 127 196 / 0.09);
-  border: 1px solid rgb(180 163 230 / 0.28);
+  background: rgb(143 127 196 / 0.05);
+  border: 1px solid rgb(180 163 230 / 0.16);
   margin-top: 26px;
   padding: 11px 12px 12px;
 }
 
 .now__label {
   align-items: center;
-  color: var(--accent-2);
+  color: var(--ink-3);
   display: flex;
   font-family: var(--mono);
   font-size: 12.5px;
@@ -2013,13 +2013,13 @@ blockquote p {
 }
 
 .now__label::after {
-  border-top: 1px solid rgb(180 163 230 / 0.3);
+  border-top: 1px solid rgb(180 163 230 / 0.18);
   content: "";
   flex: 1;
 }
 
 .now--playing .now__state {
-  color: var(--accent-soft);
+  color: var(--accent-2);
 }
 
 .now__pre {
@@ -2035,7 +2035,7 @@ blockquote p {
 }
 
 .now__mark {
-  color: var(--accent-soft);
+  color: var(--accent-2);
 }
 
 .now__title {
@@ -2048,15 +2048,15 @@ blockquote p {
 }
 
 .now__meta {
-  color: var(--ink-2);
+  color: var(--ink-3);
 }
 
 .now__meter {
-  color: var(--accent);
+  color: var(--accent-2);
 }
 
 .now__eq {
-  color: var(--accent-soft);
+  color: var(--accent);
   display: inline-block;
 }
 
