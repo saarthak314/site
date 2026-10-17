@@ -548,9 +548,11 @@ main {
 
 .home-project__name {
   color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 0.2em;
 }
 
-a.home-project__name,
 .home-experience__company {
   text-decoration: underline;
 }
@@ -569,6 +571,10 @@ a.home-project__name,
   color: var(--ink-3);
   font-size: 12.5px;
   white-space: nowrap;
+}
+
+.home-experience__period {
+  color: var(--ink-2);
 }
 
 .home-project__description,
