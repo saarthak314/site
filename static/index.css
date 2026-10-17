@@ -1023,13 +1023,15 @@ blockquote p {
 
 .about-article {
   margin-top: 1.6rem;
-  max-width: 64ch;
+}
+
+.about-article p {
+  max-width: 68ch;
 }
 
 .about-article > p:first-child {
   color: var(--ink);
   font-size: 1.04rem;
-  max-width: 60ch;
 }
 
 .about-article h2 {
@@ -1039,33 +1041,50 @@ blockquote p {
 }
 
 .about-article h3 {
+  align-items: center;
   color: var(--ink-3);
+  display: flex;
   font-family: var(--mono);
   font-size: 12.5px;
   font-weight: 400;
+  gap: 12px;
   letter-spacing: 0.04em;
-  margin: 1.6rem 0 0.2rem;
+  line-height: 1.5;
+  margin: 1.9rem 0 0;
   scroll-margin-top: 1.5rem;
 }
 
-.about-article ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.about-article h3::after {
+  border-top: 1px solid var(--line-soft);
+  content: "";
+  flex: 1;
 }
 
-.about-article li {
-  border-bottom: 1px solid var(--line-soft);
-  column-gap: 16px;
+.about-article h2 + h3 {
+  margin-top: 1rem;
+}
+
+.about-article dl {
   display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr);
+  grid-template-columns: 10rem minmax(0, 1fr);
+  margin: 0;
+}
+
+.about-article dt,
+.about-article dd {
+  border-bottom: 1px solid var(--line-soft);
+  margin: 0;
   overflow-wrap: anywhere;
   padding: 7px 0;
 }
 
-.about-article li strong {
+.about-article dt {
   color: var(--ink-3);
-  font-weight: 400;
+  padding-right: 16px;
+}
+
+.about-article dd > p {
+  margin: 0;
 }
 
 /* 404 */
@@ -1699,6 +1718,21 @@ main,
   .writings-header,
   .about-header {
     padding-top: 12px;
+  }
+
+  .about-article dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .about-article dt {
+    border-bottom: 0;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    padding: 10px 0 0;
+  }
+
+  .about-article dd {
+    padding: 0 0 10px;
   }
 
   .footer {

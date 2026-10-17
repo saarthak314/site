@@ -240,6 +240,18 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
     self.assertNotIn('loading="lazy" decoding="async" src="/video', rendered.html)
     self.assertNotIn("<img", rendered.html)
 
+  def test_renders_definition_lists_as_dl_terms_and_details(self) -> None:
+    rendered = self.renderer.render(
+      "### hardware\n\ncomputer\n: 14-inch macbook pro\n\ndisplay\n: dell s2725dc\n"
+    )
+
+    self.assertIn(
+      "<dl>\n<dt>computer</dt>\n<dd>14-inch macbook pro</dd>\n"
+      "<dt>display</dt>\n<dd>dell s2725dc</dd>\n</dl>",
+      rendered.html,
+    )
+    self.assertNotIn("<li>", rendered.html)
+
   def test_reads_svg_dimensions_from_attributes_or_viewbox(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       sized = Path(temp_dir) / "sized.svg"

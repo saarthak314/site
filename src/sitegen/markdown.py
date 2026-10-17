@@ -15,6 +15,7 @@ from markdown_it.common.utils import escapeHtml
 from markdown_it.renderer import RendererHTML
 from markdown_it.rules_inline.state_inline import StateInline
 from markdown_it.token import Token
+from mdit_py_plugins.deflist import deflist_plugin
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import TextLexer, get_lexer_by_name
@@ -79,6 +80,7 @@ class MarkdownRenderer:
         "typographer": False,
       },
     ).enable("table")
+    markdown.use(deflist_plugin)
     markdown.inline.ruler.before("escape", "mathjax", _mathjax_rule)
     markdown.inline.add_terminator_char("$")
     markdown.add_render_rule("mathjax", _render_mathjax)

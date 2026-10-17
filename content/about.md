@@ -13,18 +13,40 @@ cooking, cars, lifting, sports, nonfiction, anime & manga. music is basically al
 
 ### hardware
 
-- **computer** 14-inch macbook pro with m5 pro
-- **display** dell s2725dc
-- **keyboard** aula f75
-- **mouse** razer deathadder essential
-- **audio** airpods pro 2
+computer
+: 14-inch macbook pro with m5 pro
+
+display
+: dell s2725dc
+
+keyboard
+: aula f75
+
+mouse
+: razer deathadder essential
+
+audio
+: airpods pro 2
 
 ### software
 
-- **system** macos + zsh
-- **browser** zen
-- **editor** zed
-- **terminal** ghostty + tmux
-- **agent sessions** herdr
-- **notes** obsidian
-- **agents** codex as primary, claude code as secondary
+system
+: macos + zsh
+
+browser
+: zen
+
+editor
+: zed
+
+terminal
+: ghostty + tmux
+
+agent sessions
+: herdr
+
+notes
+: obsidian
+
+agents
+: codex as primary, claude code as secondary
