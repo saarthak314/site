@@ -110,10 +110,11 @@ class TestMarkdownRenderer(unittest.TestCase):
       image_dir.joinpath("test-960w.png").write_bytes(png)
 
       rendered = MarkdownRenderer(static_dir=static_dir).render(
-        "![test](/images/test.png)"
+        "![lead](/images/test.png)\n\n![test](/images/test.png)"
       )
 
-    self.assertIn('loading="lazy"', rendered.html)
+    self.assertIn('alt="lead" loading="eager" fetchpriority="high"', rendered.html)
+    self.assertIn('alt="test" loading="lazy"', rendered.html)
     self.assertIn('decoding="async"', rendered.html)
     self.assertIn('width="4"', rendered.html)
     self.assertIn('height="3"', rendered.html)
@@ -191,7 +192,7 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
 
     self.assertIn(
       '<figure class="figure"><img src="/images/die.webp" alt="a die" '
-      'loading="lazy" decoding="async" />'
+      'loading="eager" fetchpriority="high" decoding="async" />'
       "<figcaption>six faces, one line</figcaption></figure>",
       rendered.html,
     )

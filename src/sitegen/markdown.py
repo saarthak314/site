@@ -153,6 +153,7 @@ class MarkdownRenderer:
         index = closing_index + 1
 
   def _add_image_attributes(self, tokens: Sequence[Token]) -> None:
+    first_image = True
     for token in _walk_tokens(tokens):
       if token.type != "image":
         continue
@@ -167,7 +168,12 @@ class MarkdownRenderer:
             if dimensions is not None:
               token.meta["dimensions"] = dimensions
         continue
-      token.attrSet("loading", "lazy")
+      if first_image:
+        token.attrSet("loading", "eager")
+        token.attrSet("fetchpriority", "high")
+        first_image = False
+      else:
+        token.attrSet("loading", "lazy")
       token.attrSet("decoding", "async")
 
       if self.static_dir is None:

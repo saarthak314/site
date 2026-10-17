@@ -596,8 +596,10 @@ a.home-project__name,
   transition: opacity 0.25s var(--ease);
 }
 
-.writing-list:hover .writing-row:not(:hover) {
-  opacity: 0.45;
+@media (hover: hover) {
+  .writing-list:hover .writing-row:not(:hover) {
+    opacity: 0.45;
+  }
 }
 
 .writing-row__date,
@@ -807,6 +809,12 @@ code {
 .blog-article pre:hover .copy,
 .blog-article pre .copy:focus-visible {
   opacity: 1;
+}
+
+@media (hover: none) {
+  .blog-article pre .copy {
+    opacity: 0.7;
+  }
 }
 
 .blog-article pre .copy:hover {
@@ -1192,6 +1200,8 @@ blockquote p {
     linear-gradient(to top, rgb(143 127 196 / 0.04), transparent 45%),
     linear-gradient(to right, rgb(0 0 0 / 0.35), transparent 22%, transparent 78%, rgb(0 0 0 / 0.35));
   inset: 0;
+  mask-image: linear-gradient(to bottom, transparent, #000 38%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 38%);
   position: absolute;
 }
 

@@ -145,7 +145,7 @@ class TestSiteRendering(unittest.TestCase):
     )
     self.assertRegex(
       randomness,
-      r'<figure class="figure"><img src="/images/reddit-meme\.webp" alt="random number" loading="lazy" decoding="async" width="\d+" height="\d+"[^>]*/>',
+      r'<figure class="figure"><img src="/images/reddit-meme\.webp" alt="random number" loading="eager" fetchpriority="high" decoding="async" width="\d+" height="\d+"[^>]*/>',
     )
     self.assertNotIn("highlight.min.js", randomness)
     self.assertIn('class="k">', randomness)
