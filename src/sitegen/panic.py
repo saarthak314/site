@@ -62,7 +62,7 @@ def _wire(canvas: Canvas, wire: Wire, cls: str) -> None:
 
 
 def _pole(
-  canvas: Canvas, col: int, top: int, ground: int, *, arms: int
+  canvas: Canvas, col: int, top: int, ground: int, *, arms: int, can: bool = True
 ) -> list[tuple[int, int]]:
   """A pole with crossarms and insulators; returns the insulator cells."""
   points: list[tuple[int, int]] = []
@@ -75,16 +75,24 @@ def _pole(
     for offset in (-6, 0, 6):
       canvas.put(row - 1, col + offset, "▪", "ins")
       points.append((row - 1, col + offset))
-  for row, text in ((top + 4, "▐██▌"), (top + 5, "▐██▌"), (top + 6, "▝▀▀▘")):
-    for offset, glyph in enumerate(text):
-      canvas.put(row, col + 1 + offset, glyph, "can")
+  if can:
+    for row, text in ((top + 4, "▐██▌"), (top + 5, "▐██▌"), (top + 6, "▝▀▀▘")):
+      for offset, glyph in enumerate(text):
+        canvas.put(row, col + 1 + offset, glyph, "can")
   canvas.put(ground, col, "┴", "pole")
   return points
 
 
-def _fan(canvas: Canvas, top: int, col: int, direction: int, ground: int) -> None:
-  """Steep lines radiating from a pole top to the frame edges and the ground."""
-  for slope in (1.0, 0.5, 0.33, 0.2):
+def _fan(
+  canvas: Canvas,
+  top: int,
+  col: int,
+  direction: int,
+  ground: int,
+  slopes: tuple[float, ...] = (0.33,),
+) -> None:
+  """Straight lines from a pole top toward the frame edge and the ground."""
+  for slope in slopes:
     c = col
     previous = top
     while 0 <= c + direction < canvas.cols:
@@ -108,15 +116,12 @@ def _lamp(canvas: Canvas, col: int, top: int, ground: int) -> None:
 
 
 def _far(rng: random.Random) -> Canvas:
+  """The distance: a street lamp, one long faint wire, a few stars."""
   canvas = Canvas(COLS, ROWS)
   ground = ROWS - 1
   _lamp(canvas, 40, 9, ground)
-  points = _pole(canvas, 170, 9, ground, arms=2)
-  for (row, col), left_row in zip(points[:3], (6, 8, 10), strict=False):
-    _wire(canvas, (left_row, 0, row, col, 1.4), "wire")
-  for row, col in points[3:6]:
-    _wire(canvas, (row, col, row + 2, COLS - 1, 1.0), "wire")
-  for _ in range(14):
+  _wire(canvas, (8, 0, 11, COLS - 1, 1.6), "wire")
+  for _ in range(10):
     row, col = rng.randint(0, 6), rng.randrange(COLS)
     if canvas.glyph(row, col) == " ":
       canvas.put(row, col, rng.choice(".'"), "star")
@@ -128,22 +133,19 @@ def _near(rng: random.Random) -> tuple[Canvas, list[Wire]]:
   ground = ROWS - 1
   for col in range(COLS):
     canvas.put(ground, col, "─", "ground")
-  left = _pole(canvas, 62, 7, ground, arms=3)
-  right = _pole(canvas, 150, 6, ground, arms=3)
+  # Seven wires in all: three between the poles, one off each edge, one drop
+  # line from the left pole, and the faint one in the far layer.
+  left = _pole(canvas, 62, 7, ground, arms=1, can=False)
+  right = _pole(canvas, 150, 6, ground, arms=1)
   spans: list[Wire] = []
   for index, ((lr, lc), (rr, rc)) in enumerate(zip(left, right, strict=False)):
-    wire: Wire = (lr, lc, rr, rc, 1.2 + (index % 3) * 0.3)
+    wire: Wire = (lr, lc, rr, rc, 1.2 + index * 0.4)
     _wire(canvas, wire, "wire")
     spans.append(wire)
-  for index, (lr, lc) in enumerate(left[:6]):
-    _wire(canvas, (lr, lc, lr - 2 + (index % 2) * 3, 0, 0.8), "wire")
-  for index, (rr, rc) in enumerate(right[:6]):
-    _wire(canvas, (rr, rc, rr - 1 + (index % 3), COLS - 1, 0.8), "wire")
+  _wire(canvas, (left[0][0], left[0][1], left[0][0] + 1, 0, 0.9), "wire")
+  _wire(canvas, (right[2][0], right[2][1], right[2][0] + 1, COLS - 1, 0.9), "wire")
   _fan(canvas, 7, 62, -1, ground)
-  _fan(canvas, 7, 62, 1, ground)
-  _fan(canvas, 6, 150, -1, ground)
-  _fan(canvas, 6, 150, 1, ground)
-  for col in (84, 86, 91, 118, 121):
+  for col in (88, 91, 121):
     row = next((r for r in range(ROWS) if canvas.glyph(r, col) in "─_"), None)
     if row and canvas.glyph(row - 1, col) == " ":
       canvas.put(row - 1, col, "v", "bird")

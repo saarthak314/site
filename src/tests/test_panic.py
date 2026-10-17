@@ -37,17 +37,14 @@ class TestPanicScene(unittest.TestCase):
     near = str(scene.near)
     far = str(scene.far)
 
-    self.assertIn('class="pole"', near)
-    self.assertIn('class="ins"', near)
-    self.assertIn('class="can"', near)
-    self.assertIn('class="wire"', near)
-    self.assertIn('class="wire wire--fan"', near)
-    self.assertIn('class="bird"', near)
-    self.assertIn('class="lamp"', far)
-    self.assertIn('class="star"', far)
+    # Cells inside a lag patch carry a "glitch " prefix on their class.
+    for cls in ("pole", "ins", "can", "wire", "wire wire--fan", "bird"):
+      self.assertRegex(near, rf'class="(glitch )?{cls}"')
+    self.assertRegex(far, r'class="(glitch )?lamp"')
+    self.assertRegex(far, r'class="(glitch )?star"')
     self.assertEqual(scene.patches, 3)
     lanes = scene.wires.split(";")
-    self.assertGreaterEqual(len(lanes), 6)
+    self.assertEqual(len(lanes), 3)
     for lane in lanes:
       r0, c0, r1, c1, sag = lane.split(",")
       self.assertLess(int(c0), int(c1))
