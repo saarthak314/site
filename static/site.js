@@ -229,14 +229,26 @@
         ticker = 0;
       }
     };
+    const storageKey = "sarrthak.now";
+    const remember = (data) => {
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(data));
+      } catch {
+        // storage can be full or disabled; the block still works without it
+      }
+    };
+    // The page head started the first request before this script ran.
+    let early = window.__now instanceof Promise ? window.__now : null;
     const load = async () => {
       if (poller) window.clearTimeout(poller);
       poller = 0;
       try {
-        const response = await fetch(endpoint, { mode: "cors" });
-        if (!response.ok) throw new Error(String(response.status));
+        const response = early ? await early : await fetch(endpoint, { mode: "cors" });
+        early = null;
+        if (!response || !response.ok) throw new Error(String(response && response.status));
         state = { data: await response.json(), receivedAt: Date.now() };
         failures = 0;
+        remember(state.data);
         render();
       } catch {
         failures += 1;
@@ -256,6 +268,19 @@
         stop();
       }
     };
+    // Show the last known track at once; the fresh answer replaces it.
+    try {
+      const stored = JSON.parse(window.localStorage.getItem(storageKey) || "null");
+      if (stored && stored.track && !state) {
+        state = { data: { ...stored, playing: false, progress_ms: null }, receivedAt: Date.now() };
+        render();
+        label.textContent = "spotify // syncing";
+        state = null;
+      }
+    } catch {
+      // ignore unreadable storage
+    }
+    if (early) load();
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(
         (entries) => {

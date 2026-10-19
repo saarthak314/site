@@ -58,6 +58,10 @@
     {% if page.rendered.has_code %}
     <link rel="stylesheet" href="/code.css" />
     {% endif %}
+    {% if page.now_playing is defined and page.now_playing %}
+    <link rel="preconnect" href="{{ now_origin }}" crossorigin />
+    <script>window.__now = fetch("{{ page.now_playing }}", { mode: "cors" }).catch(function () { return null; });</script>
+    {% endif %}
     <link href="/index.css" rel="stylesheet" />
     <script defer src="/site.js"></script>
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />

@@ -867,6 +867,7 @@ class TestAboutTemplate(TemplateRenderingTestCase):
     )
     self.assertNotIn("gutter", html)
     self.assertNotIn("data-now", html)
+    self.assertNotIn("window.__now", html)
 
   def test_rails_print_the_now_playing_box_only_when_an_endpoint_is_set(self) -> None:
     about = page(
@@ -890,6 +891,14 @@ class TestAboutTemplate(TemplateRenderingTestCase):
     )
 
     for html in (about_html, home_html):
+      self.assertIn(
+        '<link rel="preconnect" href="https://sarrthak-now.example.workers.dev" crossorigin />',
+        html,
+      )
+      self.assertIn(
+        'window.__now = fetch("https://sarrthak-now.example.workers.dev/now", { mode: "cors" })',
+        html,
+      )
       self.assertIn(
         '<div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
         html,

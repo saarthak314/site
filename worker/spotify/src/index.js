@@ -15,7 +15,7 @@ let token = { value: null, expiresAt: 0 };
 let cached = { body: null, at: 0 };
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const cors = corsHeaders(request.headers.get("Origin"), env);
     if (request.method === "OPTIONS") {
@@ -24,17 +24,65 @@ export default {
     if (request.method !== "GET" || url.pathname !== "/now") {
       return json({ error: "not found" }, 404, cors);
     }
+    const headers = { ...cors, "cache-control": "public, max-age=30, stale-while-revalidate=600" };
     try {
-      if (!cached.body || Date.now() - cached.at > CACHE_MS) {
-        cached = { body: await nowPlaying(env), at: Date.now() };
+      // Warm isolate: answer from memory.
+      if (cached.body && Date.now() - cached.at <= CACHE_MS) {
+        return json(cached.body, 200, headers);
       }
-      return json(cached.body, 200, { ...cors, "cache-control": "public, max-age=30" });
+      // Cold isolate: answer from the edge cache if a recent copy exists there,
+      // and refresh it in the background so the next visitor gets a fresh one.
+      const edge = await edgeCache(url);
+      const hit = edge ? await edge.match(EDGE_KEY) : null;
+      if (hit) {
+        const body = await hit.json();
+        cached = { body, at: Date.now() };
+        if (edge) ctx.waitUntil(refresh(env, edge));
+        return json(body, 200, headers);
+      }
+      const body = await nowPlaying(env);
+      cached = { body, at: Date.now() };
+      if (edge) ctx.waitUntil(storeAtEdge(edge, body));
+      return json(body, 200, headers);
     } catch (error) {
       const message = error && error.message ? error.message : String(error);
       return json({ error: message }, 502, { ...cors, "cache-control": "no-store" });
     }
   },
 };
+
+const EDGE_KEY = "https://now.cache/sarrthak/now";
+
+async function edgeCache() {
+  try {
+    return typeof caches !== "undefined" && caches.default ? caches.default : null;
+  } catch {
+    return null;
+  }
+}
+
+async function storeAtEdge(edge, body) {
+  try {
+    await edge.put(
+      EDGE_KEY,
+      new Response(JSON.stringify(body), {
+        headers: { "content-type": "application/json", "cache-control": `public, max-age=${CACHE_MS / 1000}` },
+      }),
+    );
+  } catch {
+    // the edge cache is best effort
+  }
+}
+
+async function refresh(env, edge) {
+  try {
+    const body = await nowPlaying(env);
+    cached = { body, at: Date.now() };
+    await storeAtEdge(edge, body);
+  } catch {
+    // keep serving the last good answer
+  }
+}
 
 function corsHeaders(origin, env) {
   const allowed = String(env.ALLOWED_ORIGINS || DEFAULT_ORIGINS)
@@ -85,7 +133,8 @@ async function accessToken(env) {
 async function nowPlaying(env) {
   const headers = { authorization: `Bearer ${await accessToken(env)}` };
   const fetchedAt = new Date().toISOString();
-  const current = await fetch(NOW_URL, { headers });
+  // Both calls at once: the recent one is only read if nothing is playing.
+  const [current, recentPromise] = [await fetch(NOW_URL, { headers }), fetch(RECENT_URL, { headers })];
   if (current.status === 200) {
     const data = await current.json();
     if (data && data.item && data.currently_playing_type === "track") {
@@ -102,7 +151,7 @@ async function nowPlaying(env) {
     throw new Error(`spotify currently-playing failed (${current.status})`);
   }
   // Nothing playing, or an ad or podcast: fall back to the last track played.
-  const recent = await fetch(RECENT_URL, { headers });
+  const recent = await recentPromise;
   if (!recent.ok) throw new Error(`spotify recently-played failed (${recent.status})`);
   const data = await recent.json();
   const item = data.items && data.items[0];

@@ -4,6 +4,7 @@ from datetime import date
 from html import escape
 from types import SimpleNamespace
 from typing import Any
+from urllib.parse import urlsplit
 
 from jinja2 import Environment
 from markupsafe import Markup
@@ -58,6 +59,7 @@ class TemplateRenderer:
       footer_line=getattr(page, "copyright", None)
       or f"© {date.today().year} sarthak tomar. {footer_phrase}",
       readout=_readout_markup(getattr(page, "rail_readout", ())),
+      now_origin=_origin(getattr(page, "now_playing", None)),
       bracket=_bracket(getattr(page, "bracket", ())) if annotated else "",
       structured_data=_structured_data(page, values.get("config")),
     )
@@ -196,6 +198,14 @@ def _meta_description(page: Any) -> str:
 
 BRACKET_COLS = 38
 BRACKET_ROWS = 17
+
+
+def _origin(url: Any) -> str:
+  """Scheme and host of a URL, for a preconnect hint."""
+  if not url:
+    return ""
+  parts = urlsplit(str(url))
+  return f"{parts.scheme}://{parts.netloc}" if parts.scheme and parts.netloc else ""
 
 
 def _readout_markup(lines: Any) -> Markup:

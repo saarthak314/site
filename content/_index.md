@@ -3,6 +3,7 @@ date: 2025-12-22
 updated: 2026-08-29
 description: notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
 annotations: true
+now_playing: https://sarrthak-now.shinero-voldemort.workers.dev/now
 stamp: "circular code 413x"
 bracket:
   - "id: [mirror // - _ - ]"
