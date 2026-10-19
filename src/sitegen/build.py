@@ -101,6 +101,7 @@ class SiteBuilder:
       if not config.static_dir.is_dir():
         raise ContentError(f"{config.static_dir}: static directory not found")
       shutil.copytree(config.static_dir, staging_dir, dirs_exist_ok=True)
+      _minify_assets(staging_dir)
       config_digest = _config_digest(config, options)
       panic_path = config.content_dir / "_panic.txt"
       panic_digest = panic_path.read_bytes() if panic_path.is_file() else b""
@@ -285,6 +286,24 @@ def _config_digest(config: SiteConfig, options: BuildOptions) -> str:
     "year": date.today().year,
   }
   return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _minify_assets(root: Path) -> None:
+  """Strip comments and whitespace from shipped scripts and stylesheets.
+
+  Sources stay readable in ``static/``; only the copies in the build shrink.
+  Files already named ``*.min.*`` are left alone.
+  """
+  from rcssmin import cssmin
+  from rjsmin import jsmin
+
+  for path in sorted(root.rglob("*")):
+    if not path.is_file() or ".min." in path.name:
+      continue
+    if path.suffix == ".js":
+      path.write_text(jsmin(path.read_text(encoding="utf-8")), encoding="utf-8")
+    elif path.suffix == ".css":
+      path.write_text(cssmin(path.read_text(encoding="utf-8")), encoding="utf-8")
 
 
 def _hash_values(*values) -> str:

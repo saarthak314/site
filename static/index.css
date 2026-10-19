@@ -2225,6 +2225,11 @@ main,
     order: -1;
   }
 
+  .rail--home .now,
+  .rail--home .rail__readout {
+    max-width: 240px;
+  }
+
   .layout--home main {
     padding-top: 12px;
   }

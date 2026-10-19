@@ -90,6 +90,20 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<p class="writing-row__summary">', archive)
     self.assertNotIn("&lt;- home", archive)
 
+  def test_shipped_script_and_stylesheet_are_minified_copies(self) -> None:
+    script = self.output_dir.joinpath("site.js").read_text()
+    stylesheet = self.output_dir.joinpath("index.css").read_text()
+    source_script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
+    source_stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+
+    self.assertLess(len(script), len(source_script) * 0.8)
+    self.assertLess(len(stylesheet), len(source_stylesheet) * 0.9)
+    self.assertIn("data-now", script)
+    self.assertIn("spawnPacket", script)
+    self.assertIn(".city--panic", stylesheet)
+    self.assertNotIn("Each ship is one CSS transform animation", script)
+    self.assertNotIn("/* ledger */", stylesheet)
+
   def test_about_page_keeps_personal_details_and_setup_discoverable(self) -> None:
     about_path = self.output_dir.joinpath("about/index.html")
     self.assertTrue(about_path.is_file())
@@ -248,7 +262,8 @@ class TestSiteRendering(unittest.TestCase):
   ) -> None:
     robots = self.output_dir.joinpath("robots.txt").read_text()
     llms = self.output_dir.joinpath("llms.txt").read_text()
-    css = self.output_dir.joinpath("index.css").read_text()
+    # the shipped stylesheet is minified; the rules are checked in the source
+    css = PROJECT_ROOT.joinpath("static", "index.css").read_text()
 
     self.assertEqual(
       robots,
@@ -265,7 +280,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn("/fonts/jetbrains-mono-400.woff2", css)
 
   def test_home_listings_use_reflow_safe_grid_boundaries(self) -> None:
-    css = self.output_dir.joinpath("index.css").read_text()
+    css = PROJECT_ROOT.joinpath("static", "index.css").read_text()
     home = self.output_dir.joinpath("index.html").read_text()
 
     self.assertIn('<div class="home-experience__header">', home)
