@@ -173,6 +173,7 @@
       const data = state && state.data;
       if (!data || !data.track) {
         box.hidden = true;
+        box.classList.add("now--off");
         return;
       }
       const track = data.track;
@@ -257,6 +258,7 @@
         failures += 1;
         if (failures >= 2) {
           box.hidden = true;
+          box.classList.add("now--off");
           stop();
           loading = false;
           return;

@@ -1981,7 +1981,18 @@ body > .layout {
   background: rgb(143 127 196 / 0.05);
   border: 1px solid rgb(180 163 230 / 0.16);
   margin-top: 26px;
+  min-height: 118px;
   padding: 11px 12px 12px;
+}
+
+/* the card keeps its place while the worker answers, so nothing below it shifts */
+.now[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
+.now.now--off {
+  display: none;
 }
 
 .now__label {
