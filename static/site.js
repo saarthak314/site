@@ -183,7 +183,7 @@
       label.textContent = data.playing
         ? "spotify // playing"
         : data.played_at
-          ? "spotify // last played " + ago(data.played_at)
+          ? "spotify // played " + ago(data.played_at)
           : "spotify // paused";
       box.classList.toggle("now--playing", Boolean(data.playing));
       document.dispatchEvent(new CustomEvent("now-playing", { detail: { playing: Boolean(data.playing) } }));
