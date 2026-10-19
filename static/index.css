@@ -2113,6 +2113,20 @@ body > .layout {
   color: var(--ink-3);
 }
 
+/* math: MathML rendered at build time, set in the browser's math font */
+
+math {
+  font-size: 1.05em;
+}
+
+math[display="block"] {
+  margin: 0.4rem 0;
+}
+
+.math-source {
+  color: var(--ink-3);
+}
+
 /* motion */
 
 @keyframes rise {

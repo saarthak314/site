@@ -9,6 +9,7 @@ description = "Static site generator for sarrthak.com"
 requires-python = ">=3.11"
 dependencies = [
   "Jinja2>=3.1,<4",
+  "latex2mathml>=3.77,<4",
   "markdown-it-py>=4,<5",
   "mdit-py-plugins>=0.4,<1",
   "Pygments>=2.19,<3",

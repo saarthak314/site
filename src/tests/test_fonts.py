@@ -12,7 +12,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class _TextCollector(HTMLParser):
-  SKIPPED = {"script", "style"}
+  # MathML is set in the browser's math font by design, so it is not checked.
+  SKIPPED = {"script", "style", "math"}
 
   def __init__(self) -> None:
     super().__init__()

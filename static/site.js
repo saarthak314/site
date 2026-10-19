@@ -239,7 +239,10 @@
     };
     // The page head started the first request before this script ran.
     let early = window.__now instanceof Promise ? window.__now : null;
+    let loading = false;
     const load = async () => {
+      if (loading) return;
+      loading = true;
       if (poller) window.clearTimeout(poller);
       poller = 0;
       try {
@@ -255,9 +258,11 @@
         if (failures >= 2) {
           box.hidden = true;
           stop();
+          loading = false;
           return;
         }
       }
+      loading = false;
       schedule();
     };
     const sync = () => {

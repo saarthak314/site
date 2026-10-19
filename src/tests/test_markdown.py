@@ -37,12 +37,19 @@ class TestMarkdownRenderer(unittest.TestCase):
     self.assertFalse(rendered.has_math)
     self.assertTrue(rendered.has_code)
 
-  def test_preserves_mathjax_in_text_without_parsing_its_markdown(self) -> None:
+  def test_renders_math_as_mathml_without_parsing_its_markdown(self) -> None:
     rendered = self.renderer.render("Inline $x_i * y_j$ and display \\[a_b + c_d\\].")
 
-    self.assertIn("$x_i * y_j$", rendered.html)
-    self.assertIn("\\[a_b + c_d\\]", rendered.html)
+    self.assertIn(
+      '<math xmlns="http://www.w3.org/1998/Math/MathML" display="inline"><mrow>'
+      "<msub><mi>x</mi><mi>i</mi></msub>",
+      rendered.html,
+    )
+    self.assertIn(
+      'display="block"><mrow><msub><mi>a</mi><mi>b</mi></msub>', rendered.html
+    )
     self.assertNotIn("<em>", rendered.html)
+    self.assertNotIn("$x_i", rendered.html)
     self.assertTrue(rendered.has_math)
 
   def test_renders_fence_languages_and_tables(self) -> None:

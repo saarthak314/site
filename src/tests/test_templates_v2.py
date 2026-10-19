@@ -325,15 +325,12 @@ class TestSharedLayout(TemplateRenderingTestCase):
     plain_html = self.render(plain_article, namespace(config=config()))
     rich_html = self.render(rich_article, namespace(config=config()))
 
-    self.assertNotIn("mathjax@3.2.2/es5/tex-chtml.js", plain_html)
     self.assertNotIn("highlight.min.js", plain_html)
     self.assertNotIn("/code.css", plain_html)
-    self.assertIn("mathjax@3.2.2/es5/tex-chtml.js", rich_html)
-    self.assertIn(
-      'integrity="sha384-AHAnt9ZhGeHIrydA1Kp1L7FN+2UosbF7RQg6C+9Is/a7kDpQ1684C2iH2VWil6r4"',
-      rich_html,
-    )
-    self.assertIn('crossorigin="anonymous"', rich_html)
+    # math is MathML at build time: no runtime, on any page
+    self.assertNotIn("mathjax", plain_html.lower())
+    self.assertNotIn("mathjax", rich_html.lower())
+    self.assertNotIn("cdn.jsdelivr.net", rich_html)
     self.assertNotIn("highlight.min.js", rich_html)
     self.assertIn("/code.css", rich_html)
 

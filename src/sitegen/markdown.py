@@ -279,8 +279,26 @@ def _render_mathjax(
   options: dict[str, object],
   environment: dict[str, object],
 ) -> str:
+  """TeX math becomes MathML at build time, so pages ship no math runtime."""
   del renderer, options, environment
-  return escapeHtml(tokens[index].content)
+  return render_math(tokens[index].content)
+
+
+def render_math(source: str) -> str:
+  """Convert ``$...$``, ``$$...$$``, ``\\(...\\)`` or ``\\[...\\]`` to MathML."""
+  display = source.startswith("$$") or source.startswith("\\[")
+  for opening, closing in (("$$", "$$"), ("\\[", "\\]"), ("\\(", "\\)"), ("$", "$")):
+    if source.startswith(opening) and source.endswith(closing):
+      tex = source[len(opening) : len(source) - len(closing)].strip()
+      break
+  else:
+    tex = source.strip()
+  try:
+    from latex2mathml.converter import convert
+
+    return convert(tex, display="block" if display else "inline")
+  except Exception:  # noqa: BLE001 (any TeX the converter rejects keeps its source)
+    return f'<code class="math-source">{escapeHtml(source)}</code>'
 
 
 def _render_visually_hidden(
