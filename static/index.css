@@ -2140,9 +2140,11 @@ math[display="block"] {
 
 /* motion */
 
+/* Starts above zero on purpose: Chrome drops fully transparent paints from
+   largest-contentful-paint, which pushed the metric onto a late text repaint. */
 @keyframes rise {
   from {
-    opacity: 0;
+    opacity: 0.3;
     transform: translateY(14px);
   }
 
