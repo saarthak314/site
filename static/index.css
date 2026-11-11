@@ -1,6 +1,6 @@
 /* Hallmark · checked: 2026-11-11 · genre: editorial and atmospheric (inferred; universal gates)
  * floor: 0 FAIL · fixed: 2a, 2b, 7a, 26b, 34, 40 (the cat, city, ships and spectrum drawn as svg and canvas, not text), 48, 63, 67, 73, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
- * finish-review: subagent · 4 findings · 3 resolved, 1 left to the owner (bold phrases in the intro copy)
+ * finish-review: subagent · 4 findings · 4 resolved (bold phrases taken out of the intro copy; section heads at 20px and the gaps between sections varied by the owner)
  * built: the project · redesign: polish · v2.0.0 */
 /* Hallmark · waive 37 · JBM Symbols is a subset file of JetBrains Mono · the city, the ships, the player's disc and rail and the λ in the name load from that 5 KB subset before any code letters */
 /* Hallmark · waive 49b · links inside a post's lists and the writing list, never nav or buttons · each is the author's own title for a real project or post, like the text editor written in c, and wraps with the text around it */
@@ -551,7 +551,7 @@ h3 {
   color: var(--ink);
   display: flex;
   font-family: var(--mono);
-  font-size: 1rem;
+  font-size: 1.25rem;
   font-weight: 400;
   gap: 1ch;
   letter-spacing: 0;
@@ -722,7 +722,7 @@ body.home-page {
 }
 
 .home {
-  --section: 3.5rem; /* between sections */
+  --section: 6rem; /* before writing and projects, the widest break */
   --heading: 1rem; /* from a heading to its list */
   --item: 1.15rem; /* between entries that carry a description */
   --row: 0.55rem; /* between one-line rows */
@@ -731,15 +731,23 @@ body.home-page {
   padding-top: 10px; /* the intro sits close under the name */
 }
 
-.home > section,
-.home > .now-slot {
+.home > section {
   margin-top: var(--section);
 }
 
-/* the untitled links row closes out the lists, so it sits nearer to them
-   than a new section would */
+/* the gaps group the page: experience follows on from the intro, writing and
+   projects open the work, the untitled links row closes it out, and the
+   listening pane sits apart at the end */
+.home > .home-experience {
+  margin-top: calc(var(--section) * 2 / 3);
+}
+
 .home > .socials {
-  margin-top: calc(var(--section) * 0.6);
+  margin-top: calc(var(--section) / 2);
+}
+
+.home > .now-slot {
+  margin-top: calc(var(--section) * 3 / 4);
 }
 
 /* links on the home page carry no underline; they take the accent on hover
@@ -1984,7 +1992,7 @@ math[display="block"] {
   }
 
   .home {
-    --section: 2.75rem;
+    --section: 4rem;
   }
 
   main {

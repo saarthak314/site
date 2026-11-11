@@ -42,8 +42,8 @@ projects:
     tech: [python, agents]
 -----
 
-systems engineer, currently dabbling in **inference systems**, **high perf computing** and **agentic workloads**.
+systems engineer, currently dabbling in inference systems, high perf computing and agentic workloads.
 
-mostly obsessed with the machinery behind intelligence: how a pile of matmuls turns into useful behaviour, how **agents** turn that behaviour into useful work, and how to make the systems around it fast, reliable, and efficient.
+mostly obsessed with the machinery behind intelligence: how a pile of matmuls turns into useful behaviour, how agents turn that behaviour into useful work, and how to make the systems around it fast, reliable, and efficient.
 
 this site is a log of things i'm learning, building, or overthinking. usually the latter.
