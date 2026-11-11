@@ -75,8 +75,8 @@ class TestSiteValidator(unittest.TestCase):
   def test_reports_missing_and_non_absolute_canonical_links(self) -> None:
     missing_path = self.write("index.html", "<html><head></head><body></body></html>")
     relative_path = self.write(
-      "about/index.html",
-      self.html("/about/"),
+      "notes/index.html",
+      self.html("/notes/"),
     )
 
     issues = SiteValidator().validate(self.root)

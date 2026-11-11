@@ -99,16 +99,14 @@ class TestSiteRendering(unittest.TestCase):
     self.assertLess(len(script), len(source_script) * 0.8)
     self.assertLess(len(stylesheet), len(source_stylesheet) * 0.9)
     self.assertIn("data-now", script)
-    self.assertIn("spawnPacket", script)
-    self.assertIn(".city--panic", stylesheet)
+    self.assertIn("ship--left", script)
+    self.assertIn(".city__ships", stylesheet)
+    self.assertNotIn("hexpatch", script + stylesheet)
     self.assertNotIn("Each ship is one CSS transform animation", script)
     self.assertNotIn("/* ledger */", stylesheet)
 
-  def test_about_page_keeps_personal_details_and_setup_discoverable(self) -> None:
-    about_path = self.output_dir.joinpath("about/index.html")
-    self.assertTrue(about_path.is_file())
-
-    about = about_path.read_text()
+  def test_about_route_redirects_home_and_the_header_drops_it(self) -> None:
+    redirect = self.output_dir.joinpath("about/index.html").read_text()
     home = self.output_dir.joinpath("index.html").read_text()
     llms = self.output_dir.joinpath("llms.txt").read_text()
     locations = [
@@ -117,44 +115,28 @@ class TestSiteRendering(unittest.TestCase):
       if element.tag.endswith("loc")
     ]
 
-    self.assertIn('<body class="about-page page--annotated">', about)
-    self.assertIn('<h1 class="about-heading">about me</h1>', about)
-    for marker in (
-      "outside work",
-      "silence rarely wins",
-      "current setup",
-      "14-inch macbook pro with m5 pro",
-      "dell s2725dc",
-      "aula f75",
-      "razer deathadder essential",
-      "airpods pro 2",
-      "zen",
-      "zed",
-      "ghostty + tmux",
-      "herdr",
-      "circular code 413x",
-      'class="city city--panic"',
-      'class="rail__readout"',
-      'class="portrait-bracket"',
-      "PAGE_FAULT_IN_NONPAGED_AREA",
-      "obsidian",
-      "codex as primary, claude code as secondary",
-    ):
-      self.assertIn(marker, about)
-    self.assertIn('<a href="/about/">about</a>', home)
+    self.assertIn('<meta http-equiv="refresh" content="0; url=/" />', redirect)
+    self.assertIn('<meta name="robots" content="noindex, follow" />', redirect)
     header = home[home.index('<header class="site-header">') : home.index("</header>")]
     self.assertIn(">writing</a>", header)
-    self.assertIn(">about</a>", header)
     self.assertIn(">rss</a>", header)
+    self.assertNotIn("/about/", header)
     self.assertNotIn('rel="me"', header)
-    self.assertIn(
-      '<aside class="rail rail--home rail--annotated" aria-label="elsewhere">', about
-    )
+    self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', home)
+    self.assertIn('rel="me">github</a>', home)
     self.assertIn('class="city" aria-hidden="true" data-city', home)
-    self.assertNotIn("city--panic", home)
-    self.assertIn('rel="me">github</a>', about)
-    self.assertIn("https://sarrthak.com/about/", locations)
-    self.assertIn("[about](/about/)", llms)
+    for removed in (
+      "page--annotated",
+      "portrait-bracket",
+      "rail__tag",
+      "rail__stamp",
+      "rail__readout",
+      "city--panic",
+      'class="glitch',
+    ):
+      self.assertNotIn(removed, home)
+    self.assertNotIn("https://sarrthak.com/about/", locations)
+    self.assertNotIn("/about/", llms)
 
   def test_real_articles_preserve_accessibility_and_image_stability(self) -> None:
     ocaml = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
@@ -249,7 +231,6 @@ class TestSiteRendering(unittest.TestCase):
       [
         "https://sarrthak.com/",
         "https://sarrthak.com/blogs/",
-        "https://sarrthak.com/about/",
         "https://sarrthak.com/blogs/amazon_ml_hackathon/",
         "https://sarrthak.com/blogs/learn_ocaml/",
         "https://sarrthak.com/blogs/make_cool_stuff/",

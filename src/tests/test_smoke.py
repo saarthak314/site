@@ -68,7 +68,6 @@ class TestProductionSmokeChecks(unittest.TestCase):
 
     for path in (
       "/",
-      "/about/",
       "/blogs/",
       "/blogs/make_cool_stuff/",
       "/feed.xml",
@@ -80,6 +79,7 @@ class TestProductionSmokeChecks(unittest.TestCase):
       self.assertIn(path, expectations)
       self.assertEqual(expectations[path].status, 200)
 
+    self.assertEqual(expectations["/about/"].contains, ('url=/"',))
     missing = expectations["/__sitegen-smoke-missing__/"]
     self.assertEqual(missing.status, 404)
     self.assertIn("nothing here", missing.contains)

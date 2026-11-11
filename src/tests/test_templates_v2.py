@@ -52,22 +52,12 @@ def page(
   experience: tuple[SimpleNamespace, ...] = (),
   projects: tuple[SimpleNamespace, ...] = (),
   body: SimpleNamespace | None = None,
-  footer: str = "city",
   copyright: str | None = None,
-  rail_readout: tuple[str, ...] = (),
-  annotations: bool = False,
-  stamp: str | None = None,
-  bracket: tuple[str, ...] = (),
   now_playing: str | None = None,
 ) -> SimpleNamespace:
   return namespace(
     now_playing=now_playing,
-    footer=footer,
     copyright=copyright,
-    rail_readout=rail_readout,
-    annotations=annotations,
-    stamp=stamp,
-    bracket=bracket,
     title=title,
     date=published,
     updated=updated,
@@ -252,9 +242,9 @@ class TestSharedLayout(TemplateRenderingTestCase):
 
     header = html[html.index('<header class="site-header">') : html.index("</header>")]
     self.assertIn('<a href="/blogs/">writing</a>', header)
-    self.assertIn('<a href="/about/">about</a>', header)
     self.assertIn('<a href="/feed.xml">rss</a>', header)
-    self.assertEqual(header.count("<a "), 4)
+    self.assertNotIn("/about/", header)
+    self.assertEqual(header.count("<a "), 3)
     self.assertNotIn('rel="me"', header)
 
     rail_start = html.index('<aside class="rail rail--home" aria-label="elsewhere">')
@@ -795,85 +785,40 @@ class TestNotFoundTemplate(TemplateRenderingTestCase):
     self.assertIn('href="/blogs/">all writings</a>', html)
 
 
-class TestAboutTemplate(TemplateRenderingTestCase):
-  def test_about_renders_prose_and_the_elsewhere_links(self) -> None:
-    about = page(
-      title="about me",
-      route="/about/",
-      template="about.html",
+class TestHomeRailTemplate(TemplateRenderingTestCase):
+  def test_home_rail_is_portrait_socials_and_nothing_else(self) -> None:
+    home = page(
+      title="home",
+      route="/",
+      template="home.html",
       body=rendered("<p>hey.</p>"),
+      copyright="© 2026 sarthak tomar. plain plate.",
     )
 
-    html = self.render(about, namespace(config=config()))
+    html = self.render(
+      home, namespace(config=config(), index=namespace(recent_posts=()))
+    )
 
-    self.assertIn('<h1 class="about-heading">about me</h1>', html)
-    self.assertIn('<article class="about-article"><p>hey.</p></article>', html)
+    self.assertIn('<body class="home-page">', html)
     self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', html)
     self.assertIn('<pre class="portrait" role="img"', html)
-    self.assertNotIn("about-elsewhere", html)
     self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', html)
-    self.assertIn('href="mailto:hey@sarrthak.com">email</a>', html)
-    self.assertIn('<a href="/about/" aria-current="page">about</a>', html)
     self.assertIn('class="city" aria-hidden="true" data-city', html)
-    self.assertNotIn("city--panic", html)
-    self.assertNotIn("rail__readout", html)
-
-  def test_about_can_switch_to_the_panic_footer_with_annotations(self) -> None:
-    about = page(
-      title="about me",
-      route="/about/",
-      template="about.html",
-      body=rendered("<p>hey.</p>"),
-      footer="panic",
-      copyright="© 2026 sarthak tomar // systemworks // circular code 413x",
-      rail_readout=("node 03 // sarthak-mbp", "", "+ memory fragments", "<b>", "$ _"),
-      annotations=True,
-      stamp="circular code 413x",
-      bracket=("id: [mirror // - _ - ]", "0x8054C8A2 // asuka"),
-    )
-
-    html = self.render(about, namespace(config=config()))
-
-    self.assertIn('<body class="about-page page--annotated">', html)
-    self.assertIn('<footer class="footer footer--city footer--panic">', html)
-    self.assertIn("© 2026 sarthak tomar // systemworks // circular code 413x", html)
+    self.assertIn("© 2026 sarthak tomar. plain plate.", html)
     self.assertNotIn("built with love.", html)
-    self.assertIn(
-      'class="city city--panic" aria-hidden="true" data-city data-scene="panic"', html
-    )
-    self.assertIn('<pre class="city__layer city__layer--far">', html)
-    self.assertIn('<div class="city__packets"></div>', html)
-    self.assertIn('data-wires="', html)
-    self.assertNotIn("panic__screen", html)
-    self.assertIn(
-      '<div class="panic__chrome">s<span class="lam">λ</span>rthak</div>', html
-    )
-    self.assertIn(
-      '<pre class="portrait-bracket" aria-hidden="true">┌ id: [mirror // - _ - ] ', html
-    )
-    self.assertIn(" 0x8054C8A2 // asuka ─┘", html)
-    self.assertIn(
-      '<span class="rail__stamp" aria-hidden="true">circular code 413x</span>', html
-    )
-    self.assertIn('<span class="rail__tag" aria-hidden="true">errorCode</span>', html)
-    self.assertIn(
-      '<pre class="rail__readout" aria-hidden="true">node 03 // sarthak-mbp\n\n'
-      '<span class="readout__hi">+ memory fragments</span>\n&lt;b&gt;\n'
-      '$ <span class="readout__cursor">_</span></pre>',
-      html,
-    )
-    self.assertNotIn("gutter", html)
-    self.assertNotIn("data-now", html)
-    self.assertNotIn("window.__now", html)
+    for removed in (
+      "page--annotated",
+      "portrait-bracket",
+      "rail__tag",
+      "rail__stamp",
+      "rail__readout",
+      "city--panic",
+      "data-now",
+      "window.__now",
+    ):
+      self.assertNotIn(removed, html)
 
-  def test_rails_print_the_now_playing_box_only_when_an_endpoint_is_set(self) -> None:
-    about = page(
-      title="about me",
-      route="/about/",
-      template="about.html",
-      body=rendered("<p>hey.</p>"),
-      now_playing="https://sarrthak-now.example.workers.dev/now",
-    )
+  def test_home_rail_prints_the_now_playing_box_when_an_endpoint_is_set(self) -> None:
     home = page(
       title="home",
       route="/",
@@ -882,25 +827,21 @@ class TestAboutTemplate(TemplateRenderingTestCase):
       now_playing="https://sarrthak-now.example.workers.dev/now",
     )
 
-    about_html = self.render(about, namespace(config=config()))
-    home_html = self.render(
+    html = self.render(
       home, namespace(config=config(), index=namespace(recent_posts=()))
     )
 
-    for html in (about_html, home_html):
-      self.assertIn(
-        '<link rel="preconnect" href="https://sarrthak-now.example.workers.dev" crossorigin />',
-        html,
-      )
-      self.assertIn(
-        'window.__now = fetch("https://sarrthak-now.example.workers.dev/now", { mode: "cors" })',
-        html,
-      )
-      self.assertIn(
-        '<div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
-        html,
-      )
-      self.assertIn('<p class="now__label"><span class="now__state"></span></p>', html)
-      self.assertIn(
-        '<pre class="now__pre" aria-label="playing on spotify"></pre>', html
-      )
+    self.assertIn(
+      '<link rel="preconnect" href="https://sarrthak-now.example.workers.dev" crossorigin />',
+      html,
+    )
+    self.assertIn(
+      'window.__now = fetch("https://sarrthak-now.example.workers.dev/now", { mode: "cors" })',
+      html,
+    )
+    self.assertIn(
+      '<div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
+      html,
+    )
+    self.assertIn('<p class="now__label"><span class="now__state"></span></p>', html)
+    self.assertIn('<pre class="now__pre" aria-label="playing on spotify"></pre>', html)

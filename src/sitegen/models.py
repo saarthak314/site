@@ -45,12 +45,7 @@ class PageMetadata:
   noindex: bool = False
   experience: tuple[ExperienceItem, ...] = ()
   projects: tuple[ProjectItem, ...] = ()
-  footer: str = "city"
   copyright: str | None = None
-  rail_readout: tuple[str, ...] = ()
-  annotations: bool = False
-  stamp: str | None = None
-  bracket: tuple[str, ...] = ()
   now_playing: str | None = None
 
 
@@ -86,10 +81,5 @@ class Page:
   noindex: bool
   experience: tuple[ExperienceItem, ...] = ()
   projects: tuple[ProjectItem, ...] = ()
-  footer: str = "city"
   copyright: str | None = None
-  rail_readout: tuple[str, ...] = ()
-  annotations: bool = False
-  stamp: str | None = None
-  bracket: tuple[str, ...] = ()
   now_playing: str | None = None

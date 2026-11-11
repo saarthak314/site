@@ -12,7 +12,7 @@ class TestMarks(unittest.TestCase):
     self.assertNotEqual(first, mark_svg("/blogs/learn_ocaml/", 56))
 
   def test_marks_are_decorative_inline_svgs_in_lavender_only(self) -> None:
-    svg = mark_svg("/about/", 18)
+    svg = mark_svg("/blogs/", 18)
 
     self.assertTrue(
       svg.startswith('<svg class="mark" viewBox="0 0 64 64" width="18" height="18"')

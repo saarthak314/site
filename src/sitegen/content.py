@@ -67,16 +67,6 @@ class ContentRepository:
       self._create_page(home_path, "/", "home.html", is_post=False),
       self._create_page(archive_path, "/blogs/", "writings.html", is_post=False),
     ]
-    about_path = content_dir / "about.md"
-    if about_path.is_file():
-      pages.append(
-        self._create_page(
-          about_path,
-          "/about/",
-          "about.html",
-          is_post=False,
-        )
-      )
     not_found_path = content_dir / "404.md"
     if not_found_path.is_file():
       pages.append(
@@ -178,12 +168,7 @@ class ContentRepository:
       noindex=metadata.noindex or metadata.draft,
       experience=metadata.experience,
       projects=metadata.projects,
-      footer=metadata.footer,
       copyright=metadata.copyright,
-      rail_readout=metadata.rail_readout,
-      annotations=metadata.annotations,
-      stamp=metadata.stamp,
-      bracket=metadata.bracket,
       now_playing=metadata.now_playing,
     )
 
@@ -270,12 +255,7 @@ class ContentRepository:
           "template": page.template,
           "aliases": page.aliases,
           "noindex": page.noindex,
-          "footer": page.footer,
           "copyright": page.copyright,
-          "rail_readout": page.rail_readout,
-          "annotations": page.annotations,
-          "stamp": page.stamp,
-          "bracket": page.bracket,
           "now_playing": page.now_playing,
           "experience": [
             {

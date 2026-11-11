@@ -187,22 +187,18 @@ class TestContentRepository(unittest.TestCase):
     aliased = index.page_for_route("/blogs/aliased/")
     self.assertEqual(aliased.aliases, ("/writeups/aliased/",))
 
-  def test_discovers_optional_about_page(self) -> None:
+  def test_home_can_alias_a_retired_route_and_about_is_not_discovered(self) -> None:
+    self.root.joinpath("content/_index.md").write_text(
+      "title: home\ndate: 2026-08-20\naliases: [/about/]\n-----\nhome body"
+    )
     self.root.joinpath("content/about.md").write_text(
-      "title: about me\n"
-      "date: 2026-08-30\n"
-      "description: the person outside the terminal\n"
-      "-----\n"
-      "about body"
+      "title: about me\ndate: 2026-08-30\n-----\nabout body"
     )
 
     index = ContentRepository(self.config, self.renderer).discover()
 
-    about = index.page_for_route("/about/")
-    self.assertIsNotNone(about)
-    self.assertEqual(about.template, "about.html")
-    self.assertEqual(about.output_path, Path("about/index.html"))
-    self.assertFalse(about.is_post)
+    self.assertEqual(index.page_for_route("/").aliases, ("/about/",))
+    self.assertIsNone(index.page_for_route("/about/"))
 
   def test_rejects_alias_that_collides_with_a_route(self) -> None:
     self._write_post(

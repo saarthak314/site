@@ -1,12 +1,12 @@
 import re
 import unittest
-from collections import defaultdict
+from pathlib import Path
 
 from sitegen.city import ALLOWED_GLYPHS, FAR_ROWS, NEAR_ROWS, STAR_ROWS, city_layers
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TAG_RE = re.compile(r"<[^>]+>")
-LIGHT_RE = re.compile(r'class="(?:glitch )?lt')
-GLITCH_RE = re.compile(r'class="glitch[^"]*" style="--i: (\d)')
+LIGHT_RE = re.compile(r'class="lt')
 
 
 def plain(markup: str) -> str:
@@ -39,9 +39,9 @@ class TestCity(unittest.TestCase):
   def test_near_layer_mixes_shaded_mass_wireframes_and_solid_cores(self) -> None:
     text = plain(str(self.city.near))
 
-    self.assertGreaterEqual(text.count("░"), 300)
+    self.assertGreaterEqual(text.count("░"), 250)
     self.assertGreaterEqual(text.count("▒"), 100)
-    self.assertGreaterEqual(text.count("┌"), 40)
+    self.assertGreaterEqual(text.count("┌"), 30)
     self.assertIn("/", text)
     self.assertIn("╭", text)
     cores = text.count("█")
@@ -49,37 +49,29 @@ class TestCity(unittest.TestCase):
     self.assertLess(cores, 160)
     self.assertNotIn("▄", text)
 
-  def test_near_layer_is_dressed_and_far_layer_is_dark(self) -> None:
+  def test_near_layer_is_sparsely_lit_and_far_layer_is_dark(self) -> None:
     near = str(self.city.near)
     far = str(self.city.far)
 
-    self.assertGreaterEqual(len(LIGHT_RE.findall(near)), 150)
-    self.assertLess(near.count("<span"), 320)
-    self.assertEqual(near.count('class="beacon"'), 3)
-    self.assertGreaterEqual(len(re.findall(r'class="(?:glitch )?sign"', near)), 3)
-    self.assertGreaterEqual(len(re.findall(r'class="(?:glitch )?band"', near)), 2)
-    self.assertGreaterEqual(len(re.findall(r'class="(?:glitch )?strip"', near)), 3)
-    self.assertRegex(
-      near, r'class="(?:glitch )?lt lt--twinkle" style="(?:--i: \d; )?--i: \d"'
-    )
-    self.assertIn("lt--neon", near)
+    lights = len(LIGHT_RE.findall(near))
+    self.assertTrue(60 <= lights <= 90, lights)
+    self.assertLessEqual(near.count("lt--neon"), 8)
+    self.assertLess(near.count("<span"), 140)
+    self.assertEqual(near.count('class="beacon"'), 2)
+    self.assertGreaterEqual(len(re.findall(r'class="sign"', near)), 1)
+    self.assertGreaterEqual(len(re.findall(r'class="band"', near)), 1)
+    self.assertGreaterEqual(len(re.findall(r'class="strip"', near)), 1)
+    self.assertNotIn("lt--twinkle", near)
     self.assertEqual(LIGHT_RE.findall(far), [])
-    self.assertLess(far.count("<span"), 60)
+    self.assertNotIn("<span", far)
     self.assertRegex(far, r"[.']")
     for markup in (near, far):
       self.assertNotIn("<script", markup)
       self.assertNotIn("&#", markup)
 
-  def test_glitch_patches_are_rectangles_that_share_an_index(self) -> None:
-    rows_by_index: dict[str, set[int]] = defaultdict(set)
-    for row, line in enumerate(str(self.city.near).split("\n")):
-      for match in GLITCH_RE.finditer(line):
-        rows_by_index[match.group(1)].add(row)
-
-    self.assertGreaterEqual(len(rows_by_index), 4)
-    for index, rows in rows_by_index.items():
-      self.assertGreaterEqual(len(rows), 3, index)
-      self.assertEqual(max(rows) - min(rows) + 1, len(rows), index)  # contiguous
+  def test_skyline_carries_no_glitch_patches(self) -> None:
+    self.assertNotIn("glitch", str(self.city.near))
+    self.assertNotIn("glitch", str(self.city.far))
 
 
 class TestStars(unittest.TestCase):
@@ -91,7 +83,21 @@ class TestStars(unittest.TestCase):
     self.assertEqual(len(lines), STAR_ROWS)
     self.assertTrue(all(len(line) == 220 for line in stripped))
     glyphs = "".join(stripped).replace(" ", "")
-    self.assertTrue(30 <= len(glyphs) <= 70, len(glyphs))
+    self.assertTrue(15 <= len(glyphs) <= 40, len(glyphs))
     self.assertTrue(set(glyphs) <= set(".'+*"), set(glyphs))
-    self.assertEqual(stars.count('class="star star--twinkle"'), 6)
+    self.assertEqual(stars.count('class="star star--twinkle"'), 3)
     self.assertEqual(stars, str(city_layers().stars))
+
+
+class TestCityStaysQuiet(unittest.TestCase):
+  def test_footer_is_short_and_only_beacons_stars_and_one_ship_move(self) -> None:
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
+
+    footer = re.search(r"\.footer--city \{[^}]*\}", stylesheet).group(0)
+    self.assertIn("height: 280px", footer)
+    city_keyframes = set(re.findall(r"@keyframes (city-[a-z-]+)", stylesheet))
+    self.assertEqual(city_keyframes, {"city-twinkle", "city-beacon"})
+    self.assertNotIn("lt--twinkle", stylesheet)
+    self.assertIn("state.alive < 1", script)
+    self.assertIn("between(18000, 30000)", script)

@@ -13,9 +13,9 @@
     wide.addEventListener("change", sync);
   }
 
-  // Two hotkeys, w and a, mirror the header links. They stay out of the way of
-  // form fields and of any shortcut with a modifier.
-  const hotkeys = { w: "/blogs/", a: "/about/" };
+  // A hotkey, w, mirrors the writing link in the header. It stays out of the
+  // way of form fields and of any shortcut with a modifier.
+  const hotkeys = { w: "/blogs/" };
   document.addEventListener("keydown", (event) => {
     if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
     const target = event.target;
@@ -186,7 +186,6 @@
           ? "spotify // played " + ago(data.played_at)
           : "spotify // paused";
       box.classList.toggle("now--playing", Boolean(data.playing));
-      document.dispatchEvent(new CustomEvent("now-playing", { detail: { playing: Boolean(data.playing) } }));
       const title = node(track.url ? "a" : "span", "now__title", clip(lower(track.title), width - 2));
       if (track.url) {
         title.href = track.url;
@@ -305,227 +304,6 @@
     document.addEventListener("visibilitychange", sync);
   });
 
-  // The rail readout is alive. Its vitals follow what the visitor does on the
-  // page (scrolling, moving, typing, clicking), drift on their own, spike on
-  // random events, and the music process follows the spotify block. Only text
-  // nodes change, every two seconds, and only while the readout is on screen.
-  document.querySelectorAll(".rail__readout").forEach((readout) => {
-    const between = (low, high) => low + Math.random() * (high - low);
-    const clamp = (value, low, high) => Math.min(high, Math.max(low, value));
-    const calmer = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const walker = document.createTreeWalker(readout, NodeFilter.SHOW_TEXT);
-    const nodes = [];
-    while (walker.nextNode()) nodes.push({ node: walker.currentNode, source: walker.currentNode.nodeValue });
-    // "uptime since YYYY-MM-DD" becomes the exact calendar span to today.
-    const uptime = (iso) => {
-      const [year, month, day] = iso.split("-").map(Number);
-      const now = new Date();
-      let years = now.getFullYear() - year;
-      let months = now.getMonth() + 1 - month;
-      let days = now.getDate() - day;
-      if (days < 0) {
-        months -= 1;
-        days += new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-      }
-      if (months < 0) {
-        years -= 1;
-        months += 12;
-      }
-      return years + "y " + months + "mo " + days + "d";
-    };
-    const vitals = {
-      activity: between(0, 2),
-      cpu: between(6, 28),
-      load: [0, 0, 0],
-      mem: between(44, 72),
-      swap: between(0, 4),
-      temp: 0,
-    };
-    vitals.load = vitals.load.map(() => (vitals.cpu / 100) * 2.2 + between(-0.1, 0.1));
-    vitals.temp = 36 + vitals.cpu * 0.22;
-    const states = {};
-    const original = {};
-    nodes.forEach(({ source }) => {
-      source.replace(/^\d{3}\s+(\S+)\s+(running|sleeping)$/gm, (_, name, state) => {
-        original[name] = state;
-        return _;
-      });
-    });
-    const meters = { mem: () => vitals.mem, swap: () => vitals.swap, cpu: () => vitals.cpu };
-    const bar = (length, percent) => {
-      const filled = Math.round((percent / 100) * length);
-      return "\u2593".repeat(filled) + "\u2591".repeat(length - filled);
-    };
-    const paint = () => {
-      nodes.forEach(({ node, source }) => {
-        const text = source
-          .replace(/uptime since (\d{4}-\d{2}-\d{2})/g, (_, iso) => "uptime " + uptime(iso))
-          .replace(/load \d+\.\d+ \d+\.\d+ \d+\.\d+/g, () => "load " + vitals.load.map((value) => value.toFixed(2)).join(" "))
-          .replace(/temp \d+c/g, () => "temp " + Math.round(vitals.temp) + "c")
-          .replace(/(\w+) ([\u2593\u2591]+) (\d+)%/g, (match, word, cells) => {
-            const meter = meters[word];
-            if (!meter) return match;
-            const percent = clamp(Math.round(meter()), 0, 99);
-            return word + " " + bar(cells.length, percent) + " " + percent + "%";
-          })
-          .replace(/^(\d{3}\s+)(\S+)(\s+)(running|sleeping|killed|panicked)$/gm, (match, pid, name, gap) =>
-            states[name] ? pid + name + gap + states[name] : match,
-          );
-        if (node.nodeValue !== text) node.nodeValue = text;
-      });
-    };
-
-    // Activity: a decaying score fed by the visitor's input.
-    const bump = (weight) => {
-      vitals.activity = Math.min(12, vitals.activity + weight);
-    };
-    let lastMove = 0;
-    window.addEventListener("scroll", () => bump(0.5), { passive: true });
-    document.addEventListener(
-      "pointermove",
-      () => {
-        const now = Date.now();
-        if (now - lastMove > 150) {
-          lastMove = now;
-          bump(0.25);
-        }
-      },
-      { passive: true },
-    );
-    document.addEventListener("keydown", () => bump(1.2));
-    document.addEventListener("pointerdown", () => bump(1.5));
-    document.addEventListener("now-playing", (event) => {
-      states["music.service"] = event.detail && event.detail.playing ? "running" : "sleeping";
-      paint();
-    });
-
-    let lastTick = Date.now();
-    const tick = () => {
-      const now = Date.now();
-      const seconds = Math.min(5, (now - lastTick) / 1000);
-      lastTick = now;
-      vitals.activity *= Math.pow(0.55, seconds);
-      const target = 6 + Math.min(72, vitals.activity * 9) + between(-3, 3);
-      vitals.cpu += (target - vitals.cpu) * 0.5;
-      if (Math.random() < 0.06) vitals.cpu += between(15, 35); // a random event
-      vitals.cpu = clamp(vitals.cpu, 2, 99);
-      const busy = (vitals.cpu / 100) * 2.2;
-      vitals.load[0] += (busy - vitals.load[0]) * 0.35;
-      vitals.load[1] += (busy - vitals.load[1]) * 0.12;
-      vitals.load[2] += (busy - vitals.load[2]) * 0.04;
-      vitals.mem = clamp(vitals.mem + between(-0.6, 0.9) + (vitals.activity > 2 ? 0.4 : 0), 35, 92);
-      vitals.swap = clamp(vitals.swap + between(-0.3, 0.3) + (vitals.mem > 82 ? 0.5 : -0.15), 0, 14);
-      vitals.temp += (36 + vitals.cpu * 0.22 - vitals.temp) * 0.2;
-      paint();
-    };
-
-    // Random events: a process flips state for a while, then settles back.
-    const names = Object.keys(original).filter((name) => name !== "music.service");
-    let flipTimer = 0;
-    const flip = () => {
-      flipTimer = 0;
-      if (!names.length) return;
-      const name = names[Math.floor(Math.random() * names.length)];
-      states[name] = original[name] === "running" ? "sleeping" : "running";
-      paint();
-      window.setTimeout(() => {
-        delete states[name];
-        paint();
-      }, 4000 + Math.random() * 10000);
-      flipTimer = window.setTimeout(flip, 15000 + Math.random() * 30000);
-    };
-
-    let timer = 0;
-    let visible = false;
-    const sync = () => {
-      const running = visible && !document.hidden;
-      if (running && !timer) {
-        lastTick = Date.now();
-        timer = window.setInterval(tick, calmer.matches ? 10000 : 2000);
-        if (!flipTimer) flipTimer = window.setTimeout(flip, 8000 + Math.random() * 20000);
-      } else if (!running && timer) {
-        window.clearInterval(timer);
-        window.clearTimeout(flipTimer);
-        timer = 0;
-        flipTimer = 0;
-      }
-    };
-    paint();
-    if ("IntersectionObserver" in window) {
-      new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            visible = entry.isIntersecting;
-          });
-          sync();
-        },
-        { rootMargin: "80px 0px" },
-      ).observe(readout);
-    } else {
-      visible = true;
-      sync();
-    }
-    document.addEventListener("visibilitychange", sync);
-  });
-
-  // Hex-dump glitches: on annotated pages a small patch of memory dump flashes in
-  // a side margin for a second or two every so often. Never over the text, never
-  // on narrow screens, never under reduced motion, and nothing while hidden.
-  const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
-  if (document.body.classList.contains("page--annotated") && !calm.matches) {
-    const rand = (n) => Math.floor(Math.random() * n);
-    const hex = (digits) => {
-      let out = "";
-      for (let i = 0; i < digits; i += 1) out += "0123456789abcdef"[rand(16)];
-      return out;
-    };
-    const glyphs = "..........MZ.@#$%&*+=-_/|<>?!~^";
-    const dump = (lines, cols) => {
-      let address = 0x80400000 + rand(0x4000) * 8;
-      const rows = [];
-      for (let i = 0; i < lines; i += 1) {
-        let ascii = "";
-        for (let c = 0; c < 8; c += 1) ascii += glyphs[rand(glyphs.length)];
-        const row = address.toString(16).padStart(8, "0") + " " + hex(4) + " " + hex(4) + " " + hex(4) + " " + hex(4) + " " + ascii;
-        rows.push(row.slice(0, cols));
-        address += 8;
-      }
-      return rows.join("\n");
-    };
-    let timer = 0;
-    const flash = () => {
-      timer = 0;
-      if (document.hidden) return;
-      const margin = (window.innerWidth - 1080) / 2;
-      if (margin >= 96) {
-        const width = Math.min(220, margin - 28);
-        const lines = 5 + rand(5);
-        const height = lines * 15;
-        const patch = document.createElement("pre");
-        patch.className = "hexpatch";
-        patch.setAttribute("aria-hidden", "true");
-        patch.textContent = dump(lines, Math.floor(width / 6));
-        const slack = Math.max(1, margin - width - 28);
-        const left = Math.random() < 0.5 ? 14 + rand(slack) : window.innerWidth - margin + 14 + rand(slack);
-        patch.style.left = left + "px";
-        patch.style.top = 40 + rand(Math.max(1, window.innerHeight - height - 80)) + "px";
-        patch.style.setProperty("--hold", (1 + Math.random()).toFixed(2) + "s");
-        patch.addEventListener("animationend", () => patch.remove());
-        document.body.appendChild(patch);
-      }
-      timer = window.setTimeout(flash, 6000 + rand(8000));
-    };
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        if (timer) window.clearTimeout(timer);
-        timer = 0;
-      } else if (!timer) {
-        timer = window.setTimeout(flash, 2000 + rand(4000));
-      }
-    });
-    timer = window.setTimeout(flash, 3000 + rand(5000));
-  }
-
   // Ships over the footer city. Each ship is one CSS transform animation on its
   // own element; this scheduler only decides when and where the next one appears.
   const cities = Array.from(document.querySelectorAll("[data-city]"));
@@ -622,45 +400,12 @@
     const between = (low, high) => low + Math.random() * (high - low);
 
     cities.forEach((city) => {
-      // The city spawns ships in its lane; the panic scene spawns packets that
-      // ride its wires. Scenes with neither keep the lag patches and jolts.
-      const lane = city.querySelector(".city__ships") || city.querySelector(".city__packets");
-      const wires = (city.dataset.wires || "")
-        .split(";")
-        .filter(Boolean)
-        .map((lane) => lane.split(",").map(Number));
-      const packets = Boolean(city.querySelector(".city__packets")) && wires.length > 0;
-      const state = { alive: 0, timer: 0, paused: false, visible: false, glitchTimer: 0, shakeTimer: 0, fizzTimer: 0 };
-      const maxShips = () => (packets ? 1 : window.innerWidth > 1400 ? 3 : 2);
-      const spawnPacket = () => {
-        const [r0, c0, r1, c1, sag] = wires[Math.floor(Math.random() * wires.length)];
-        const packet = document.createElement("span");
-        const backwards = Math.random() < 0.5;
-        packet.className = "packet";
-        packet.setAttribute("aria-hidden", "true");
-        packet.textContent = "\u25aa";
-        packet.style.setProperty("--r0", backwards ? r1 : r0);
-        packet.style.setProperty("--c0", backwards ? c1 : c0);
-        packet.style.setProperty("--r1", backwards ? r0 : r1);
-        packet.style.setProperty("--c1", backwards ? c0 : c1);
-        packet.style.setProperty("--sag", sag);
-        packet.style.setProperty("--dur", between(9, 14).toFixed(1) + "s");
-        packet.addEventListener("animationend", () => {
-          packet.remove();
-          state.alive -= 1;
-        });
-        lane.appendChild(packet);
-        state.alive += 1;
-      };
+      const lane = city.querySelector(".city__ships");
+      const state = { alive: 0, timer: 0, paused: false, visible: false };
       const spawn = () => {
         state.timer = 0;
         if (!lane || state.paused || !state.visible) return;
-        if (packets) {
-          if (state.alive < maxShips()) spawnPacket();
-          schedule(between(10000, 18000));
-          return;
-        }
-        if (state.alive < maxShips()) {
+        if (state.alive < 1) {
           const ship = document.createElement("pre");
           const left = Math.random() < 0.5;
           const far = Math.random() < 0.45;
@@ -669,7 +414,7 @@
           ship.setAttribute("aria-hidden", "true");
           ship.innerHTML = spriteHtml(rows, left);
           ship.style.setProperty("--y", between(far ? 4 : 18, far ? 24 : 40).toFixed(1) + "%");
-          ship.style.setProperty("--dur", (far ? between(24, 34) : between(14, 22)).toFixed(1) + "s");
+          ship.style.setProperty("--dur", (far ? between(32, 44) : between(22, 30)).toFixed(1) + "s");
           ship.style.setProperty("--scale", (far ? between(0.6, 0.8) : between(0.95, 1.2)).toFixed(2));
           ship.addEventListener("animationend", () => {
             ship.remove();
@@ -678,64 +423,7 @@
           lane.appendChild(ship);
           state.alive += 1;
         }
-        schedule(between(5000, 9000));
-      };
-      // A rare whole-city jolt: three dropped frames, on/off/on/off.
-      const jolt = () => {
-        state.glitchTimer = 0;
-        if (state.paused || !state.visible) return;
-        [0, 60, 120].forEach((delay, index) => {
-          window.setTimeout(() => city.classList.toggle("city--glitch", index % 2 === 0), delay);
-        });
-        window.setTimeout(() => city.classList.remove("city--glitch"), 180);
-        state.glitchTimer = window.setTimeout(jolt, packets ? between(40000, 90000) : between(100000, 200000));
-      };
-
-      // Static on the lines: a few wire runs turn to noise for a few frames,
-      // twice in quick succession, then read as wire again.
-      const runs = packets ? Array.from(city.querySelectorAll(".city__layer--near .wire")) : [];
-      const noise = "\u2571\u2572\u2500_\u2592\u2591\u25aa ";
-      const scramble = (text) =>
-        Array.from(text)
-          .map((glyph) => (glyph === " " ? " " : noise[Math.floor(Math.random() * noise.length)]))
-          .join("");
-      const fizz = () => {
-        state.fizzTimer = 0;
-        if (state.paused || !state.visible || !runs.length) return;
-        const chosen = [];
-        for (let i = 0; i < 1 + Math.floor(Math.random() * 3); i += 1) {
-          chosen.push(runs[Math.floor(Math.random() * runs.length)]);
-        }
-        const originals = chosen.map((run) => run.textContent);
-        const burst = (delay, scrambled) =>
-          window.setTimeout(() => {
-            chosen.forEach((run, index) => {
-              run.textContent = scrambled ? scramble(originals[index]) : originals[index];
-            });
-          }, delay);
-        burst(0, true);
-        burst(160, false);
-        burst(320, true);
-        burst(460, false);
-        state.fizzTimer = window.setTimeout(fizz, between(5000, 11000));
-      };
-
-      // Lag patches: one random rectangle of the skyline shakes for 600 ms, then
-      // nothing animates until the next burst. Segments share an --i per patch.
-      const patches = new Map();
-      city.querySelectorAll(".glitch").forEach((segment) => {
-        const key = segment.style.getPropertyValue("--i").trim().split(";")[0];
-        if (!patches.has(key)) patches.set(key, []);
-        patches.get(key).push(segment);
-      });
-      const patchKeys = Array.from(patches.keys());
-      const shake = () => {
-        state.shakeTimer = 0;
-        if (state.paused || !state.visible || !patchKeys.length) return;
-        const group = patches.get(patchKeys[Math.floor(Math.random() * patchKeys.length)]);
-        group.forEach((segment) => segment.classList.add("glitch--on"));
-        window.setTimeout(() => group.forEach((segment) => segment.classList.remove("glitch--on")), 700);
-        state.shakeTimer = window.setTimeout(shake, packets ? between(4000, 8000) : between(8000, 14000));
+        schedule(between(18000, 30000));
       };
       const schedule = (delay) => {
         if (state.timer) window.clearTimeout(state.timer);
@@ -746,23 +434,10 @@
         state.paused = !running;
         city.classList.toggle("city--paused", !running);
         if (running) {
-          if (lane && !state.timer) schedule(state.alive ? between(5000, 9000) : 1500);
-          if (!state.glitchTimer) state.glitchTimer = window.setTimeout(jolt, between(100000, 200000));
-          if (!state.shakeTimer) state.shakeTimer = window.setTimeout(shake, between(3000, 8000));
-          if (packets && !state.fizzTimer) state.fizzTimer = window.setTimeout(fizz, between(2000, 6000));
-          if (!state.budgeted && document.getAnimations) {
-            state.budgeted = true;
-            if (document.getAnimations().length > 100) city.classList.add("city--lean");
-          }
+          if (lane && !state.timer) schedule(state.alive ? between(18000, 30000) : 6000);
         } else {
           if (state.timer) window.clearTimeout(state.timer);
-          if (state.glitchTimer) window.clearTimeout(state.glitchTimer);
-          if (state.shakeTimer) window.clearTimeout(state.shakeTimer);
-          if (state.fizzTimer) window.clearTimeout(state.fizzTimer);
           state.timer = 0;
-          state.glitchTimer = 0;
-          state.shakeTimer = 0;
-          state.fizzTimer = 0;
         }
       };
       new IntersectionObserver(

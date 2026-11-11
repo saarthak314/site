@@ -140,47 +140,28 @@ class TestFrontMatter(unittest.TestCase):
       ):
         parse_document(path)
 
-  def test_parses_footer_and_annotation_keys_with_defaults(self) -> None:
+  def test_parses_the_copyright_override_with_a_default(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
-      path = Path(temp_dir) / "about.md"
+      path = Path(temp_dir) / "home.md"
       path.write_text(
-        "title: about me\n"
+        "title: home\n"
         "date: 2026-08-30\n"
-        "footer: panic\n"
-        'copyright: "© 2026 sarthak tomar // circular code 413x"\n'
-        "annotations: true\n"
-        'stamp: "circular code 413x"\n'
-        'bracket: ["id: [mirror]", "0x8054C8A2 // asuka"]\n'
-        "rail_readout:\n"
-        '  - "node 03 // sarthak-mbp"\n'
-        '  - ""\n'
-        "  -\n"
-        '  - "$ _"\n'
+        'copyright: "© 2026 sarthak tomar. plain plate."\n'
         "-----\n\nhey."
       )
       plain = Path(temp_dir) / "plain.md"
       plain.write_text("title: plain\ndate: 2026-08-30\n-----\n\nhey.")
 
-      metadata = parse_document(path).metadata
-      defaults = parse_document(plain).metadata
-
-      self.assertEqual(metadata.footer, "panic")
-      self.assertEqual(metadata.copyright, "© 2026 sarthak tomar // circular code 413x")
-      self.assertTrue(metadata.annotations)
-      self.assertEqual(metadata.stamp, "circular code 413x")
-      self.assertEqual(metadata.bracket, ("id: [mirror]", "0x8054C8A2 // asuka"))
-      self.assertEqual(metadata.rail_readout, ("node 03 // sarthak-mbp", "", "", "$ _"))
-      self.assertEqual(defaults.footer, "city")
-      self.assertIsNone(defaults.copyright)
-      self.assertFalse(defaults.annotations)
-      self.assertEqual(defaults.rail_readout, ())
-      self.assertEqual(defaults.bracket, ())
+      self.assertEqual(
+        parse_document(path).metadata.copyright, "© 2026 sarthak tomar. plain plate."
+      )
+      self.assertIsNone(parse_document(plain).metadata.copyright)
 
   def test_parses_now_playing_as_an_absolute_url(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
-      path = Path(temp_dir) / "about.md"
+      path = Path(temp_dir) / "home.md"
       path.write_text(
-        "title: about me\ndate: 2026-08-30\n"
+        "title: home\ndate: 2026-08-30\n"
         "now_playing: https://sarrthak-now.example.workers.dev/now\n-----\n\nhey."
       )
 
@@ -189,22 +170,14 @@ class TestFrontMatter(unittest.TestCase):
         "https://sarrthak-now.example.workers.dev/now",
       )
 
-  def test_rejects_unknown_footers_and_malformed_annotation_keys(self) -> None:
-    cases = (
-      ("now_playing: /now\n", "now_playing must be an absolute http(s) URL"),
-      ("footer: skyline\n", "footer must be one of city, panic"),
-      ("annotations: yes please\n", "annotations must be true or false"),
-      ("rail_readout: not a list\n", "rail_readout must be a list of strings"),
-      ("rail_readout: [1]\n", "every rail_readout value must be a string"),
-      ('bracket: ["a", "b", "c"]\n', "bracket takes at most two labels"),
-    )
+  def test_rejects_a_relative_now_playing_endpoint(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
-      for header, message in cases:
-        path = Path(temp_dir) / "about.md"
-        path.write_text(f"title: about me\ndate: 2026-08-30\n{header}-----\n\nhey.")
-        with self.subTest(header=header), self.assertRaises(ContentError) as raised:
-          parse_document(path)
-        self.assertIn(message, str(raised.exception))
+      path = Path(temp_dir) / "home.md"
+      path.write_text("title: home\ndate: 2026-08-30\nnow_playing: /now\n-----\n\nhey.")
+      with self.assertRaisesRegex(
+        ContentError, "now_playing must be an absolute http\\(s\\) URL"
+      ):
+        parse_document(path)
 
   def test_reports_path_for_invalid_metadata(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:

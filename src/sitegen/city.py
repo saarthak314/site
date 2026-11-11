@@ -2,7 +2,8 @@
 
 Two layers of wireframe buildings are drawn from box-drawing characters and
 slashes, then dressed with lit windows, neon strips, bands, billboard signs,
-beacons, and glitch slices as ``<span>`` hooks the stylesheet animates. The
+and beacons as ``<span>`` hooks the stylesheet colours. The lighting is kept
+sparse and static on purpose: only the two beacons and three stars pulse. The
 same seed always yields the same city.
 """
 
@@ -19,9 +20,9 @@ from markupsafe import Markup
 ALLOWED_GLYPHS = frozenset("▪│┃━▓░▒█▀┌┐└┘╭╮╯╰─┴")
 
 Cell = tuple[str, str | None, str | None]  # glyph, class, style
-NEAR_ROWS = 26
-FAR_ROWS = 20
-STAR_ROWS = 40
+NEAR_ROWS = 18
+FAR_ROWS = 14
+STAR_ROWS = 16
 
 
 @dataclass
@@ -257,15 +258,11 @@ def _dress_windows(
           continue
         if lit and count < budget and rng.random() < probability:
           cls = "lt"
-          if count % 8 == 5:
+          if count % 16 == 5:
             cls += " lt--neon"
-          elif count % 4 == 1:
+          elif count % 6 == 1:
             cls += " lt--bright"
-          style = None
-          if count % 7 == 2:
-            cls += " lt--twinkle"
-            style = f"--i: {rng.randint(0, 7)}"
-          canvas.put(row, col, "▪", cls, style)
+          canvas.put(row, col, "▪", cls)
           count += 1
         elif building.fill == " ":
           canvas.put(row, col, rng.choice("..:"))
@@ -337,52 +334,6 @@ def _dress_neon(
           canvas.put(row, col, "▓", "sign", f"--i: {index}")
 
 
-def _dress_glitches(rng: random.Random, canvas: Canvas, count: int) -> int:
-  """Wrap rectangular patches in glitch spans, one ``--i`` per patch.
-
-  Every row segment of a patch shares the patch's ``--i`` so the stylesheet can
-  shake the rectangle as one laggy region. Lit windows inside a patch are kept
-  as nested spans; other neon spans are avoided.
-  """
-  placed = 0
-  attempts = 0
-  taken: list[tuple[int, int, int, int]] = []  # row0, row1, col0, col1
-  while placed < count and attempts < 3000:
-    attempts += 1
-    height = rng.randint(5, 8)
-    width = rng.randint(24, 40)
-    row0 = rng.randint(4, min(24, canvas.rows - 2) - height)
-    col0 = rng.randint(0, canvas.cols - width)
-    row1, col1 = row0 + height, col0 + width
-    if any(
-      not (row1 <= r0 or r1 <= row0 or col1 <= c0 or c1 <= col0)
-      for r0, r1, c0, c1 in taken
-    ):
-      continue
-    cells = [canvas.cells[r][c] for r in range(row0, row1) for c in range(col0, col1)]
-    if any(cell[1] is not None and cell[1].startswith("beacon") for cell in cells):
-      continue
-    if sum(1 for cell in cells if cell[0] != " ") < len(cells) // 3:
-      continue
-    style = f"--i: {placed}"
-    for r in range(row0, row1):
-      for c in range(col0, col1):
-        glyph, cls, cell_style = canvas.cells[r][c]
-        if cls is None:
-          canvas.put(r, c, glyph, "glitch", style)
-        else:
-          canvas.put(
-            r,
-            c,
-            glyph,
-            f"glitch {cls}",
-            f"{style}; {cell_style}" if cell_style else style,
-          )
-    taken.append((row0, row1, col0, col1))
-    placed += 1
-  return placed
-
-
 def _draw_ground(canvas: Canvas) -> None:
   row = canvas.rows - 1
   for col in range(canvas.cols):
@@ -390,7 +341,7 @@ def _draw_ground(canvas: Canvas) -> None:
       canvas.put(row, col, "─")
 
 
-def _stars(cols: int, rows: int, seed: int, count: int = 46, twinkling: int = 6) -> str:
+def _stars(cols: int, rows: int, seed: int, count: int = 28, twinkling: int = 3) -> str:
   """A sparse field of plain-text stars for the sky band above the skyline."""
   rng = random.Random(seed)
   canvas = Canvas(cols, rows)
@@ -458,7 +409,7 @@ def _layer(cols: int, rows: int, seed: int, *, near: bool) -> str:
   if near:
     for building in sorted(
       (b for b in buildings if b.kind == "spire"), key=lambda b: b.height, reverse=True
-    )[:3]:
+    )[:2]:
       building.beacon = True
   _assign_fills(rng, buildings, near=near)
   for building in buildings:
@@ -470,13 +421,11 @@ def _layer(cols: int, rows: int, seed: int, *, near: bool) -> str:
       _draw_block(canvas, building)
   _draw_ground(canvas)
   if near:
-    _dress_windows(rng, canvas, buildings, budget=172, lit=True)
+    _dress_windows(rng, canvas, buildings, budget=90, lit=True)
     _dress_texture(rng, canvas, buildings)
-    _dress_neon(rng, canvas, buildings, strips=4, bands=3, signs=5)
-    _dress_glitches(rng, canvas, count=5)
+    _dress_neon(rng, canvas, buildings, strips=2, bands=1, signs=2)
   else:
     _dress_windows(rng, canvas, buildings, budget=0, lit=False)
-    _dress_neon(rng, canvas, buildings, strips=2, bands=0, signs=0)
     _scatter_sky_lights(rng, canvas, count=18)
   return canvas.render()
 
