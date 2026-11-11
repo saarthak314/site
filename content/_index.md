@@ -1,7 +1,7 @@
 title: sλrthak tomar
 date: 2025-12-22
 updated: 2026-08-29
-description: notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
+description: systems engineer, currently dabbling in inference systems, high perf computing and agentic workloads.
 now_playing: https://sarrthak-now.shinero-voldemort.workers.dev/now
 aliases:
   - /about/

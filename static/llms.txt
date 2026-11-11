@@ -4,7 +4,7 @@
     ┗━┓┣━┫┣┳┛ ┃ ┣━┫┣━┫┣┻┓
     ┗━┛╹ ╹╹┗╸ ╹ ╹ ╹╹ ╹╹ ╹
 
-> notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
+> systems engineer, currently dabbling in inference systems, high perf computing and agentic workloads.
 
 ## navigation
 

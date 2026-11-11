@@ -61,7 +61,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('rel="canonical" href="https://sarrthak.com/"', home)
     self.assertIn('property="og:type" content="website"', home)
     self.assertIn(
-      'property="og:image" content="https://sarrthak.com/images/social-card.jpg"',
+      'property="og:image" content="https://sarrthak.com/images/social-card-cat.jpg"',
       home,
     )
     self.assertIn('property="og:image:width" content="1200"', home)

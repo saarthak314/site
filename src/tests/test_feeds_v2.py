@@ -63,6 +63,13 @@ class TestFeeds(unittest.TestCase):
     self.assertEqual(items[0].findtext("link"), "https://example.com/blogs/newer/")
     self.assertEqual(items[0].findtext("pubDate"), "Mon, 24 Aug 2026 00:00:00 +0000")
 
+  def test_rss_describes_the_feed_with_the_home_page_description(self) -> None:
+    channel = ET.fromstring(render_rss(self.index, "https://example.com")).find(
+      "channel"
+    )
+
+    self.assertEqual(channel.findtext("description"), "description for home")
+
   def test_sitemap_includes_pages_and_tags_once(self) -> None:
     namespace = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     root = ET.fromstring(render_sitemap(self.index, "https://example.com"))
