@@ -40,7 +40,7 @@
       {% for project in page.projects %}
       <li class="home-project">
         {% if project.url %}<a class="home-project__name" href="{{ project.url }}">{{ project.name }}</a>{% else %}<span class="home-project__name">{{ project.name }}</span>{% endif %}
-        <span class="home-project__tech">{{ project.tech|join(' · ') }}</span>
+        <span class="home-project__tech">{{ project.tech|join(', ') }}</span>
         <p class="home-project__description">{{ project.description }}</p>
       </li>
       {% endfor %}

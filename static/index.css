@@ -1,3 +1,11 @@
+/* Hallmark · checked: 2026-11-11 · genre: editorial and atmospheric (inferred; universal gates)
+ * floor: 10 FAIL open, each the cat or city ascii art read as text (40, 73) · fixed: 2a, 2b, 7a, 26b, 34, 40, 48, 63, 67, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
+ * finish-review: subagent · 4 findings · 3 resolved, 1 left to the owner (bold phrases in the intro copy)
+ * built: the project · redesign: polish · v2.0.0 */
+/* Hallmark · waive 37 · JBM Symbols is a subset file of JetBrains Mono · the banner, city and player dots load from that 5 KB subset before any code letters */
+/* Hallmark · waive 49b · links inside a post's lists and the writing list, never nav or buttons · each is the author's own title for a real project or post, like the text editor written in c, and wraps with the text around it */
+/* Hallmark · dropped open.spotify.com/track, 1:38, 5:28 · the listening player shows whatever is playing now; that track link and its clock were the song playing during the before run */
+
 @font-face {
   font-display: swap;
   font-family: "IBM Plex Mono";
@@ -76,9 +84,19 @@
   --warm-2: #b08a66;
   --fur: #7a5f4a;
   --eye: #cfd27c;
+  --err: #d98c7a;
   --line: rgb(238 241 246 / 0.16);
   --line-soft: rgb(238 241 246 / 0.09);
+  --line-accent: rgb(157 184 239 / 0.38);
   --hover: rgb(238 241 246 / 0.04);
+  --bg-clear: rgb(14 16 22 / 0);
+  --bg-veil: rgb(14 16 22 / 0.82);
+  --ink-trail: rgb(238 241 246 / 0.12);
+  --city-far: #232836;
+  --city-glow: rgb(111 143 207 / 0.03);
+  --city-glow-mid: rgb(111 143 207 / 0.012);
+  --city-glow-low: rgb(111 143 207 / 0.02);
+  --city-shade: rgb(6 7 10 / 0.35);
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --code: "JetBrains Mono", "JBM Symbols", ui-monospace, Menlo, monospace;
@@ -95,6 +113,7 @@
 }
 
 html {
+  caret-color: var(--accent);
   overflow-x: clip;
   scroll-behavior: smooth;
   scroll-padding-top: 1.5rem;
@@ -102,6 +121,8 @@ html {
 }
 
 body {
+  --gutter: clamp(20px, 4vw, 48px);
+  --page: 1080px;
   background: var(--bg);
   color: var(--ink-2);
   display: flex;
@@ -109,12 +130,25 @@ body {
   font-family: var(--mono);
   font-size: 16px;
   line-height: 1.7;
-  margin: 0 auto;
-  max-width: 1080px;
+  margin: 0;
   min-height: 100vh;
-  padding: 0 clamp(20px, 4vw, 48px);
+  min-height: 100svh;
+  overflow-x: clip;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* the page is one column, capped and centred; the banner and the city run
+   edge to edge under it */
+body > :not(.skip-link, .banner, .footer--city) {
+  margin-inline: auto;
+  max-width: var(--page);
+  padding-inline: var(--gutter);
+  width: 100%;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 ::selection {
@@ -136,6 +170,10 @@ a {
 a:hover {
   color: var(--ink);
   text-decoration-color: var(--ink-2);
+}
+
+a:active {
+  color: var(--accent-2);
 }
 
 a:focus-visible,
@@ -205,6 +243,9 @@ h6 {
   font-weight: 400;
   line-height: 1.15;
   margin: 0;
+  min-width: 0;
+  overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 h1 {
@@ -255,16 +296,14 @@ h3 {
 /* about a fifth smaller than full bleed: 80% of the window, at most 1120px */
 .banner {
   --art-width: clamp(560px, 80vw, 1120px);
-  margin-left: calc(50% - 50vw);
   overflow: hidden;
   position: relative;
-  width: 100vw;
 }
 
 /* the fade into the page is a painted gradient over the art, not a mask, so
    the banner never needs a layer of its own */
 .banner::after {
-  background: linear-gradient(to bottom, rgb(14 16 22 / 0), var(--bg));
+  background: linear-gradient(to bottom, var(--bg-clear), var(--bg));
   bottom: 0;
   content: "";
   height: 28%;
@@ -365,13 +404,12 @@ h3 {
   white-space: pre;
 }
 
-/* the tail fades behind the head */
+/* the tail fades behind the head: one ink, masked out along its length */
 .meteor::before {
-  -webkit-background-clip: text;
-  background-clip: text;
-  background-image: linear-gradient(to right, var(--ink) 20%, rgb(238 241 246 / 0.12));
-  color: transparent;
+  color: var(--ink);
   content: "\2022\00B7\00B7\00B7";
+  -webkit-mask-image: linear-gradient(to right, var(--bg) 20%, var(--ink-trail));
+  mask-image: linear-gradient(to right, var(--bg) 20%, var(--ink-trail));
 }
 
 @keyframes meteor {
@@ -467,7 +505,7 @@ h3 {
   }
 
   .art {
-    margin-left: calc(50vw - 0.31 * var(--art-width));
+    margin-left: calc(50% - 0.31 * var(--art-width));
   }
 }
 
@@ -477,8 +515,8 @@ h3 {
     background: linear-gradient(
       to right,
       var(--bg),
-      rgb(14 16 22 / 0) 10%,
-      rgb(14 16 22 / 0) 90%,
+      var(--bg-clear) 10%,
+      var(--bg-clear) 90%,
       var(--bg)
     );
     content: "";
@@ -509,11 +547,13 @@ h3 {
 .home-section-heading::before {
   color: var(--accent-2);
   content: "##";
+  content: "##" / "";
 }
 
 .home-section-heading::after {
   color: var(--ink-4);
   content: "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------";
+  content: "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" / "";
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -603,10 +643,12 @@ main {
 .rail__summary::before {
   color: var(--ink-4);
   content: "+ ";
+  content: "+ " / "";
 }
 
 .rail__fold[open] > .rail__summary::before {
   content: "- ";
+  content: "- " / "";
 }
 
 .rail__list {
@@ -661,7 +703,7 @@ main {
    it), on one spacing scale */
 
 body.home-page {
-  max-width: calc(760px + 2 * clamp(20px, 4vw, 48px));
+  --page: calc(760px + 2 * var(--gutter));
 }
 
 .home {
@@ -671,9 +713,7 @@ body.home-page {
   --row: 0.55rem; /* between one-line rows */
   display: flex;
   flex-direction: column;
-  max-width: 760px;
   padding-top: 10px; /* the intro sits close under the name */
-  width: 100%;
 }
 
 .home > section,
@@ -726,6 +766,7 @@ body.home-page {
 .home-intro li::before {
   color: var(--ink-4);
   content: "-";
+  content: "-" / "";
   left: 0;
   position: absolute;
 }
@@ -762,6 +803,7 @@ body.home-page {
 .home-experience__item::before {
   color: var(--ink-4);
   content: "-";
+  content: "-" / "";
   left: 0;
   position: absolute;
 }
@@ -789,8 +831,13 @@ body.home-page {
   width: 22px;
 }
 
+/* the company mark sits a space from the role and a space from the name */
+.home-experience__logo {
+  margin-right: 1ch;
+}
+
 .home-experience__period {
-  color: var(--ink-2);
+  color: var(--ink-3);
   font-size: 12.5px;
   white-space: nowrap;
 }
@@ -843,6 +890,7 @@ body.home-page {
 .home-project::before {
   color: var(--ink-4);
   content: "-";
+  content: "-" / "";
   left: 0;
   position: absolute;
   top: 0;
@@ -908,7 +956,7 @@ a.home-project__name:hover {
 }
 
 .blog-draft {
-  border: 1px solid rgb(157 184 239 / 0.35);
+  border: 1px solid var(--line-accent);
   color: var(--ink-2);
   font-size: 13px;
   line-height: 1.55;
@@ -923,11 +971,10 @@ a.home-project__name:hover {
 }
 
 .writing-row__draft {
-  border: 1px solid rgb(157 184 239 / 0.4);
+  border: 1px solid var(--line-accent);
   color: var(--accent);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.04em;
   margin-left: 8px;
   padding: 1px 6px;
   position: relative;
@@ -936,8 +983,9 @@ a.home-project__name:hover {
 }
 
 .blog-meta > * + *::before {
-  color: var(--ink-4);
-  content: "·";
+  color: var(--ink-3);
+  content: "//";
+  content: "//" / "";
   margin: 0 0.6em;
 }
 
@@ -982,10 +1030,12 @@ a.home-project__name:hover {
 .blog-article h3::before {
   color: var(--accent-2);
   content: "## ";
+  content: "## " / "";
 }
 
 .blog-article h3::before {
   content: "### ";
+  content: "### " / "";
 }
 
 .blog-article ul,
@@ -1039,11 +1089,10 @@ code {
 .blog-article pre .copy {
   background: var(--bg);
   border: 0;
-  color: var(--ink-4);
+  color: var(--ink-3);
   cursor: pointer;
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.04em;
   opacity: 0;
   padding: 2px 6px;
   position: absolute;
@@ -1076,7 +1125,7 @@ code {
 }
 
 .figure video {
-  background: #000;
+  background: var(--bg);
   display: block;
   height: auto;
   width: 100%;
@@ -1102,7 +1151,6 @@ code {
   color: var(--ink);
   content: "fig " counter(figure);
   font-size: 11.5px;
-  letter-spacing: 0.04em;
   margin-right: 14px;
 }
 
@@ -1178,6 +1226,7 @@ blockquote p {
 .blog-tags a::before {
   color: var(--ink-4);
   content: "#";
+  content: "#" / "";
 }
 
 .blog-tags a:hover {
@@ -1277,12 +1326,14 @@ blockquote p {
 .not-found-links a::before {
   color: var(--ink-4);
   content: "[ ";
+  content: "[ " / "";
   white-space: pre;
 }
 
 .not-found-links a::after {
   color: var(--ink-4);
   content: " ]";
+  content: " ]" / "";
   white-space: pre;
 }
 
@@ -1326,9 +1377,7 @@ body > .layout {
   display: block;
   height: 280px;
   padding-top: 0;
-  margin-left: calc(50% - 50vw);
   overflow: hidden;
-  width: 100vw;
 }
 
 .footer__copy {
@@ -1337,23 +1386,24 @@ body > .layout {
   font-size: 12.5px;
   left: 0;
   margin: 0 auto;
-  max-width: 1080px;
-  padding: 0 clamp(20px, 4vw, 48px);
+  max-width: var(--page);
+  padding: 0 var(--gutter);
   pointer-events: none;
   position: absolute;
   right: 0;
   z-index: 5;
 }
 
+/* the veil overhangs to the left, so the words line up with the column */
 .footer__copy span {
-  background: rgb(14 16 22 / 0.82);
+  background: var(--bg-veil);
   display: inline-block;
+  margin-left: -9px;
   padding: 5px 9px;
 }
 
 .city {
   --city-near: var(--ink-4);
-  --city-far: #232836;
   bottom: 0;
   container-type: inline-size;
   height: 280px;
@@ -1368,15 +1418,15 @@ body > .layout {
   background:
     radial-gradient(
       ellipse 95% 80% at 50% 85%,
-      rgb(111 143 207 / 0.03),
-      rgb(111 143 207 / 0.012) 50%,
+      var(--city-glow),
+      var(--city-glow-mid) 50%,
       transparent 90%
     ),
-    linear-gradient(to top, rgb(111 143 207 / 0.02), transparent 45%),
-    linear-gradient(to right, rgb(0 0 0 / 0.35), transparent 22%, transparent 78%, rgb(0 0 0 / 0.35));
+    linear-gradient(to top, var(--city-glow-low), transparent 45%),
+    linear-gradient(to right, var(--city-shade), transparent 22%, transparent 78%, var(--city-shade));
   inset: 0;
-  mask-image: linear-gradient(to bottom, transparent, #000 38%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 38%);
+  mask-image: linear-gradient(to bottom, transparent, var(--bg) 38%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, var(--bg) 38%);
   position: absolute;
 }
 
@@ -1548,16 +1598,16 @@ body > .layout {
    a rounded frame with its title cut into the top edge, and where the track
    comes from cut into the other end */
 
-/* the slot keeps the pane's place while the worker answers, so nothing below
-   it shifts; on phones the artists usually take a second line. the frame
-   itself only ever wraps what it holds */
+/* the slot keeps the pane's place while the worker answers (its idle height:
+   the last track shows first), so nothing below it shifts; on phones the
+   artists usually take a second line. the frame only ever wraps what it holds */
 .now-slot {
-  min-height: 169px;
+  min-height: 119px;
 }
 
 @media (max-width: 640px) {
   .now-slot {
-    min-height: 190px;
+    min-height: 140px;
   }
 }
 
@@ -1604,7 +1654,7 @@ body > .layout {
 }
 
 .now__source {
-  color: var(--ink-4);
+  color: var(--ink-3);
   right: 1.5ch;
 }
 
@@ -1618,7 +1668,7 @@ body > .layout {
 /* a one-em box around the glyph, so it turns about its own centre; nudged
    down to sit in the middle of the title's line */
 .now__disc {
-  color: var(--ink-4);
+  color: var(--ink-3);
   display: inline-block;
   font-family: var(--art);
   grid-row: 1;
@@ -1626,11 +1676,12 @@ body > .layout {
   justify-self: start;
   line-height: 1;
   margin-top: 0.35em;
+  transform-origin: 0.28em 0.43em; /* the circle's own centre in this glyph */
   width: 0.6em;
 }
 
 .now__disc::before {
-  content: "\25D0";
+  content: "\25D4";
 }
 
 /* a quarter turn at a time, like a terminal spinner */
@@ -1670,9 +1721,9 @@ body > .layout {
   text-wrap: pretty;
 }
 
-/* the spectrum: two layers of dots on square cells, like the cat's. the dim
-   field stays put; the lit dots above it are redrawn by site.js, coloured by
-   height so only the peaks reach the warm of the cat's fur */
+/* the spectrum: layers of dots on square cells, like the cat's. the dim
+   field stays put; site.js redraws the bars in the earth's blue and, above
+   them, the dot each peak leaves behind in the warm of the cat's fur */
 .now__viz {
   contain: strict; /* a redraw stays inside the strip */
   font-family: var(--art);
@@ -1703,16 +1754,11 @@ body > .layout {
 }
 
 .now__lit {
-  -webkit-background-clip: text;
-  background-clip: text;
-  background-image: linear-gradient(
-    to top,
-    var(--accent-2),
-    var(--accent) 45%,
-    var(--accent-soft) 72%,
-    var(--warm)
-  );
-  color: transparent;
+  color: var(--accent-2);
+}
+
+.now__caps {
+  color: var(--warm);
 }
 
 .now__time {
@@ -1754,7 +1800,8 @@ body > .layout {
   content: "\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501";
 }
 
-/* nothing to measure when it isn't playing: the note stands alone */
+/* nothing to measure or move when it isn't playing: the note stands alone */
+.now:not(.now--playing) .now__viz,
 .now:not(.now--playing) .now__rail,
 .now:not(.now--playing) .now__length {
   display: none;
@@ -1763,7 +1810,7 @@ body > .layout {
 /* reading meter in the article rail */
 
 .rail__progress {
-  color: var(--ink-4);
+  color: var(--ink-3);
   font-family: var(--art);
   font-size: 11px;
   font-variant-ligatures: none;
@@ -1872,7 +1919,16 @@ math[display="block"] {
 
 @media (max-width: 640px) {
   body {
-    padding: 0 17px;
+    --gutter: 17px;
+  }
+
+  /* the update takes its own line rather than opening one with "//" */
+  .blog-meta .blog-updated {
+    flex-basis: 100%;
+  }
+
+  .blog-meta .blog-updated::before {
+    content: none;
   }
 
   .site-header {

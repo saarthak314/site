@@ -37,7 +37,7 @@ where = ["src"]
 include = ["sitegen*"]
 
 [tool.ruff]
-exclude = ["DESIGN-IS-2026-08-25", "docs"]
+exclude = ["docs"]
 indent-width = 2
 line-length = 88
 target-version = "py311"

@@ -82,7 +82,7 @@ class TestSiteRendering(unittest.TestCase):
     # the role runs straight into the company's mark, with no "@" between
     self.assertIn("<strong>systems engineer</strong> <img", home)
     self.assertNotIn("<span> @ </span>", home)
-    self.assertIn('class="home-project__tech">python · agents</span>', home)
+    self.assertIn('class="home-project__tech">python, agents</span>', home)
     self.assertLess(home.index(">kurama</a>"), home.index(">sakura</a>"))
     self.assertLess(home.index(">sakura</a>"), home.index(">web server</span>"))
     self.assertLess(home.index(">web server</span>"), home.index(">paimon</a>"))
@@ -106,9 +106,10 @@ class TestSiteRendering(unittest.TestCase):
 
     home = self.output_dir.joinpath("index.html").read_text()
     stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
-    cmap = TTFont(
+    with TTFont(
       str(PROJECT_ROOT / "static" / "fonts" / "jetbrains-mono-symbols.woff2")
-    ).getBestCmap()
+    ) as font:
+      cmap = font.getBestCmap()
     art = re.search(r'<pre class="cat[^>]*>(.*?)</pre>', home, re.S).group(1)
     article = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
     city = re.search(r'<div class="city".*?</footer>', article, re.S).group(0)
@@ -169,6 +170,42 @@ class TestSiteRendering(unittest.TestCase):
     frame = re.search(r"\n\.now \{[^}]*\}", stylesheet).group(0)
     self.assertNotIn("min-height", frame)
     self.assertIn(".now-slot:has(.now--off)", stylesheet)
+
+  def test_audit_holds_colour_overflow_glyph_and_label_rules(self) -> None:
+    from fontTools.ttLib import TTFont
+
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    code = PROJECT_ROOT.joinpath("static", "code.css").read_text()
+    home = self.output_dir.joinpath("index.html").read_text()
+
+    # every colour goes through a token: no literal past the :root block
+    body = stylesheet[stylesheet.index(":root {") :]
+    body = body[body.index("}") + 1 :]
+    for sheet in (body, code):
+      self.assertNotRegex(sheet, r"#[0-9a-fA-F]{3,8}\b|rgba?\(")
+    # full-bleed without 100vw; sideways overflow clipped on html and body
+    self.assertNotIn("100vw;", stylesheet)
+    self.assertNotIn("50vw", stylesheet)
+    self.assertRegex(stylesheet, r"\nbody \{[^}]*overflow-x: clip;")
+    self.assertRegex(stylesheet, r"\nhtml \{[^}]*overflow-x: clip;")
+    # no tracked small labels and no gradient text in the player
+    self.assertNotIn("letter-spacing: 0.04em", stylesheet)
+    lit = re.search(r"\n\.now__lit \{[^}]*\}", stylesheet).group(0)
+    self.assertNotIn("background-clip", lit)
+    # the disc is a glyph the preloaded subset really has, so the page never
+    # reaches for the full code font or a system fallback
+    with TTFont(
+      PROJECT_ROOT.joinpath("static", "fonts", "jetbrains-mono-symbols.woff2")
+    ) as font:
+      symbols = font.getBestCmap()
+    for escape in re.findall(r'content: "\\(25[0-9A-Fa-f]{2})"', stylesheet):
+      self.assertIn(int(escape, 16), symbols, escape)
+    self.assertNotIn("\\25D0", stylesheet)
+    # tags read as a list, not a middle-dot meta string
+    self.assertNotIn(" · ", home.split("</pre>")[-1])
+    # decorative marks are silent to screen readers
+    self.assertIn('content: "##" / "";', stylesheet)
+    self.assertIn('content: "-" / "";', stylesheet)
 
   def test_banner_hover_code_loads_only_when_a_mouse_arrives(self) -> None:
     home = self.output_dir.joinpath("index.html").read_text()

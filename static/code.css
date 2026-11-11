@@ -6,7 +6,7 @@
   color: var(--ink-2);
 }
 
-/* comments and preprocessor lines recede */
+/* comments and preprocessor lines recede, still at reading contrast */
 .c,
 .ch,
 .cm,
@@ -14,7 +14,7 @@
 .cpf,
 .c1,
 .cs {
-  color: var(--ink-4);
+  color: var(--ink-3);
   font-style: italic;
 }
 
@@ -119,5 +119,5 @@
 .gr,
 .gt,
 .err {
-  color: #d98c7a;
+  color: var(--err);
 }

@@ -208,7 +208,9 @@ class TestSharedLayout(TemplateRenderingTestCase):
     self.assertIn('<body class="home-page">', html)
     self.assertIn('<a class="skip-link" href="#main-content">skip to content</a>', html)
     self.assertIn(
-      '<a class="site-title" href="/">s<span class="lam">λ</span>rthak tomar</a>', html
+      '<a class="site-title" href="/" aria-label="sarthak tomar">'
+      's<span class="lam">λ</span>rthak tomar</a>',
+      html,
     )
     # the wordmark stands alone, without the full name beside it
     self.assertNotIn("site-name", html)
@@ -441,7 +443,8 @@ class TestHomeTemplate(TemplateRenderingTestCase):
     self.assertNotIn("all writings", html)
     self.assertNotIn('href="/blogs/"', html)
     self.assertIn('<section class="home-projects" id="projects"', html)
-    self.assertIn('class="home-project__tech">python · agents</span>', html)
+    # a plain list, not a middle-dot meta string
+    self.assertIn('class="home-project__tech">python, agents</span>', html)
     self.assertIn('<span class="home-project__name">web server</span>', html)
     self.assertNotIn('href="None">web server</a>', html)
     self.assertIn(
@@ -786,7 +789,7 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
     self.assertIn('<p class="now__by"></p>', html)
     self.assertIn(
       '<div class="now__viz" aria-hidden="true"><pre class="now__rest"></pre>'
-      '<pre class="now__lit"></pre></div>',
+      '<pre class="now__lit"></pre><pre class="now__caps"></pre></div>',
       html,
     )
     self.assertIn(

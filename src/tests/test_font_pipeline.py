@@ -15,7 +15,8 @@ class TestFontPipeline(unittest.TestCase):
     with tempfile.TemporaryDirectory() as temp_dir:
       output = Path(temp_dir) / "symbols.woff2"
       size = subset_font(SOURCE_FONT, output, SYMBOL_UNICODES)
-      cmap = TTFont(str(output)).getBestCmap()
+      with TTFont(str(output)) as font:
+        cmap = font.getBestCmap()
 
     self.assertLess(size, 12_000)
     for codepoint in (

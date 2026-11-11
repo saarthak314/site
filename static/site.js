@@ -172,6 +172,7 @@
     // it stops. About twelve frames a second, and only while it's on screen.
     const viz = box.querySelector(".now__viz");
     const lit = viz && viz.querySelector(".now__lit");
+    const peaks = viz && viz.querySelector(".now__caps");
     const rest = viz && viz.querySelector(".now__rest");
     const ROWS = 6;
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -233,16 +234,24 @@
         caps[c] = settle || bars[c] >= caps[c] ? bars[c] : caps[c] - 0.025;
       }
     };
+    // the bars and the dot each peak leaves behind are drawn on two layers, so
+    // each keeps one solid colour
     const draw = () => {
       const lines = [];
+      const tops = [];
       for (let row = ROWS; row >= 1; row -= 1) {
         let line = "";
+        let top = "";
         for (let c = 0; c < columns; c += 1) {
-          line += row <= Math.round(bars[c] * ROWS) || row === Math.round(caps[c] * ROWS) ? "\u2022" : " ";
+          const bar = row <= Math.round(bars[c] * ROWS);
+          line += bar ? "\u2022" : " ";
+          top += !bar && row === Math.round(caps[c] * ROWS) ? "\u2022" : " ";
         }
         lines.push(line);
+        tops.push(top);
       }
       lit.textContent = lines.join("\n");
+      peaks.textContent = tops.join("\n");
     };
     const moving = () =>
       visible && !document.hidden && (box.classList.contains("now--playing") || caps.some((v) => v > 0));
@@ -253,7 +262,7 @@
       if (moving()) frame = window.setTimeout(animate, 83);
     };
     const wake = () => {
-      if (!lit || !rest) return;
+      if (!lit || !rest || !peaks) return;
       fit();
       if (calm.matches) {
         step(true);
@@ -411,7 +420,7 @@
       // freighter: cab hauling three containers
       [
         "  " + hull("┌─┐┌─┐┌─┐ ") + hi("▄▄"),
-        thrust("▪═") + hull("▐") + hi("▤") + hull("▌▐") + hi("▤") + hull("▌▐") + hi("▤") + hull("▌") + "▐█" + hi("▙") + hull("▶"),
+        thrust("▪═") + hull("▐") + hi("▒") + hull("▌▐") + hi("▒") + hull("▌▐") + hi("▒") + hull("▌") + "▐█" + hi("▙") + hull("▶"),
         "  " + hull("└─┘└─┘└─┘ ") + hull("▀▀"),
       ],
       // saucer: lit dome over a wide disc

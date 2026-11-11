@@ -21,11 +21,14 @@ def subset_font(source: Path, output: Path, unicodes: str = SYMBOL_UNICODES) -> 
   options.name_IDs = ["*"]
   options.notdef_outline = True
   font = subset.load_font(str(source), options)
-  subsetter = subset.Subsetter(options)
-  subsetter.populate(unicodes=subset.parse_unicodes(unicodes))
-  subsetter.subset(font)
-  output.parent.mkdir(parents=True, exist_ok=True)
-  subset.save_font(font, str(output), options)
+  try:
+    subsetter = subset.Subsetter(options)
+    subsetter.populate(unicodes=subset.parse_unicodes(unicodes))
+    subsetter.subset(font)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    subset.save_font(font, str(output), options)
+  finally:
+    font.close()
   return output.stat().st_size
 
 
@@ -35,7 +38,8 @@ def covered_codepoints(font_dir: Path) -> set[int]:
 
   covered: set[int] = set()
   for path in sorted(font_dir.glob("*.woff2")):
-    covered.update(TTFont(str(path)).getBestCmap())
+    with TTFont(str(path)) as font:
+      covered.update(font.getBestCmap())
   return covered
 
 
