@@ -13,12 +13,12 @@
     wide.addEventListener("change", sync);
   }
 
-  // The banner's dots ride a wave under the mouse. That code lives in cat.js
-  // and loads the first time the mouse really moves over the banner, so a page
-  // load pays for nothing but the text; touch screens and reduced motion never
-  // load it.
+  // The banner's dots ride a wave under the mouse, or under a finger. That
+  // code lives in cat.js and loads the first time the mouse really moves over
+  // the banner or a finger touches it, so a page load pays for nothing but the
+  // picture; reduced motion never loads it.
   const banner = document.querySelector(".banner");
-  const pointer = "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
+  const motion = "(prefers-reduced-motion: no-preference)";
   // The sky (twinkling stars, a shooting star) holds still while the banner
   // is out of view.
   if (banner && "IntersectionObserver" in window) {
@@ -26,14 +26,19 @@
       entries.forEach((entry) => banner.classList.toggle("banner--still", !entry.isIntersecting));
     }).observe(banner);
   }
-  if (banner && window.matchMedia(pointer).matches) {
+  if (banner && window.matchMedia(motion).matches) {
     const wake = (event) => {
-      // the page scrolling under a resting cursor reports a move with no movement
-      if (event.pointerType !== "mouse" || (!event.movementX && !event.movementY)) return;
+      // a mouse wakes it by moving (the page scrolling under a resting cursor
+      // reports a move with no movement); a finger or a pen by touching down
+      const mouse = event.pointerType === "mouse";
+      const moved = event.type === "pointermove" && (event.movementX || event.movementY);
+      if (mouse ? !moved : event.type !== "pointerdown") return;
       banner.removeEventListener("pointermove", wake);
+      banner.removeEventListener("pointerdown", wake);
       import("/cat.js").then((art) => art.start(banner, event)).catch(() => {});
     };
     banner.addEventListener("pointermove", wake, { passive: true });
+    banner.addEventListener("pointerdown", wake, { passive: true });
   }
 
   // A copy affordance on code blocks, revealed on hover.

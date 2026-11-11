@@ -222,32 +222,41 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('content: "##" / "";', stylesheet)
     self.assertIn('content: "-" / "";', stylesheet)
 
-  def test_banner_hover_code_loads_only_when_a_mouse_arrives(self) -> None:
+  def test_banner_wave_loads_only_when_a_mouse_or_a_finger_arrives(self) -> None:
     home = self.output_dir.joinpath("index.html").read_text()
     script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
     hover = self.output_dir.joinpath("cat.js").read_text()
 
     self.assertNotIn("cat.js", home)
-    # a real move loads it; the page scrolling under a resting cursor does not
+    # a real mouse move loads it, and so does a touch; the page scrolling under
+    # a resting cursor does not
     self.assertIn(
       'banner.addEventListener("pointermove", wake, { passive: true })', script
     )
-    self.assertIn("!event.movementX && !event.movementY", script)
+    self.assertIn(
+      'banner.addEventListener("pointerdown", wake, { passive: true })', script
+    )
+    self.assertIn("event.movementX || event.movementY", script)
     self.assertIn('import("/cat.js")', script)
-    self.assertIn("(hover: hover) and (pointer: fine)", script)
+    self.assertNotIn("pointer: fine", script)
     self.assertIn("prefers-reduced-motion: no-preference", script)
     self.assertIn("export function start", hover)
     self.assertIn("requestAnimationFrame", hover)
-    # one simple wave that follows the cursor; hovering is the only input
+    # one simple wave that follows the cursor or the finger
     self.assertIn("centre", hover)
     self.assertIn("Math.sin", hover)
     self.assertNotIn("Math.cos", hover)
     self.assertRegex(hover, r"move\.screenX\s*!==\s*screen\.x")
-    self.assertNotIn("pointerdown", hover)
+    self.assertIn("pointerdown", hover)
+    self.assertIn("pointercancel", hover)
     self.assertNotIn("click", hover)
+    # the canvas takes each dot's size from the stylesheet, which phones enlarge
+    self.assertIn("strokeWidth", hover)
     stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
     banner = re.search(r"\n\.banner \{[^}]*\}", stylesheet).group(0)
     self.assertNotIn("mask-image", banner)
+    # vertical drags on the banner still scroll the page, and pinching zooms
+    self.assertIn("touch-action: pan-y pinch-zoom", banner)
 
   def test_shipped_script_and_stylesheet_are_minified_copies(self) -> None:
     script = self.output_dir.joinpath("site.js").read_text()

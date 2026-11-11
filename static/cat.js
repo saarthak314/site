@@ -1,8 +1,8 @@
-// A simple wave through the home banner's dots, under the cursor.
+// A simple wave through the home banner's dots, under the cursor or a finger.
 //
 // site.js imports this the first time the mouse really moves over the banner
-// (not when the page scrolls under a resting cursor), so a page load, and
-// every phone, only ever pays for the picture. On start a canvas is laid over
+// (not when the page scrolls under a resting cursor) or a finger touches it,
+// so a page load only ever pays for the picture. On start a canvas is laid over
 // the SVG, which stays where it is, invisible but still labelled for screen
 // readers. The twinkling stars are a separate layer above, and keep twinkling
 // either way.
@@ -13,14 +13,19 @@
 //
 // Around the cursor the dots ride a sine wave that rolls sideways: crests
 // lift the dots and swell them, troughs let them sink. Moving the mouse stirs
-// the water; scrolling does not. When the mouse stops or leaves, the wave
-// settles and the loop sleeps. A frame only touches the tiles under the wave,
+// the water; scrolling does not. On a touch screen a tap stirs it where the
+// finger lands, holding the finger down keeps it stirred, and dragging sideways
+// carries the wave along (a vertical drag still scrolls the page). When the
+// mouse stops or leaves, or the finger lifts, the wave settles and the loop
+// sleeps. A frame only touches the tiles under the wave,
 // and a moment after the mouse leaves the canvas lets go of its pixels and
 // the text returns.
 
 // Each dot, in cells, as the SVG draws it: its radius and how far down its
 // cell its centre sits ("·" and "•" as JetBrains Mono sets them on the grid).
-// Across, every dot is centred 0.75 cells into its cell.
+// Across, every dot is centred 0.75 cells into its cell. The radius is only a
+// fallback: the stylesheet's stroke widths are read back, since small screens
+// draw the dots larger.
 const SMALL = { r: 0.205, y: 0.5475 };
 const LARGE = { r: 0.3, y: 0.4875 };
 const ACROSS = 0.75;
@@ -37,6 +42,7 @@ const LIFT = 1; // how high a crest lifts a dot
 const SWELL = 0.8; // how much a crest grows a dot (a trough shrinks it)
 const FOLLOW = 0.06; // the wave's centre trails the cursor by about this long
 const STIR = 0.25; // a movement keeps stirring the water for about this long
+const TAP = 0.5; // a tap keeps it stirred for this long before it settles
 const CALM = 0.35; // the wave rises and settles over about this long
 const STILL = 0.04; // a dot moved less than this (in cells) is left as drawn
 const REACH = 1.4; // the farthest a dot may travel
@@ -55,10 +61,12 @@ export function start(banner, event) {
   // Read the dots back out of the paths: a path is one colour and size, and
   // each "M x y" or "m dx dy" in it is one dot.
   const tones = [];
+  const paths = [];
   const found = [];
   art.querySelectorAll("path").forEach((path) => {
     const tone = tones.length;
     tones.push(window.getComputedStyle(path).stroke);
+    paths.push(path);
     const big = path.classList.contains("l") ? 1 : 0;
     const drop = (big ? LARGE : SMALL).y;
     let x = 0;
@@ -86,6 +94,14 @@ export function start(banner, event) {
     tone[i] = found[i * 4 + 3];
     if (hx[i] >= 0 && hx[i] < cols && hy[i] >= 0 && hy[i] < rows) grid[hy[i] * cols + hx[i]] = i;
   }
+  // Each colour's dot radius, in cells: half its stroke width as drawn now.
+  const radius = new Float32Array(tones.length);
+  const measure = () => {
+    paths.forEach((path, k) => {
+      const stroke = Number.parseFloat(window.getComputedStyle(path).strokeWidth);
+      radius[k] = stroke > 0 ? stroke / 2 : (path.classList.contains("l") ? LARGE : SMALL).r;
+    });
+  };
   const tilesAcross = Math.ceil(cols / TILE);
   const tilesDown = Math.ceil(rows / TILE);
   const dirty = new Uint8Array(tilesAcross * tilesDown);
@@ -125,7 +141,7 @@ export function start(banner, event) {
       for (const i of bucket) {
         const swell = carried ? Math.min(2, Math.max(0.25, 1 + grow[i])) : 1;
         const lift = carried ? Math.max(-REACH, Math.min(REACH, oy[i])) * cell : 0;
-        const r = (large[i] ? LARGE : SMALL).r * cell * swell * INK;
+        const r = radius[k] * cell * swell * INK;
         const x = centreX(i);
         const y = centreY(i) + lift;
         target.moveTo(x + r, y);
@@ -151,7 +167,8 @@ export function start(banner, event) {
     if (!live || box.width === width) return;
     width = box.width;
     const frame = art.parentElement.getBoundingClientRect();
-    ratio = Math.min(2, window.devicePixelRatio || 1);
+    // as sharp as the screen: phones are 3x, and a 2x canvas there blurs
+    ratio = Math.min(3, window.devicePixelRatio || 1);
     across = box.width / cols;
     cell = across * ratio;
     const left = (box.left - frame.left) * ratio;
@@ -164,6 +181,7 @@ export function start(banner, event) {
     canvas.style.top = `${Math.floor(top) / ratio}px`;
     canvas.style.width = `${canvas.width / ratio}px`;
     canvas.style.height = `${canvas.height / ratio}px`;
+    measure();
     drawStill();
     context.drawImage(still, 0, 0);
   };
@@ -194,6 +212,9 @@ export function start(banner, event) {
   let pointer = null; // where the cursor is, in cells, while it is over the art
   let centre = null; // where the wave is: it trails the cursor
   let stir = 0; // 1 just after the mouse moves, falling back to 0
+  const fingers = new Set(); // the fingers down on the banner
+  let touching = false; // any finger is
+  let hold = 0; // the clock time a tap stops stirring the water
   let strength = 0; // how tall the wave is now, following the stirring
   let clock = 0; // seconds the water has been moving, for the crests' phase
   let last = 0;
@@ -218,7 +239,7 @@ export function start(banner, event) {
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
     last = now;
     clock += dt;
-    stir *= Math.exp(-dt / STIR);
+    stir = touching || clock < hold ? 1 : stir * Math.exp(-dt / STIR);
     strength += (stir - strength) * (1 - Math.exp(-dt / CALM));
     if (pointer && centre) {
       const pull = 1 - Math.exp(-dt / FOLLOW);
@@ -319,10 +340,38 @@ export function start(banner, event) {
     wake();
   };
 
+  // A finger (or a pen) stirs the water where it lands, and keeps stirring it
+  // while it stays down.
+  const touch = (input) => {
+    fingers.add(input.pointerId);
+    touching = true;
+    stirAt(input);
+    hold = clock + TAP;
+  };
+  const lift = (up) => {
+    if (up.pointerType === "mouse") return;
+    fingers.delete(up.pointerId);
+    if (fingers.size) return;
+    touching = false;
+    pointer = null;
+    wake();
+  };
+  banner.addEventListener(
+    "pointerdown",
+    (down) => {
+      if (down.pointerType !== "mouse") touch(down);
+    },
+    { passive: true },
+  );
+  banner.addEventListener("pointerup", lift);
+  banner.addEventListener("pointercancel", lift);
   banner.addEventListener(
     "pointermove",
     (move) => {
-      if (move.pointerType !== "mouse") return;
+      if (move.pointerType !== "mouse") {
+        if (touching) stirAt(move);
+        return;
+      }
       const moving = move.screenX !== screen.x || move.screenY !== screen.y;
       screen = { x: move.screenX, y: move.screenY };
       if (moving) stirAt(move);
@@ -334,6 +383,13 @@ export function start(banner, event) {
     pointer = null;
     wake();
   });
-  // site.js starts this on a real move; the cursor may have left since.
-  if (banner.matches(":hover")) stirAt(event);
+  // site.js starts this on a real move or a touch; the cursor may have left,
+  // or the finger lifted, since. A touch gets its wave either way, settling
+  // where the finger landed.
+  if (event.pointerType !== "mouse") {
+    touch(event);
+    fingers.clear();
+    touching = false;
+    pointer = null;
+  } else if (banner.matches(":hover")) stirAt(event);
 }

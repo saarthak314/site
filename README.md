@@ -13,7 +13,7 @@ no frontend framework: markdown goes in, and plain html, one stylesheet and two 
 - `templates/`: jinja layouts (`base`, `home`, `blog`, `tags`, `404`, `redirect`) and partials (header, footer, the cat banner, the city under each post, the listening pane)
 - `static/`: copied into the build as is
   - `index.css`, plus `code.css` for code blocks
-  - `site.js` for the listening pane, its spectrum and the ships; `cat.js` for the banner's hover ripple
+  - `site.js` for the listening pane, its spectrum and the ships; `cat.js` for the ripple through the banner under a mouse or a finger
   - fonts, images, `CNAME`, `robots.txt`, `llms.txt`
 - `assets/`: source fonts and images; the scripts below turn them into the symbol font subset and the webp variants in `static/`
 - `src/sitegen/`: the generator
