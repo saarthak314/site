@@ -2,15 +2,14 @@
 //
 // site.js imports this the first time the mouse really moves over the banner
 // (not when the page scrolls under a resting cursor), so a page load, and
-// every phone, only ever pays for the text. On start a canvas is laid over
-// the text, which stays where it is, invisible but still labelled for screen
+// every phone, only ever pays for the picture. On start a canvas is laid over
+// the SVG, which stays where it is, invisible but still labelled for screen
 // readers. The twinkling stars are a separate layer above, and keep twinkling
 // either way.
 //
-// The canvas keeps a still copy of the art, each dot a circle of the glyph's
-// exact size and place (circles match the text more closely than the canvas's
-// own text drawing, which macOS thickens), so at rest the two look the same.
-// A frame copies tiles back from it and draws only the dots the wave carries.
+// The canvas keeps a still copy of the art, each dot the same circle at the
+// same place as in the SVG, so at rest the two look the same. A frame copies
+// tiles back from it and draws only the dots the wave carries.
 //
 // Around the cursor the dots ride a sine wave that rolls sideways: crests
 // lift the dots and swell them, troughs let them sink. Moving the mouse stirs
@@ -19,12 +18,15 @@
 // and a moment after the mouse leaves the canvas lets go of its pixels and
 // the text returns.
 
-// Each glyph's ink, in em: its radius and how high its centre sits above the
-// baseline (JetBrains Mono, 1000 units to the em). Horizontally the ink is
-// centred 0.3em into the advance. Where the baselines fall is measured from the
-// text itself, since the browser rounds font metrics and line boxes.
-const SMALL = { glyph: "·", r: 0.082, lift: 0.341 }; // 164 units across
-const LARGE = { glyph: "•", r: 0.12, lift: 0.365 }; // 240 units across
+// Each dot, in cells, as the SVG draws it: its radius and how far down its
+// cell its centre sits ("·" and "•" as JetBrains Mono sets them on the grid).
+// Across, every dot is centred 0.75 cells into its cell.
+const SMALL = { r: 0.205, y: 0.5475 };
+const LARGE = { r: 0.3, y: 0.4875 };
+const ACROSS = 0.75;
+// a filled circle comes out a shade heavier than the SVG's round cap of the
+// same radius; this much smaller and the two match
+const INK = 0.977;
 
 // The water, in cells and seconds.
 const WAVE = 16; // distance from one crest to the next
@@ -43,44 +45,31 @@ const TILE = 8; // the canvas repaints in squares of this many cells
 const TAU = Math.PI * 2;
 
 export function start(banner, event) {
-  const pre = banner.querySelector(".cat");
-  if (!pre || banner.querySelector(".cat__live")) return;
-  const cols = Number(pre.style.getPropertyValue("--cols"));
-  if (!cols) return;
+  const art = banner.querySelector("svg.cat");
+  if (!art || banner.querySelector(".cat__live")) return;
+  const view = art.viewBox.baseVal;
+  const cols = view.width;
+  const rows = view.height;
+  if (!cols || !rows) return;
 
-  // Read the dots back out of the text: one per "·" or "•", with its colour.
+  // Read the dots back out of the paths: a path is one colour and size, and
+  // each "M x y" or "m dx dy" in it is one dot.
   const tones = [];
-  const toneOf = new Map();
-  const toneFor = (element) => {
-    const key = element === pre ? "" : element.className;
-    let index = toneOf.get(key);
-    if (index === undefined) {
-      index = tones.length;
-      toneOf.set(key, index);
-      tones.push(window.getComputedStyle(element).color);
-    }
-    return index;
-  };
   const found = [];
-  let col = 0;
-  let row = 0;
-  const read = (text, tone) => {
-    for (const glyph of text) {
-      if (glyph === "\n") {
-        row += 1;
-        col = 0;
-        continue;
-      }
-      if (glyph === SMALL.glyph || glyph === LARGE.glyph) {
-        found.push(col, row, glyph === LARGE.glyph ? 1 : 0, tone);
-      }
-      col += 1;
+  art.querySelectorAll("path").forEach((path) => {
+    const tone = tones.length;
+    tones.push(window.getComputedStyle(path).stroke);
+    const big = path.classList.contains("l") ? 1 : 0;
+    const drop = (big ? LARGE : SMALL).y;
+    let x = 0;
+    let y = 0;
+    const moves = /([Mm])(-?[\d.]+)[ ,](-?[\d.]+)/g;
+    for (let m = moves.exec(path.getAttribute("d")); m; m = moves.exec(path.getAttribute("d"))) {
+      x = m[1] === "M" ? Number(m[2]) : x + Number(m[2]);
+      y = m[1] === "M" ? Number(m[3]) : y + Number(m[3]);
+      found.push(Math.round(x - ACROSS), Math.round(y - drop), big, tone);
     }
-  };
-  pre.childNodes.forEach((node) => {
-    read(node.textContent, toneFor(node.nodeType === Node.TEXT_NODE ? pre : node));
   });
-  const rows = row + 1;
   const count = found.length / 4;
   const hx = new Float32Array(count);
   const hy = new Float32Array(count);
@@ -95,7 +84,7 @@ export function start(banner, event) {
     hy[i] = found[i * 4 + 1];
     large[i] = found[i * 4 + 2];
     tone[i] = found[i * 4 + 3];
-    grid[hy[i] * cols + hx[i]] = i;
+    if (hx[i] >= 0 && hx[i] < cols && hy[i] >= 0 && hy[i] < rows) grid[hy[i] * cols + hx[i]] = i;
   }
   const tilesAcross = Math.ceil(cols / TILE);
   const tilesDown = Math.ceil(rows / TILE);
@@ -106,20 +95,21 @@ export function start(banner, event) {
   canvas.setAttribute("aria-hidden", "true");
   canvas.hidden = true;
   const context = canvas.getContext("2d");
-  const still = document.createElement("canvas"); // the art at rest, as text
+  const still = document.createElement("canvas"); // the art at rest
   const stillContext = still.getContext("2d");
   if (!context || !stillContext) return;
   const buckets = tones.map(() => []);
 
-  // Geometry, set by fit(), in device pixels: each row's baseline, and where
-  // each glyph's ink sits relative to its cell and baseline.
-  const baseline = new Float32Array(rows);
+  // Geometry, set by fit(), in device pixels: the size of a cell, and where
+  // the art's corner falls inside the canvas (the canvas sits on whole device
+  // pixels; the art need not).
   let ratio = 1;
-  let cell = 1; // device pixels per cell, across
-  let size = 1; // the text's font size, in device pixels
+  let cell = 1; // device pixels per cell
+  let offsetX = 0;
+  let offsetY = 0;
 
-  const centreX = (i) => hx[i] * cell + 0.3 * size;
-  const centreY = (i) => baseline[hy[i]] - (large[i] ? LARGE : SMALL).lift * size;
+  const centreX = (i) => offsetX + (hx[i] + ACROSS) * cell;
+  const centreY = (i) => offsetY + (hy[i] + (large[i] ? LARGE : SMALL).y) * cell;
 
   // Dots as circles, one fill per colour: at rest for the still copy, or
   // where the water has carried them.
@@ -135,7 +125,7 @@ export function start(banner, event) {
       for (const i of bucket) {
         const swell = carried ? Math.min(2, Math.max(0.25, 1 + grow[i])) : 1;
         const lift = carried ? Math.max(-REACH, Math.min(REACH, oy[i])) * cell : 0;
-        const r = (large[i] ? LARGE : SMALL).r * size * swell;
+        const r = (large[i] ? LARGE : SMALL).r * cell * swell * INK;
         const x = centreX(i);
         const y = centreY(i) + lift;
         target.moveTo(x + r, y);
@@ -151,84 +141,34 @@ export function start(banner, event) {
     paint(stillContext, everyDot, false);
   };
 
-  // Where the browser actually put each line: the box of its first character
-  // (one read for every line, no layout in between). The browser snaps lines
-  // and baselines in ways no formula here would match exactly.
-  const lineTops = (across) => {
-    const tops = new Array(rows).fill(null);
-    const range = document.createRange();
-    const walker = document.createTreeWalker(pre, NodeFilter.SHOW_TEXT);
-    let line = 0;
-    let fresh = true;
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      for (let k = 0; k < node.data.length; k += 1) {
-        if (node.data[k] === "\n") {
-          line += 1;
-          fresh = true;
-        } else if (fresh) {
-          range.setStart(node, k);
-          range.setEnd(node, k + 1);
-          tops[line] = range.getBoundingClientRect().top;
-          fresh = false;
-        }
-      }
-    }
-    // an empty line has no character to measure; take it from its neighbours
-    const known = tops.flatMap((top, r) => (top === null ? [] : [r]));
-    for (let r = 0; r < rows; r += 1) {
-      if (tops[r] !== null) continue;
-      const before = known.filter((k) => k < r).pop();
-      const after = known.find((k) => k > r);
-      const a = before ?? after;
-      const b = after ?? before;
-      tops[r] = a === b ? tops[a] + (r - a) * across : tops[a] + ((tops[b] - tops[a]) * (r - a)) / (b - a);
-    }
-    return tops;
-  };
-  // A zero-size box set on the first line sits on its baseline: how far that
-  // is below the top of the line's text is the same on every line.
-  const baselineDrop = (top) => {
-    const mark = document.createElement("span");
-    mark.style.cssText = "display:inline-block;width:0;height:0";
-    pre.prepend(mark);
-    const y = mark.getBoundingClientRect().top;
-    mark.remove();
-    return y - top;
-  };
-
-  // Lay the canvas exactly over the text, in whole device pixels so nothing
-  // is resampled, and copy the still art onto it.
+  // Lay the canvas over the art on whole device pixels, so nothing is
+  // resampled, and copy the still art onto it.
   let across = 1; // CSS pixels per cell
   let width = 0;
   let live = false;
   const fit = () => {
-    const box = pre.getBoundingClientRect();
+    const box = art.getBoundingClientRect();
     if (!live || box.width === width) return;
     width = box.width;
-    const frame = pre.parentElement.getBoundingClientRect();
-    const style = window.getComputedStyle(pre);
+    const frame = art.parentElement.getBoundingClientRect();
     ratio = Math.min(2, window.devicePixelRatio || 1);
     across = box.width / cols;
     cell = across * ratio;
-    size = parseFloat(style.fontSize) * ratio;
-    const tops = lineTops(across);
-    const drop = baselineDrop(tops[0]);
-    // text is painted on whole CSS pixels of the page; so are these baselines
-    for (let r = 0; r < rows; r += 1) {
-      const y = Math.round(tops[r] + drop + window.scrollY) - window.scrollY;
-      baseline[r] = (y - box.top) * ratio;
-    }
-    canvas.width = Math.ceil(box.width * ratio);
-    canvas.height = Math.ceil(box.height * ratio);
-    canvas.style.left = `${box.left - frame.left}px`;
-    canvas.style.top = `${box.top - frame.top}px`;
+    const left = (box.left - frame.left) * ratio;
+    const top = (box.top - frame.top) * ratio;
+    offsetX = left - Math.floor(left);
+    offsetY = top - Math.floor(top);
+    canvas.width = Math.ceil(box.width * ratio + offsetX);
+    canvas.height = Math.ceil(box.height * ratio + offsetY);
+    canvas.style.left = `${Math.floor(left) / ratio}px`;
+    canvas.style.top = `${Math.floor(top) / ratio}px`;
     canvas.style.width = `${canvas.width / ratio}px`;
     canvas.style.height = `${canvas.height / ratio}px`;
     drawStill();
     context.drawImage(still, 0, 0);
   };
-  pre.after(canvas); // under the twinkling stars, which come next
-  new ResizeObserver(fit).observe(pre);
+  art.after(canvas); // under the twinkling stars, which come next
+  new ResizeObserver(fit).observe(art);
 
   // The two look the same, so swapping between them never shows.
   let idle = 0;
@@ -239,11 +179,11 @@ export function start(banner, event) {
     width = 0;
     fit();
     canvas.hidden = false;
-    pre.classList.add("cat--live");
+    art.classList.add("cat--live");
   };
   const hide = () => {
     live = false;
-    pre.classList.remove("cat--live");
+    art.classList.remove("cat--live");
     canvas.hidden = true;
     canvas.width = 0;
     canvas.height = 0;
@@ -331,10 +271,10 @@ export function start(banner, event) {
       if (!dirty[t]) continue;
       dirty[t] = 0;
       any = true;
-      const x = Math.floor((t % tilesAcross) * TILE * cell);
-      const y = Math.floor(Math.floor(t / tilesAcross) * TILE * cell);
-      const w = Math.min(canvas.width, Math.ceil(((t % tilesAcross) + 1) * TILE * cell)) - x;
-      const h = Math.min(canvas.height, Math.ceil((Math.floor(t / tilesAcross) + 1) * TILE * cell)) - y;
+      const x = Math.floor(offsetX + (t % tilesAcross) * TILE * cell);
+      const y = Math.floor(offsetY + Math.floor(t / tilesAcross) * TILE * cell);
+      const w = Math.min(canvas.width, Math.ceil(offsetX + ((t % tilesAcross) + 1) * TILE * cell)) - x;
+      const h = Math.min(canvas.height, Math.ceil(offsetY + (Math.floor(t / tilesAcross) + 1) * TILE * cell)) - y;
       context.clearRect(x, y, w, h);
       context.drawImage(still, x, y, w, h, x, y, w, h);
       context.rect(x, y, w, h);
@@ -364,7 +304,7 @@ export function start(banner, event) {
 
   // Where a pointer is, in cells of the art.
   const cellAt = (input) => {
-    const box = pre.getBoundingClientRect();
+    const box = art.getBoundingClientRect();
     return { x: (input.clientX - box.left) / across, y: (input.clientY - box.top) / across };
   };
   // Only a mouse that really moved stirs the water. When the page scrolls

@@ -1,10 +1,12 @@
 /* Hallmark · checked: 2026-11-11 · genre: editorial and atmospheric (inferred; universal gates)
- * floor: 10 FAIL open, each the cat or city ascii art read as text (40, 73) · fixed: 2a, 2b, 7a, 26b, 34, 40, 48, 63, 67, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
+ * floor: 0 FAIL · fixed: 2a, 2b, 7a, 26b, 34, 40 (the cat, city, ships and spectrum drawn as svg and canvas, not text), 48, 63, 67, 73, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
  * finish-review: subagent · 4 findings · 3 resolved, 1 left to the owner (bold phrases in the intro copy)
  * built: the project · redesign: polish · v2.0.0 */
-/* Hallmark · waive 37 · JBM Symbols is a subset file of JetBrains Mono · the banner, city and player dots load from that 5 KB subset before any code letters */
+/* Hallmark · waive 37 · JBM Symbols is a subset file of JetBrains Mono · the city, the ships, the player's disc and rail and the λ in the name load from that 5 KB subset before any code letters */
 /* Hallmark · waive 49b · links inside a post's lists and the writing list, never nav or buttons · each is the author's own title for a real project or post, like the text editor written in c, and wraps with the text around it */
 /* Hallmark · dropped open.spotify.com/track, 1:38, 5:28 · the listening player shows whatever is playing now; that track link and its clock were the song playing during the before run */
+/* Hallmark · dropped http://nifty.stanford.edu · the stanford page moved to https, and the post now links its new address instead of the redirect */
+/* Hallmark · waive 82 · marks of one picture, not a quantity · the 41 dots are stars in the home banner's sky and the 90 squares are lit windows in each building of the city under a post */
 
 @font-face {
   font-display: swap;
@@ -100,7 +102,7 @@
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --code: "JetBrains Mono", "JBM Symbols", ui-monospace, Menlo, monospace;
-  /* the preloaded symbol subset first: the banner, city, ships, and λ draw
+  /* the preloaded symbol subset first: the city, ships, player and λ draw
      from it alone, and the full file loads only for letters (code, diagrams) */
   --art: "JBM Symbols", "JetBrains Mono", ui-monospace, Menlo, monospace;
   --ease: cubic-bezier(0.19, 1, 0.22, 1);
@@ -269,8 +271,6 @@ h3 {
 
 /* ascii art blocks */
 
-.cat,
-.cat-stars,
 .meteor,
 .city__layer,
 .ship,
@@ -282,8 +282,6 @@ h3 {
   white-space: pre;
 }
 
-.cat,
-.cat-stars,
 .meteor,
 .city__layer,
 .ship,
@@ -321,31 +319,50 @@ h3 {
   width: var(--art-width);
 }
 
-/* square cells: the advance and the line are both 0.4em, so dots sit on a grid */
-.cat,
-.cat-stars {
-  font-size: calc(var(--art-width) / var(--cols) / 0.4);
-  letter-spacing: -0.2em;
-  line-height: 0.4;
-  margin: 0;
+/* the dots, on a grid of square cells: each path is one tone and size, each
+   dot the round cap of a zero-length stroke as wide as the glyph it stands for */
+.cat {
+  display: block;
+  height: auto;
+  overflow: visible;
+  width: 100%;
 }
 
-/* stars alone in open sky, on the art's own grid; each keeps one of six
-   rhythms, so no two neighbours pulse together */
+.cat path {
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-linecap: round;
+  stroke-width: 0.41;
+}
+
+.cat .l {
+  stroke-width: 0.6;
+}
+
+/* stars alone in open sky, on the art's own grid: small dots set where a "·"
+   would sit; each keeps one of six rhythms, so no two neighbours pulse together */
 .cat-stars {
+  --cell: calc(var(--art-width) / var(--cols));
   color: var(--ink-3);
-  left: 0;
+  inset: 0;
   pointer-events: none;
   position: absolute;
-  top: 0;
 }
 
 .cat-stars .hi {
   color: var(--ink);
 }
 
-.cat-stars span {
+.cat-stars i {
   animation: cat-twinkle var(--beat) ease-in-out var(--wait) infinite;
+  background: currentColor;
+  border-radius: 50%;
+  height: calc(var(--cell) * 0.41);
+  left: calc((var(--x) + 0.75) * var(--cell));
+  position: absolute;
+  top: calc((var(--y) + 0.5475) * var(--cell));
+  transform: translate(-50%, -50%);
+  width: calc(var(--cell) * 0.41);
 }
 
 .cat-stars .s1 {
@@ -436,13 +453,13 @@ h3 {
 }
 
 /* nothing in the sky moves while the banner is out of view */
-.banner--still .cat-stars span,
+.banner--still .cat-stars i,
 .banner--still .meteor {
   animation-play-state: paused;
 }
 
-/* cat.js draws the same dots on a canvas over the text once a mouse arrives;
-   the text stays for screen readers */
+/* cat.js draws the same dots on a canvas over the art once a mouse arrives;
+   the art stays, labelled, for screen readers */
 .cat--live {
   opacity: 0;
 }
@@ -452,50 +469,48 @@ h3 {
   position: absolute;
 }
 
-.cat.t1,
 .cat .t1 {
-  color: var(--ink-4);
+  stroke: var(--ink-4);
 }
 
-.cat.t2,
 .cat .t2 {
-  color: var(--ink-3);
+  stroke: var(--ink-3);
 }
 
 .cat .t3 {
-  color: var(--ink-2);
+  stroke: var(--ink-2);
 }
 
 .cat .t4 {
-  color: var(--ink);
+  stroke: var(--ink);
 }
 
 .cat .b1 {
-  color: var(--earth);
+  stroke: var(--earth);
 }
 
 .cat .b2 {
-  color: var(--accent-2);
+  stroke: var(--accent-2);
 }
 
 .cat .b3 {
-  color: var(--accent);
+  stroke: var(--accent);
 }
 
 .cat .w1 {
-  color: var(--fur);
+  stroke: var(--fur);
 }
 
 .cat .w2 {
-  color: var(--warm-2);
+  stroke: var(--warm-2);
 }
 
 .cat .w3 {
-  color: var(--warm);
+  stroke: var(--warm);
 }
 
 .cat .g {
-  color: var(--eye);
+  stroke: var(--eye);
 }
 
 /* phones: a wider crop, centred on the cat's face (31% across the art) */
@@ -1430,16 +1445,45 @@ body > .layout {
   position: absolute;
 }
 
+/* each layer is an SVG of the glyphs on a 0.6em by 1em grid, sized from the
+   column count so the city spans the footer */
 .city__layer {
   bottom: 0;
   font-size: clamp(4px, calc(100cqw / (var(--city-cols) * 0.6)), 14px);
+  height: calc(var(--rows) * 1em);
   left: 50%;
   line-height: 1;
-  margin: 0;
   position: absolute;
   transform: translateX(-50%);
   user-select: none;
-  will-change: transform;
+  width: calc(var(--city-cols) * 0.6em);
+}
+
+.city__layer svg {
+  display: block;
+  height: 100%;
+  overflow: visible;
+  width: 100%;
+}
+
+/* the SVG is 6 units a column at font size 10, so its text is the layer's 1em */
+.city__layer text {
+  fill: currentColor;
+  font-family: var(--art);
+  font-size: 10px;
+  white-space: pre;
+}
+
+.city__layer rect {
+  fill: currentColor;
+}
+
+/* what pulses sits over the picture as HTML, on the same grid */
+.city__layer > i {
+  font-style: normal;
+  left: calc(var(--c) * 0.6em);
+  position: absolute;
+  top: calc(var(--r) * 1em);
 }
 
 .city__layer--stars {
@@ -1449,9 +1493,13 @@ body > .layout {
   z-index: 0;
 }
 
-.city .star--twinkle {
+.city .star {
   animation: city-twinkle calc(11s + var(--i, 0) * 2s) ease-in-out calc(var(--i, 0) * -3s) infinite;
-  display: inline-block;
+  font-family: var(--art);
+}
+
+.city .star::before {
+  content: attr(data-glyph);
 }
 
 .city__layer--far {
@@ -1486,9 +1534,13 @@ body > .layout {
   color: var(--accent-2);
 }
 
+/* a beacon is the lit-window square in warm: 0.3em, 0.15em in, 0.35em down */
 .city .beacon {
   animation: city-beacon 7s ease-in-out infinite;
-  color: var(--warm);
+  background: var(--warm);
+  height: 0.3em;
+  margin: 0.35em 0 0 0.15em;
+  width: 0.3em;
 }
 
 .city .beacon ~ .beacon {
@@ -1499,7 +1551,7 @@ body > .layout {
 .city .band,
 .city .sign {
   color: var(--accent-2);
-  opacity: 0.7;
+  fill-opacity: 0.7;
 }
 
 @keyframes city-twinkle {
@@ -1538,6 +1590,21 @@ body > .layout {
   transform-origin: left top;
   user-select: none;
   will-change: transform;
+}
+
+/* a ship is drawn like a layer: glyphs on the 6 by 10 grid, 1em a line */
+.ship svg {
+  display: block;
+  height: calc(var(--rows) * 1em);
+  overflow: visible;
+  width: calc(var(--cols) * 0.6em);
+}
+
+.ship text {
+  fill: currentColor;
+  font-family: var(--art);
+  font-size: 10px;
+  white-space: pre;
 }
 
 .ship--left {
@@ -1721,44 +1788,22 @@ body > .layout {
   text-wrap: pretty;
 }
 
-/* the spectrum: layers of dots on square cells, like the cat's. the dim
-   field stays put; site.js redraws the bars in the earth's blue and, above
-   them, the dot each peak leaves behind in the warm of the cat's fur */
+/* the spectrum: a small canvas of dots on 6px square cells, like the cat's;
+   site.js reads its three colours from here */
 .now__viz {
+  --bar: var(--accent-2);
+  --peak: var(--warm);
+  --rest: var(--ink-4);
   contain: strict; /* a redraw stays inside the strip */
-  font-family: var(--art);
-  font-size: 15px;
   grid-column: 2;
-  height: calc(6 * 0.4em);
-  letter-spacing: -0.2em;
-  line-height: 0.4;
+  height: 36px;
   margin: 14px 0 0;
-  overflow: hidden;
-  position: relative;
 }
 
-.now__viz pre {
-  font: inherit;
-  inset: 0;
-  letter-spacing: inherit;
-  line-height: inherit;
-  margin: 0;
-  overflow: hidden;
-  position: absolute;
-  white-space: pre;
-}
-
-.now__rest {
-  color: var(--ink-4);
-  opacity: 0.45;
-}
-
-.now__lit {
-  color: var(--accent-2);
-}
-
-.now__caps {
-  color: var(--warm);
+.now__viz canvas {
+  display: block;
+  height: 100%;
+  width: 100%;
 }
 
 .now__time {

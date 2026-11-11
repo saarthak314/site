@@ -43,7 +43,7 @@ my advice would be to dissect websites, write game engines or fun games that you
 some great projects to learn underlying principles with articles/blogs to start:
 
 - redis from scratch - best for learning about network programming and data structures [good starting point](https://build-your-own.org/redis/)
-- music visualizer - [assignment by stanford](http://nifty.stanford.edu/2025/wayne-music-visualizer/)
+- music visualizer - [assignment by stanford](https://nifty.stanford.edu/2025/wayne-music-visualizer/)
 - database from scratch - learn persistence, indexing and concurrency | [sqlite clone from in c](https://cstack.github.io/db_tutorial/) | [golang (more advanced)](https://build-your-own.org/database/)
 - shell in c
 - make your own scripting language [book](https://craftinginterpreters.com/)

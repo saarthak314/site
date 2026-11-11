@@ -2,9 +2,9 @@
   <p class="footer__copy"><span>{{ footer_line }}</span></p>
   <div class="city" aria-hidden="true" data-city style="--city-cols: {{ city.cols }}">
     <div class="city__sky"></div>
-    <pre class="city__layer city__layer--stars">{{ city.stars }}</pre>
-    <pre class="city__layer city__layer--far">{{ city.far }}</pre>
+    <div class="city__layer city__layer--stars" style="--rows: {{ city.rows.stars }}">{{ city.stars }}</div>
+    <div class="city__layer city__layer--far" style="--rows: {{ city.rows.far }}">{{ city.far }}</div>
     <div class="city__ships"></div>
-    <pre class="city__layer city__layer--near">{{ city.near }}</pre>
+    <div class="city__layer city__layer--near" style="--rows: {{ city.rows.near }}">{{ city.near }}</div>
   </div>
 </footer>

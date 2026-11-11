@@ -2,9 +2,14 @@
 
 Two layers of wireframe buildings are drawn from box-drawing characters and
 slashes, then dressed with lit windows, neon strips, bands, billboard signs,
-and beacons as ``<span>`` hooks the stylesheet colours. The lighting is kept
-sparse and static on purpose: only the two beacons and three stars pulse. The
-same seed always yields the same city.
+and beacons. The lighting is kept sparse and static on purpose: only the two
+beacons and three stars pulse. The same seed always yields the same city.
+
+The skyline is a picture, so each layer is set as an inline SVG: the same
+glyphs on the same grid, coloured through classes the stylesheet fills. Lit
+windows are drawn as the squares the font would draw. The few things that
+pulse are small HTML marks over the SVG, so their animation stays on the
+compositor instead of repainting the picture.
 """
 
 from __future__ import annotations
@@ -23,6 +28,18 @@ Cell = tuple[str, str | None, str | None]  # glyph, class, style
 NEAR_ROWS = 18
 FAR_ROWS = 14
 STAR_ROWS = 16
+
+# The SVG grid, at font size 10: a column is 6 units (JetBrains Mono's 0.6em
+# advance) and a line 10. In a line that tall the font's 1.02em ascent and
+# 0.3em descent put the baseline 8.6 units down, as in the old 1em lines.
+COLUMN = 6
+LINE = 10
+BASELINE = 8.6
+# the lit-window square (▪) as the font draws it: 0.3em across, 0.15em in
+# from its cell's left, its top 0.51em above the baseline
+LIGHT_INSET = 1.5
+LIGHT_TOP = 5.1
+LIGHT_SIZE = 3
 
 
 @dataclass
@@ -62,35 +79,80 @@ class Canvas:
   def cls(self, row: int, col: int) -> str | None:
     return self.cells[row][col][1]
 
-  def render(self) -> str:
-    return "\n".join(_render_row(row) for row in self.cells)
+  def text(self) -> str:
+    """The layer as plain text, one line per row: what the picture shows."""
+    return "\n".join("".join(glyph for glyph, _, _ in row) for row in self.cells)
+
+  def svg(self) -> str:
+    """The layer as an inline SVG, plus the HTML marks that pulse over it."""
+    rows: list[str] = []
+    squares: list[str] = []
+    marks: list[str] = []
+    for r, row in enumerate(self.cells):
+      cells: list[tuple[str, str | None]] = []
+      for c, (glyph, cls, style) in enumerate(row):
+        if cls and cls.split()[0] == "lt":
+          x = _num(c * COLUMN + LIGHT_INSET)
+          y = _num(r * LINE + BASELINE - LIGHT_TOP)
+          squares.append(
+            f'<rect class="{cls}" x="{x}" y="{y}" '
+            f'width="{LIGHT_SIZE}" height="{LIGHT_SIZE}"/>'
+          )
+          glyph, cls = " ", None
+        elif cls == "beacon":
+          marks.append(f'<i class="beacon" style="--c: {c}; --r: {r}"></i>')
+          glyph, cls = " ", None
+        elif cls and "star--twinkle" in cls:
+          rhythm = f"; {style}" if style else ""
+          marks.append(
+            f'<i class="star" style="--c: {c}; --r: {r}{rhythm}" '
+            f'data-glyph="{escape(glyph)}"></i>'
+          )
+          glyph, cls = " ", None
+        cells.append((glyph, cls))
+      line = _svg_row(cells, r)
+      if line:
+        rows.append(line)
+    return (
+      f'<svg viewBox="0 0 {self.cols * COLUMN} {self.rows * LINE}" '
+      f'focusable="false"><text xml:space="preserve">{"".join(rows)}</text>'
+      f"{''.join(squares)}</svg>{''.join(marks)}"
+    )
 
 
-def _render_row(row: list[Cell]) -> str:
+def _num(value: float) -> str:
+  return f"{round(value, 2):g}"
+
+
+def _svg_row(cells: list[tuple[str, str | None]], r: int) -> str:
+  """One row as a positioned ``<tspan>``: leading space becomes its x, classed
+  runs (neon strips, bands, signs) nest as their own tspans."""
+  glyphs = [glyph for glyph, _ in cells]
+  first = next((c for c, glyph in enumerate(glyphs) if glyph != " "), None)
+  if first is None:
+    return ""
+  last = max(c for c, glyph in enumerate(glyphs) if glyph != " ")
   parts: list[str] = []
   run: list[str] = []
-  run_key: tuple[str | None, str | None] = (None, None)
+  run_cls: str | None = None
 
   def flush() -> None:
     if not run:
       return
     text = escape("".join(run), quote=False)
-    cls, style = run_key
-    if cls is None:
-      parts.append(text)
-    else:
-      attributes = f' class="{cls}"' + (f' style="{style}"' if style else "")
-      parts.append(f"<span{attributes}>{text}</span>")
+    parts.append(
+      text if run_cls is None else f'<tspan class="{run_cls}">{text}</tspan>'
+    )
     run.clear()
 
-  for glyph, cls, style in row:
-    key = (cls, style)
-    if key != run_key:
+  for glyph, cls in cells[first : last + 1]:
+    cls = run_cls if glyph == " " else cls  # a space joins the run it sits in
+    if cls != run_cls:
       flush()
-      run_key = key
+      run_cls = cls
     run.append(glyph)
   flush()
-  return "".join(parts)
+  return f'<tspan x="{first * COLUMN}" y="{_num(r * LINE + BASELINE)}">{"".join(parts)}</tspan>'
 
 
 def _plan_buildings(
@@ -341,8 +403,10 @@ def _draw_ground(canvas: Canvas) -> None:
       canvas.put(row, col, "─")
 
 
-def _stars(cols: int, rows: int, seed: int, count: int = 28, twinkling: int = 3) -> str:
-  """A sparse field of plain-text stars for the sky band above the skyline."""
+def _stars(
+  cols: int, rows: int, seed: int, count: int = 28, twinkling: int = 3
+) -> Canvas:
+  """A sparse field of stars for the sky band above the skyline."""
   rng = random.Random(seed)
   canvas = Canvas(cols, rows)
   placed = 0
@@ -364,7 +428,7 @@ def _stars(cols: int, rows: int, seed: int, count: int = 28, twinkling: int = 3)
     else:
       canvas.put(row, col, glyph)
     placed += 1
-  return canvas.render()
+  return canvas
 
 
 def _scatter_sky_lights(rng: random.Random, canvas: Canvas, count: int) -> None:
@@ -400,7 +464,7 @@ def _assign_fills(rng: random.Random, buildings: list[Building], *, near: bool) 
       building.fill = "░"
 
 
-def _layer(cols: int, rows: int, seed: int, *, near: bool) -> str:
+def _layer(cols: int, rows: int, seed: int, *, near: bool) -> Canvas:
   rng = random.Random(seed)
   canvas = Canvas(cols, rows)
   buildings = _plan_buildings(
@@ -427,18 +491,33 @@ def _layer(cols: int, rows: int, seed: int, *, near: bool) -> str:
   else:
     _dress_windows(rng, canvas, buildings, budget=0, lit=False)
     _scatter_sky_lights(rng, canvas, count=18)
-  return canvas.render()
+  return canvas
 
 
 @lru_cache(maxsize=4)
 def city_layers(cols: int = 220, seed: int = 1701) -> SimpleNamespace:
-  """Return the far and near skyline layers as HTML, plus the column count."""
+  """Return the star, far and near layers as inline SVG, their row counts, the
+  column count, and each layer as plain text (what the pictures show)."""
+  stars = _stars(cols, STAR_ROWS, seed + 2)
+  far = _layer(cols, FAR_ROWS, seed + 1, near=False)
+  near = _layer(cols, NEAR_ROWS, seed, near=True)
   return SimpleNamespace(
     cols=cols,
-    stars=Markup(_stars(cols, STAR_ROWS, seed + 2)),
-    far=Markup(_layer(cols, FAR_ROWS, seed + 1, near=False)),
-    near=Markup(_layer(cols, NEAR_ROWS, seed, near=True)),
+    rows=SimpleNamespace(stars=STAR_ROWS, far=FAR_ROWS, near=NEAR_ROWS),
+    stars=Markup(stars.svg()),
+    far=Markup(far.svg()),
+    near=Markup(near.svg()),
+    text=SimpleNamespace(stars=stars.text(), far=far.text(), near=near.text()),
   )
 
 
-__all__ = ["ALLOWED_GLYPHS", "FAR_ROWS", "NEAR_ROWS", "STAR_ROWS", "city_layers"]
+__all__ = [
+  "ALLOWED_GLYPHS",
+  "BASELINE",
+  "COLUMN",
+  "FAR_ROWS",
+  "LINE",
+  "NEAR_ROWS",
+  "STAR_ROWS",
+  "city_layers",
+]

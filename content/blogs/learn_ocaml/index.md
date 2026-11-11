@@ -101,7 +101,7 @@ _expressions_ specify **what to compute**
 
 ocaml and other functional langs are nowhere near as popular as python, c++, or java. ocaml's real strength lies in language manipulation: compilers, analyzers, verifiers, provers, etc. it evolved from the domain of theorem proving, after all.
 
-but that doesn't mean that functional langs aren't used in the industry, there are many [industry](https://ocaml.org/learn/companies.html) using ocaml and haskell. some of the major ones are:
+but that doesn't mean that functional langs aren't used in the industry, there are many [industry](https://ocaml.org/industrial-users) using ocaml and haskell. some of the major ones are:
 
 - facebook: created a language Reason also known as ReasonML i.e syntax extension and toolchain for ocaml. fun fact, it was created by jordan walke who also created react framework at facebook. reason uses many syntax elements from javascript, compiles to native code using ocaml's compiler toolchain, and can compile to javascript using the _rescript_ compiler.
 

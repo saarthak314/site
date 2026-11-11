@@ -166,15 +166,19 @@
       if (done >= duration) load();
     };
 
-    // A spectrum in dots, set like the cat at the top. It isn't the song's real
-    // sound (spotify no longer shares that): the bars keep a beat taken from
-    // the track's place in the song, so they pause with it and settle flat when
-    // it stops. About twelve frames a second, and only while it's on screen.
+    // A spectrum in dots, drawn like the cat at the top: a dim field of small
+    // dots, bars of large ones in the earth's blue, and the dot each peak
+    // leaves behind in the warm of the fur. It isn't the song's real sound
+    // (spotify no longer shares that): the bars keep a beat taken from the
+    // track's place in the song, so they pause with it and settle flat when it
+    // stops. A small canvas, about twelve frames a second, only on screen.
     const viz = box.querySelector(".now__viz");
-    const lit = viz && viz.querySelector(".now__lit");
-    const peaks = viz && viz.querySelector(".now__caps");
-    const rest = viz && viz.querySelector(".now__rest");
+    const canvas = viz && viz.querySelector("canvas");
+    const pen = canvas && canvas.getContext("2d");
     const ROWS = 6;
+    let ink = null; // the field's, the bars' and the peaks' colours, from the stylesheet
+    let cell = 6; // CSS pixels a dot's square
+    let scale = 1;
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
     let columns = 0;
     let bars = [];
@@ -198,13 +202,21 @@
       return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
     };
     const fit = () => {
-      const cell = parseFloat(window.getComputedStyle(viz).fontSize) * 0.4;
+      if (!viz.clientWidth) return;
+      const style = window.getComputedStyle(viz);
+      ink = ["--rest", "--bar", "--peak"].map((name) => style.getPropertyValue(name).trim());
+      cell = viz.clientHeight / ROWS;
+      scale = Math.min(2, window.devicePixelRatio || 1);
+      const width = Math.round(viz.clientWidth * scale);
+      if (canvas.width !== width) {
+        canvas.width = width;
+        canvas.height = Math.round(viz.clientHeight * scale);
+      }
       const next = Math.max(12, Math.floor(viz.clientWidth / cell));
       if (next === columns) return;
       columns = next;
       bars = new Array(columns).fill(0);
       caps = new Array(columns).fill(0);
-      rest.textContent = new Array(ROWS).fill("\u00b7".repeat(columns)).join("\n");
     };
     const step = (settle) => {
       const playing = box.classList.contains("now--playing");
@@ -234,24 +246,33 @@
         caps[c] = settle || bars[c] >= caps[c] ? bars[c] : caps[c] - 0.025;
       }
     };
-    // the bars and the dot each peak leaves behind are drawn on two layers, so
-    // each keeps one solid colour
+    // each dot as the cat's are: a "·" is 0.41 of its cell across, a "•" 0.6,
+    // centred 0.75 cells in; one fill per colour
+    const dot = (c, row, big) => {
+      const x = (c + 0.75) * cell * scale;
+      const y = (ROWS - row + (big ? 0.4875 : 0.5475)) * cell * scale;
+      const r = (big ? 0.3 : 0.205) * cell * scale;
+      pen.moveTo(x + r, y);
+      pen.arc(x, y, r, 0, Math.PI * 2);
+    };
     const draw = () => {
-      const lines = [];
-      const tops = [];
-      for (let row = ROWS; row >= 1; row -= 1) {
-        let line = "";
-        let top = "";
-        for (let c = 0; c < columns; c += 1) {
-          const bar = row <= Math.round(bars[c] * ROWS);
-          line += bar ? "\u2022" : " ";
-          top += !bar && row === Math.round(caps[c] * ROWS) ? "\u2022" : " ";
+      if (!ink || !columns) return;
+      pen.clearRect(0, 0, canvas.width, canvas.height);
+      const layers = [[], [], []];
+      for (let c = 0; c < columns; c += 1) {
+        const height = Math.round(bars[c] * ROWS);
+        const peak = Math.round(caps[c] * ROWS);
+        for (let row = 1; row <= ROWS; row += 1) {
+          layers[row <= height ? 1 : row === peak ? 2 : 0].push(c, row);
         }
-        lines.push(line);
-        tops.push(top);
       }
-      lit.textContent = lines.join("\n");
-      peaks.textContent = tops.join("\n");
+      layers.forEach((cells, k) => {
+        pen.globalAlpha = k ? 1 : 0.45;
+        pen.fillStyle = ink[k];
+        pen.beginPath();
+        for (let n = 0; n < cells.length; n += 2) dot(cells[n], cells[n + 1], k > 0);
+        pen.fill();
+      });
     };
     const moving = () =>
       visible && !document.hidden && (box.classList.contains("now--playing") || caps.some((v) => v > 0));
@@ -262,7 +283,7 @@
       if (moving()) frame = window.setTimeout(animate, 83);
     };
     const wake = () => {
-      if (!lit || !rest || !peaks) return;
+      if (!pen) return;
       fit();
       if (calm.matches) {
         step(true);
@@ -488,11 +509,26 @@
       const max = Math.max.apply(null, widths);
       return rows.map((row, index) => " ".repeat(max - widths[index]) + row);
     };
-    const spriteHtml = (rows, left) => {
-      if (!left) return rows.join("\n");
+    const spriteRows = (rows, left) => {
+      if (!left) return rows;
       const mirrored = rows.map((row) => mirrorRow(row));
       const max = Math.max.apply(null, mirrored.map((row) => row.width));
-      return mirrored.map((row) => row.html + " ".repeat(max - row.width)).join("\n");
+      return mirrored.map((row) => row.html + " ".repeat(max - row.width));
+    };
+    // A ship is a small picture, set like the city's layers: an SVG of its
+    // glyphs, 6 units a column and 10 a line, the baseline 8.6 down.
+    const shipSvg = (rows) => {
+      const cols = Math.max.apply(null, rows.map((row) => Array.from(row.replace(/<[^>]+>/g, "")).length));
+      const lines = rows.map(
+        (row, r) =>
+          '<tspan x="0" y="' + (r * 10 + 8.6).toFixed(1) + '">' +
+          row.replace(/<span /g, "<tspan ").replace(/<\/span>/g, "</tspan>") +
+          "</tspan>",
+      );
+      return (
+        '<svg viewBox="0 0 ' + cols * 6 + " " + rows.length * 10 + '" style="--cols: ' + cols +
+        "; --rows: " + rows.length + '"><text xml:space="preserve">' + lines.join("") + "</text></svg>"
+      );
     };
     const between = (low, high) => low + Math.random() * (high - low);
 
@@ -503,13 +539,13 @@
         state.timer = 0;
         if (!lane || state.paused || !state.visible) return;
         if (state.alive < 1) {
-          const ship = document.createElement("pre");
+          const ship = document.createElement("div");
           const left = Math.random() < 0.5;
           const far = Math.random() < 0.45;
           const rows = padRows(sprites[Math.floor(Math.random() * sprites.length)]);
           ship.className = "ship" + (left ? " ship--left" : "") + (far ? " ship--far" : " ship--near");
           ship.setAttribute("aria-hidden", "true");
-          ship.innerHTML = spriteHtml(rows, left);
+          ship.innerHTML = shipSvg(spriteRows(rows, left));
           ship.style.setProperty("--y", between(far ? 4 : 18, far ? 24 : 40).toFixed(1) + "%");
           ship.style.setProperty("--dur", (far ? between(32, 44) : between(22, 30)).toFixed(1) + "s");
           ship.style.setProperty("--scale", (far ? between(0.6, 0.8) : between(0.95, 1.2)).toFixed(2));

@@ -36,9 +36,9 @@ uv run sitegen check                    # validate the generated site
 uv run sitegen serve                    # serve once without dev tooling
 uv run sitegen new my-post --title "..." # scaffold a draft writing
 uv run python scripts/optimize_images.py # rebuild responsive images and icons
-uv run python scripts/subset_fonts.py    # rebuild the symbol font subset (box drawing, λ, the banner dots)
+uv run python scripts/subset_fonts.py    # rebuild the symbol font subset (box drawing, λ, the city and player glyphs)
 uv run python scripts/generate_art.py    # regenerate the dartboard svg
-uv run python scripts/generate_cat.py    # regenerate the home banner (cat in space, in dots)
+uv run python scripts/generate_cat.py    # regenerate the home banner (cat in space, as svg dots)
 uv run python scripts/generate_portrait.py # redraw the ascii portrait the social card uses
 uv run python scripts/generate_social_card.py # redraw the social preview card from the portrait
 ./test.sh                                # run every local verification

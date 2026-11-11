@@ -4,8 +4,13 @@ Reads assets/images/cat-in-space.jpg and writes templates/partials/cat.html.
 Each cell is a dot sized by brightness (· •) on a square grid; the earth's
 blues keep a blue tint, everything else sits on the site's ink ramp. Stars
 that a cell average would wash out are kept by also looking at each cell's
-brightest pixel. Stars alone in open sky go to a second, transparent layer
-laid over the art, where CSS makes them twinkle; the rest stay put.
+brightest pixel. Stars alone in open sky go to a layer of their own laid over
+the art, where CSS makes them twinkle; the rest stay put.
+
+The art is a picture, so it is written as an inline SVG: every dot sits where
+JetBrains Mono would put its "·" or "•" on the grid, drawn as a round cap of
+the glyph's own size, one path per tone and size. The twinkling stars are
+small HTML dots over it, so their animation stays on the compositor.
 """
 
 from __future__ import annotations
@@ -27,6 +32,15 @@ LABEL = "ascii art of a cat in a spacesuit waving, the earth behind it"
 CROP = (0.0, 0.2, 1.0, 0.84)
 
 # tone classes: t* the ink ramp, b* the earth, w* the cat's fur, g its eyes
+
+# Where each glyph's ink sits in its cell, in cells (a cell is the 0.4em the
+# art advances and steps down by). JetBrains Mono's ascent (1.02em) and descent
+# (0.3em) put the baseline 0.56em into a 0.4em line; "·" is centred 0.341em
+# above it with a 0.082em radius, "•" 0.365em above with 0.12em; both are
+# centred 0.3em into their advance.
+CENTRE_X = 0.75
+CENTRE_Y = {"·": 0.5475, "•": 0.4875}
+RADIUS = {"·": 0.205, "•": 0.3}
 
 
 def _prepare(cols: int, rows: int) -> tuple[Image.Image, Image.Image]:
@@ -154,70 +168,47 @@ def split_stars(
 
 
 def stars_html(stars: list[tuple[int, int, bool]], cols: int, rows: int) -> str:
-  """The twinkling stars, on the art's grid: one span each, with one of six
-  rhythms picked from its place so neighbours never pulse together."""
-  lines = [""] * rows
+  """The twinkling stars, on the art's grid: one small dot each, with one of
+  six rhythms picked from its place so neighbours never pulse together."""
+  dots = []
   for x, y, bright in sorted(stars, key=lambda star: (star[1], star[0])):
     rhythm = (x * 7 + y * 13) % 6 + 1
     classes = f"s{rhythm} hi" if bright else f"s{rhythm}"
-    lines[y] += " " * (x - _width(lines[y])) + f'<span class="{classes}">·</span>'
-  body = "\n".join(lines)
+    dots.append(f'<i class="{classes}" style="--x: {x}; --y: {y}"></i>')
   return (
-    f'<pre class="cat-stars" aria-hidden="true" '
-    f'style="--cols: {cols}; --rows: {rows}">{body}</pre>\n'
+    f'<span class="cat-stars" aria-hidden="true" '
+    f'style="--cols: {cols}; --rows: {rows}">{"".join(dots)}</span>\n'
   )
 
 
-def _width(line: str) -> int:
-  """Columns a line of markup takes up: its text, without the tags."""
-  depth, count = 0, 0
-  for char in line:
-    if char == "<":
-      depth += 1
-    elif char == ">":
-      depth -= 1
-    elif depth == 0:
-      count += 1
-  return count
+def _path(dots: list[tuple[int, int]], glyph: str) -> str:
+  """Path data for dots of one glyph: a zero-length segment at each centre
+  (its round cap is the dot), each a whole number of cells from the last."""
+  parts = []
+  px = py = None
+  for x, y in dots:
+    if px is None:
+      parts.append(f"M{x + CENTRE_X:g} {y + CENTRE_Y[glyph]:g}h0")
+    else:
+      parts.append(f"m{x - px} {y - py}h0")
+    px, py = x, y
+  return "".join(parts)
 
 
-def to_html(cells: list[list[tuple[str, str]]], cols: int, rows: int) -> str:
-  """A labelled ``<pre>``; the commonest tone is the default, others get spans."""
-  counts: dict[str, int] = {}
-  for row in cells:
-    for glyph, tone in row:
+def to_svg(cells: list[list[tuple[str, str]]], cols: int, rows: int) -> str:
+  """A labelled inline SVG: one path for each tone and glyph size."""
+  groups: dict[tuple[str, str], list[tuple[int, int]]] = {}
+  for y, row in enumerate(cells):
+    for x, (glyph, tone) in enumerate(row):
       if glyph != " ":
-        counts[tone] = counts.get(tone, 0) + 1
-  base = max(counts, key=counts.__getitem__)
-  lines = []
-  for row in cells:
-    parts: list[str] = []
-    current = base
-    buffer = ""
-    for glyph, tone in row:
-      # spaces join whatever run they sit in
-      tone = current if glyph == " " else tone
-      if tone != current and buffer:
-        parts.append(
-          html.escape(buffer)
-          if current == base
-          else f'<span class="{current}">{html.escape(buffer)}</span>'
-        )
-        buffer = ""
-      current = tone
-      buffer += glyph
-    if buffer.rstrip():
-      buffer = buffer.rstrip()
-      parts.append(
-        html.escape(buffer)
-        if current == base
-        else f'<span class="{current}">{html.escape(buffer)}</span>'
-      )
-    lines.append("".join(parts))
-  body = "\n".join(lines)
+        groups.setdefault((tone, glyph), []).append((x, y))
+  paths = []
+  for (tone, glyph), dots in sorted(groups.items()):
+    classes = tone if glyph == "·" else f"{tone} l"
+    paths.append(f'<path class="{classes}" d="{_path(dots, glyph)}"/>')
   return (
-    f'<pre class="cat {base}" role="img" aria-label="{html.escape(LABEL)}" '
-    f'style="--cols: {cols}; --rows: {rows}">{body}</pre>\n'
+    f'<svg class="cat" viewBox="0 0 {cols} {rows}" role="img" '
+    f'aria-label="{html.escape(LABEL)}" focusable="false">{"".join(paths)}</svg>\n'
   )
 
 
@@ -232,7 +223,7 @@ def main() -> None:
   aspect = (width * (right - left)) / (height * (bottom - top))
   rows = round(args.cols / aspect)
   art, stars = split_stars(render(args.cols, rows))
-  markup = to_html(art, args.cols, rows) + stars_html(stars, args.cols, rows)
+  markup = to_svg(art, args.cols, rows) + stars_html(stars, args.cols, rows)
   args.output.write_text(markup)
   output = (
     args.output.relative_to(PROJECT_ROOT)
@@ -240,7 +231,8 @@ def main() -> None:
     else args.output
   )
   print(
-    f"{output}: {args.cols}x{rows}, {markup.count('<span')} spans, {len(markup.encode())} bytes"
+    f"{output}: {args.cols}x{rows}, {markup.count('<path')} paths, "
+    f"{markup.count('h0')} dots, {len(markup.encode())} bytes"
   )
 
 

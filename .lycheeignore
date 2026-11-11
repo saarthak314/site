@@ -1,0 +1,8 @@
+# Sites that answer automated link checkers with 403 (or a login wall)
+# while the pages are up for readers. Checking them can only fail, so they
+# are skipped; every other link is still checked weekly.
+^https?://(www\.)?x\.com/
+^https?://(www\.)?twitter\.com/
+^https?://(www\.)?medium\.com/
+^https?://dl\.acm\.org/
+^https?://(www\.)?linkedin\.com/

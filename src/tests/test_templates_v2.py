@@ -436,7 +436,8 @@ class TestHomeTemplate(TemplateRenderingTestCase):
       '<a class="writing-row__title" href="/blogs/older/">older post</a>', html
     )
     self.assertIn(
-      '<div class="banner"><div class="art"><pre class="cat t2" role="img" aria-label="ascii art of a cat in a spacesuit waving, the earth behind it"',
+      '<div class="banner"><div class="art"><svg class="cat" viewBox="0 0 180 76" '
+      'role="img" aria-label="ascii art of a cat in a spacesuit waving, the earth behind it"',
       html,
     )
     self.assertNotIn("portrait", html)
@@ -720,7 +721,7 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
     self.assertNotIn("<aside", html)
     self.assertNotIn("portrait", html)
     self.assertLess(
-      html.index('<pre class="cat'), html.index('<header class="site-header">')
+      html.index('<svg class="cat"'), html.index('<header class="site-header">')
     )
     main = html[
       html.index('<main id="main-content" class="home"') : html.index("</main>")
@@ -788,8 +789,7 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
     self.assertIn('<a class="now__title"></a>', html)
     self.assertIn('<p class="now__by"></p>', html)
     self.assertIn(
-      '<div class="now__viz" aria-hidden="true"><pre class="now__rest"></pre>'
-      '<pre class="now__lit"></pre><pre class="now__caps"></pre></div>',
+      '<div class="now__viz" aria-hidden="true"><canvas></canvas></div>',
       html,
     )
     self.assertIn(

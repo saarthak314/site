@@ -52,7 +52,9 @@ class TestSiteRendering(unittest.TestCase):
         page.index('<footer class="footer footer--city">') : page.index("</footer>")
       ]
       self.assertIn('<div class="city" aria-hidden="true" data-city', footer)
-      self.assertIn('<pre class="city__layer city__layer--near">', footer)
+      self.assertIn(
+        '<div class="city__layer city__layer--near" style="--rows: 18">', footer
+      )
       self.assertIn('<div class="city__ships"></div>', footer)
       self.assertNotIn("<a ", footer)
       self.assertNotIn("<img", footer)
@@ -110,11 +112,15 @@ class TestSiteRendering(unittest.TestCase):
       str(PROJECT_ROOT / "static" / "fonts" / "jetbrains-mono-symbols.woff2")
     ) as font:
       cmap = font.getBestCmap()
-    art = re.search(r'<pre class="cat[^>]*>(.*?)</pre>', home, re.S).group(1)
     article = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
     city = re.search(r'<div class="city".*?</footer>', article, re.S).group(0)
-    drawn = set(html.unescape(re.sub(r"<[^>]+>", "", art + city))) - {"\n"}
+    # the city's pictures set glyphs in SVG text; the cat is dots, no glyphs
+    glyphs = "".join(re.findall(r"<text[^>]*>(.*?)</text>", city, re.S))
+    glyphs += "".join(re.findall(r'data-glyph="([^"]*)"', city))
+    drawn = set(html.unescape(re.sub(r"<[^>]+>", "", glyphs))) - {"\n"}
     drawn |= {"λ"}
+    cat = re.search(r'<svg class="cat".*?</svg>', home, re.S).group(0)
+    self.assertEqual(re.sub(r"<[^>]+>", "", cat), "")
 
     self.assertEqual(sorted(c for c in drawn if ord(c) not in cmap), [])
     self.assertIn('--art: "JBM Symbols", "JetBrains Mono"', stylesheet)
@@ -126,19 +132,25 @@ class TestSiteRendering(unittest.TestCase):
     home = self.output_dir.joinpath("index.html").read_text()
     stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
     script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
-    art = re.search(r'<pre class="cat [^>]*>(.*?)</pre>', home, re.S).group(1)
+    art = re.search(r'<svg class="cat" viewBox="0 0 (\d+) (\d+)"', home)
     stars = re.search(
-      r'<pre class="cat-stars" aria-hidden="true"[^>]*>(.*?)</pre>', home, re.S
-    ).group(1)
+      r'<span class="cat-stars" aria-hidden="true" style="--cols: (\d+); '
+      r'--rows: (\d+)">(.*?)</span>',
+      home,
+      re.S,
+    )
 
-    # the star layer sits on the art's grid: same number of lines
-    self.assertEqual(stars.count("\n"), art.count("\n"))
-    self.assertGreaterEqual(stars.count("<span"), 20)
-    self.assertRegex(stars, r'<span class="s[1-6]( hi)?">·</span>')
+    # the star layer sits on the art's grid, as small dots, not text
+    self.assertEqual(stars.group(1, 2), art.group(1, 2))
+    self.assertGreaterEqual(stars.group(3).count("<i "), 20)
+    self.assertRegex(
+      stars.group(3), r'<i class="s[1-6]( hi)?" style="--x: \d+; --y: \d+"></i>'
+    )
+    self.assertEqual(re.sub(r"<[^>]+>", "", stars.group(3)), "")
     self.assertIn('<span class="meteor" aria-hidden="true"></span>', home)
     self.assertIn("@keyframes cat-twinkle", stylesheet)
     self.assertIn("@keyframes meteor", stylesheet)
-    self.assertIn(".banner--still .cat-stars span", stylesheet)
+    self.assertIn(".banner--still .cat-stars i", stylesheet)
     self.assertIn(
       'banner.classList.toggle("banner--still", !entry.isIntersecting)', script
     )
@@ -147,15 +159,19 @@ class TestSiteRendering(unittest.TestCase):
     script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
     stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
 
-    # drawn as text in the cat's two dots, on the cat's square cells
-    self.assertIn('lit.textContent = lines.join("\\n")', script)
-    self.assertIn('"\\u2022"', script)
-    self.assertIn('"\\u00b7".repeat(columns)', script)
+    # drawn on a small canvas in the cat's two dot sizes and its colours
+    self.assertIn('viz.querySelector("canvas")', script)
+    self.assertIn("pen.arc(x, y, r, 0, Math.PI * 2)", script)
+    self.assertIn("(big ? 0.3 : 0.205) * cell * scale", script)
     viz = re.search(r"\n\.now__viz \{[^}]*\}", stylesheet).group(0)
-    self.assertIn("font-family: var(--art)", viz)
-    self.assertIn("letter-spacing: -0.2em", viz)
-    self.assertIn("line-height: 0.4", viz)
+    for colour in (
+      "--bar: var(--accent-2)",
+      "--peak: var(--warm)",
+      "--rest: var(--ink-4)",
+    ):
+      self.assertIn(colour, viz)
     self.assertIn("contain: strict", viz)
+    self.assertNotIn("textContent = lines", script)
     # it runs only while the block is on screen, the tab is open, and a track
     # plays (or the bars are still settling); reduced motion gets one still frame
     self.assertRegex(
@@ -190,8 +206,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertRegex(stylesheet, r"\nhtml \{[^}]*overflow-x: clip;")
     # no tracked small labels and no gradient text in the player
     self.assertNotIn("letter-spacing: 0.04em", stylesheet)
-    lit = re.search(r"\n\.now__lit \{[^}]*\}", stylesheet).group(0)
-    self.assertNotIn("background-clip", lit)
+    self.assertNotIn("background-clip", stylesheet)
     # the disc is a glyph the preloaded subset really has, so the page never
     # reaches for the full code font or a system fallback
     with TTFont(
@@ -202,7 +217,7 @@ class TestSiteRendering(unittest.TestCase):
       self.assertIn(int(escape, 16), symbols, escape)
     self.assertNotIn("\\25D0", stylesheet)
     # tags read as a list, not a middle-dot meta string
-    self.assertNotIn(" · ", home.split("</pre>")[-1])
+    self.assertNotIn(" · ", home)
     # decorative marks are silent to screen readers
     self.assertIn('content: "##" / "";', stylesheet)
     self.assertIn('content: "-" / "";', stylesheet)
