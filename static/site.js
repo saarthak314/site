@@ -13,21 +13,28 @@
     wide.addEventListener("change", sync);
   }
 
-  // A hotkey, w, mirrors the writing link in the header. It stays out of the
-  // way of form fields and of any shortcut with a modifier.
-  const hotkeys = { w: "/blogs/" };
-  document.addEventListener("keydown", (event) => {
-    if (event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
-    ) {
-      return;
-    }
-    const href = hotkeys[event.key];
-    if (href && window.location.pathname !== href) window.location.assign(href);
-  });
+  // The banner's dots ride a wave under the mouse. That code lives in cat.js
+  // and loads the first time the mouse really moves over the banner, so a page
+  // load pays for nothing but the text; touch screens and reduced motion never
+  // load it.
+  const banner = document.querySelector(".banner");
+  const pointer = "(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)";
+  // The sky (twinkling stars, a shooting star) holds still while the banner
+  // is out of view.
+  if (banner && "IntersectionObserver" in window) {
+    new IntersectionObserver((entries) => {
+      entries.forEach((entry) => banner.classList.toggle("banner--still", !entry.isIntersecting));
+    }).observe(banner);
+  }
+  if (banner && window.matchMedia(pointer).matches) {
+    const wake = (event) => {
+      // the page scrolling under a resting cursor reports a move with no movement
+      if (event.pointerType !== "mouse" || (!event.movementX && !event.movementY)) return;
+      banner.removeEventListener("pointermove", wake);
+      import("/cat.js").then((art) => art.start(banner, event)).catch(() => {});
+    };
+    banner.addEventListener("pointermove", wake, { passive: true });
+  }
 
   // A copy affordance on code blocks, revealed on hover.
   if (navigator.clipboard) {
@@ -115,21 +122,16 @@
   }
 
   // Now playing: a worker answers /now with the spotify track playing (or the
-  // last one played); this prints it in the rail and keeps the meter moving.
+  // last one played); this fills the small player and keeps its clock and rail
+  // moving while it plays.
   document.querySelectorAll("[data-now]").forEach((box) => {
     const endpoint = box.dataset.now;
-    const pre = box.querySelector(".now__pre");
-    const label = box.querySelector(".now__state");
-    if (!endpoint || !pre || !label || !window.fetch) return;
-    // Characters per line follow the rail's width and the block's font size.
-    const columns = () => {
-      const size = parseFloat(window.getComputedStyle(pre).fontSize) || 12;
-      return Math.max(20, Math.min(60, Math.floor(pre.clientWidth / (size * 0.6))));
-    };
-    const cells = 8;
+    const title = box.querySelector(".now__title");
+    const by = box.querySelector(".now__by");
+    const at = box.querySelector(".now__at");
+    const length = box.querySelector(".now__length");
+    if (!endpoint || !title || !by || !at || !length || !window.fetch) return;
     const lower = (value) => String(value || "").toLowerCase();
-    const clip = (text, width) =>
-      text.length > width ? text.slice(0, width - 2).trimEnd() + ".." : text;
     const clock = (ms) => {
       const seconds = Math.max(0, Math.floor(ms / 1000));
       return Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
@@ -141,35 +143,132 @@
       if (hours < 48) return hours + "h ago";
       return Math.round(hours / 24) + "d ago";
     };
-    const node = (tag, className, text) => {
-      const element = document.createElement(tag);
-      if (className) element.className = className;
-      element.textContent = text;
-      return element;
-    };
     let state = null;
-    let meter = null;
-    let timeLabel = null;
     let ticker = 0;
     let poller = 0;
     let failures = 0;
     let visible = false;
 
+    const running = () =>
+      Boolean(state && state.data.playing && state.data.progress_ms != null && state.data.track.duration_ms);
     const elapsed = () => {
-      if (!state || !state.data.playing || state.data.progress_ms == null) return 0;
-      const duration = state.data.track.duration_ms || 0;
+      if (!running()) return 0;
+      const duration = state.data.track.duration_ms;
       return Math.min(duration, state.data.progress_ms + (Date.now() - state.receivedAt));
     };
     const tick = () => {
-      if (!state || !meter) return;
-      const duration = state.data.track.duration_ms || 0;
+      if (!running()) return;
+      const duration = state.data.track.duration_ms;
       const done = elapsed();
-      const filled = duration ? Math.round((done / duration) * cells) : 0;
-      meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled);
-      timeLabel.textContent = " " + clock(done) + " / " + clock(duration) + " ";
-      if (duration && done >= duration) load();
+      at.textContent = clock(done);
+      length.textContent = clock(duration);
+      box.style.setProperty("--progress", (done / duration).toFixed(4));
+      if (done >= duration) load();
     };
-    const render = () => {
+
+    // A spectrum in dots, set like the cat at the top. It isn't the song's real
+    // sound (spotify no longer shares that): the bars keep a beat taken from
+    // the track's place in the song, so they pause with it and settle flat when
+    // it stops. About twelve frames a second, and only while it's on screen.
+    const viz = box.querySelector(".now__viz");
+    const lit = viz && viz.querySelector(".now__lit");
+    const rest = viz && viz.querySelector(".now__rest");
+    const ROWS = 6;
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let columns = 0;
+    let bars = [];
+    let caps = [];
+    let bpm = 112;
+    let frame = 0;
+    const hash = (n) => {
+      const s = Math.sin(n * 127.1) * 43758.5453;
+      return s - Math.floor(s);
+    };
+    // smooth noise across the bands and through the song, so neighbours rise together
+    const noise = (x, y) => {
+      const i = Math.floor(x);
+      const j = Math.floor(y);
+      const u = (x - i) * (x - i) * (3 - 2 * (x - i));
+      const v = (y - j) * (y - j) * (3 - 2 * (y - j));
+      const a = hash(i + j * 57);
+      const b = hash(i + 1 + j * 57);
+      const c = hash(i + (j + 1) * 57);
+      const d = hash(i + 1 + (j + 1) * 57);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    };
+    const fit = () => {
+      const cell = parseFloat(window.getComputedStyle(viz).fontSize) * 0.4;
+      const next = Math.max(12, Math.floor(viz.clientWidth / cell));
+      if (next === columns) return;
+      columns = next;
+      bars = new Array(columns).fill(0);
+      caps = new Array(columns).fill(0);
+      rest.textContent = new Array(ROWS).fill("\u00b7".repeat(columns)).join("\n");
+    };
+    const step = (settle) => {
+      const playing = box.classList.contains("now--playing");
+      const t = elapsed();
+      const beat = (t / 60000) * bpm;
+      const kick = Math.exp(-(beat % 1) * 5);
+      const snare = Math.exp(-((beat + 1) % 2) * 4);
+      const hat = Math.exp(-((beat * 2) % 1) * 7);
+      const flicker = Math.floor(t / 83);
+      for (let c = 0; c < columns; c += 1) {
+        const x = c / (columns - 1);
+        const n = noise(c * 0.45, t * 0.0016);
+        // the kick lifts the low end, the snare the middle, the hats the top
+        const hit =
+          Math.max(0, 1 - x * 3) * kick +
+          Math.max(0, 1 - Math.abs(x - 0.45) * 4) * snare * 0.8 +
+          Math.max(0, x * 1.6 - 0.6) * hat * 0.6;
+        const level =
+          (0.1 + 0.75 * n * n) * (1 - 0.3 * x) +
+          0.6 * hit * (0.4 + n) +
+          0.12 * kick +
+          0.12 * (hash(c * 13 + flicker) - 0.5);
+        const target = playing ? Math.min(1, Math.max(0, level)) : 0;
+        // up at once, down under gravity; a dot left at each peak drifts after it
+        if (settle || target > bars[c]) bars[c] = target;
+        else bars[c] = Math.max(target, bars[c] - 0.07);
+        caps[c] = settle || bars[c] >= caps[c] ? bars[c] : caps[c] - 0.025;
+      }
+    };
+    const draw = () => {
+      const lines = [];
+      for (let row = ROWS; row >= 1; row -= 1) {
+        let line = "";
+        for (let c = 0; c < columns; c += 1) {
+          line += row <= Math.round(bars[c] * ROWS) || row === Math.round(caps[c] * ROWS) ? "\u2022" : " ";
+        }
+        lines.push(line);
+      }
+      lit.textContent = lines.join("\n");
+    };
+    const moving = () =>
+      visible && !document.hidden && (box.classList.contains("now--playing") || caps.some((v) => v > 0));
+    const animate = () => {
+      frame = 0;
+      step(false);
+      draw();
+      if (moving()) frame = window.setTimeout(animate, 83);
+    };
+    const wake = () => {
+      if (!lit || !rest) return;
+      fit();
+      if (calm.matches) {
+        step(true);
+        draw();
+      } else if (!frame && moving()) animate();
+    };
+    if (viz && "ResizeObserver" in window) {
+      new ResizeObserver(() => {
+        const before = columns;
+        fit();
+        if (columns !== before) draw();
+      }).observe(viz);
+    }
+
+    const render = (note) => {
       const data = state && state.data;
       if (!data || !data.track) {
         box.hidden = true;
@@ -177,39 +276,27 @@
         return;
       }
       const track = data.track;
-      box.hidden = false;
-      pre.replaceChildren();
-      const width = columns();
-      label.textContent = data.playing
-        ? "spotify // playing"
-        : data.played_at
-          ? "spotify // played " + ago(data.played_at)
-          : "spotify // paused";
-      box.classList.toggle("now--playing", Boolean(data.playing));
-      const title = node(track.url ? "a" : "span", "now__title", clip(lower(track.title), width - 2));
+      const playing = running() && !note;
+      box.classList.toggle("now--playing", playing);
+      title.textContent = lower(track.title);
       if (track.url) {
         title.href = track.url;
         title.rel = "noopener";
+      } else {
+        title.removeAttribute("href");
       }
-      pre.append(node("span", "now__mark", data.playing ? "\u25b6 " : "\u25b7 "), title, "\n");
-      // Artists always; the album only when the whole line fits the rail.
+      // each track keeps its own tempo, somewhere between 92 and 132
+      bpm = 92 + Math.floor(hash([...String(track.title)].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7)) * 40);
       const artists = lower((track.artists || []).join(", "));
-      const withAlbum = track.album ? artists + " // " + lower(track.album) : artists;
-      pre.append("  ", node("span", "now__meta", clip(withAlbum.length <= width - 2 ? withAlbum : artists, width - 2)));
-      meter = null;
-      if (data.playing && data.progress_ms != null && track.duration_ms) {
-        meter = node("span", "now__meter", "");
-        timeLabel = node("span", "", "");
-        const eq = node("span", "now__eq", "");
-        "\u2582\u2585\u2583\u2587".split("").forEach((glyph, index) => {
-          const bar = node("span", "", glyph);
-          bar.style.setProperty("--i", index);
-          eq.append(bar);
-        });
-        pre.append("\n  ", meter, timeLabel, eq);
-        tick();
+      by.textContent = track.album ? artists + " // " + lower(track.album) : artists;
+      if (playing) tick();
+      else {
+        at.textContent =
+          note || (data.playing ? "playing" : data.played_at ? "last played " + ago(data.played_at) : "paused");
+        length.textContent = "";
       }
       box.hidden = false;
+      wake();
     };
     const stop = () => {
       if (ticker) window.clearInterval(ticker);
@@ -267,6 +354,8 @@
       schedule();
     };
     const sync = () => {
+      box.classList.toggle("now--away", !visible || document.hidden);
+      if (state) wake();
       if (visible && !document.hidden) {
         if (!state) load();
         else schedule();
@@ -279,8 +368,7 @@
       const stored = JSON.parse(window.localStorage.getItem(storageKey) || "null");
       if (stored && stored.track && !state) {
         state = { data: { ...stored, playing: false, progress_ms: null }, receivedAt: Date.now() };
-        render();
-        label.textContent = "spotify // syncing";
+        render("syncing");
         state = null;
       }
     } catch {

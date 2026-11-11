@@ -52,28 +52,39 @@
   font-style: normal;
   font-weight: 400;
   src: url("/fonts/jetbrains-mono-symbols.woff2") format("woff2");
-  unicode-range: U+03BB, U+2190-21FF, U+2500-25FF;
+  unicode-range: U+0020, U+0023, U+0027, U+002A-002B, U+002E-002F, U+003A, U+005C, U+00B7,
+    U+2022, U+03BB, U+2190-21FF, U+2500-25FF;
 }
 
 
+/* the palette comes from the banner: space for the page, the suit's whites
+   for text, the earth's blues for structure, and the cat's warm fur and
+   eyes kept for the few things that are alive (what is playing, code strings) */
 :root {
   color-scheme: dark;
-  --bg: #16151a;
-  --bg-raised: #1c1b21;
-  --ink: #f2f0ea;
-  --ink-2: #b3b0a8;
-  --ink-3: #85827c;
-  --ink-4: #5b5955;
-  --accent: #b4a3e6;
-  --accent-2: #8f7fc4;
-  --accent-soft: #d9cffa;
-  --line: rgb(242 240 234 / 0.16);
-  --line-soft: rgb(242 240 234 / 0.09);
-  --hover: rgb(242 240 234 / 0.04);
+  --bg: #0e1016;
+  --bg-raised: #151821;
+  --ink: #eef1f6;
+  --ink-2: #b2b7c2;
+  --ink-3: #7f8592;
+  --ink-4: #525866;
+  --accent: #9db8ef;
+  --accent-2: #6f8fcf;
+  --accent-soft: #cfdcf8;
+  --earth: #3f5a8c;
+  --warm: #e0bd92;
+  --warm-2: #b08a66;
+  --fur: #7a5f4a;
+  --eye: #cfd27c;
+  --line: rgb(238 241 246 / 0.16);
+  --line-soft: rgb(238 241 246 / 0.09);
+  --hover: rgb(238 241 246 / 0.04);
   --serif: "Instrument Serif", Georgia, serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   --code: "JetBrains Mono", "JBM Symbols", ui-monospace, Menlo, monospace;
-  --art: "JetBrains Mono", "JBM Symbols", ui-monospace, Menlo, monospace;
+  /* the preloaded symbol subset first: the banner, city, ships, and λ draw
+     from it alone, and the full file loads only for letters (code, diagrams) */
+  --art: "JBM Symbols", "JetBrains Mono", ui-monospace, Menlo, monospace;
   --ease: cubic-bezier(0.19, 1, 0.22, 1);
 }
 
@@ -217,7 +228,9 @@ h3 {
 
 /* ascii art blocks */
 
-.portrait,
+.cat,
+.cat-stars,
+.meteor,
 .city__layer,
 .ship,
 .not-found-figlet,
@@ -228,18 +241,288 @@ h3 {
   white-space: pre;
 }
 
-.portrait,
+.cat,
+.cat-stars,
+.meteor,
 .city__layer,
 .ship,
 .not-found-figlet {
   user-select: none;
 }
 
+/* banner: the cat in dots, full bleed, fading into the page */
+
+/* about a fifth smaller than full bleed: 80% of the window, at most 1120px */
+.banner {
+  --art-width: clamp(560px, 80vw, 1120px);
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
+  position: relative;
+  width: 100vw;
+}
+
+/* the fade into the page is a painted gradient over the art, not a mask, so
+   the banner never needs a layer of its own */
+.banner::after {
+  background: linear-gradient(to bottom, rgb(14 16 22 / 0), var(--bg));
+  bottom: 0;
+  content: "";
+  height: 28%;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+/* the art: the dots, the twinkling stars laid over them, and now and then a
+   shooting star */
+.art {
+  margin: 0 auto;
+  position: relative;
+  width: var(--art-width);
+}
+
+/* square cells: the advance and the line are both 0.4em, so dots sit on a grid */
+.cat,
+.cat-stars {
+  font-size: calc(var(--art-width) / var(--cols) / 0.4);
+  letter-spacing: -0.2em;
+  line-height: 0.4;
+  margin: 0;
+}
+
+/* stars alone in open sky, on the art's own grid; each keeps one of six
+   rhythms, so no two neighbours pulse together */
+.cat-stars {
+  color: var(--ink-3);
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+}
+
+.cat-stars .hi {
+  color: var(--ink);
+}
+
+.cat-stars span {
+  animation: cat-twinkle var(--beat) ease-in-out var(--wait) infinite;
+}
+
+.cat-stars .s1 {
+  --beat: 2.8s;
+  --wait: -0.4s;
+}
+
+.cat-stars .s2 {
+  --beat: 4.1s;
+  --wait: -2.2s;
+}
+
+.cat-stars .s3 {
+  --beat: 3.3s;
+  --wait: -1.1s;
+}
+
+.cat-stars .s4 {
+  --beat: 5.2s;
+  --wait: -3.7s;
+}
+
+.cat-stars .s5 {
+  --beat: 3.7s;
+  --wait: -0.9s;
+}
+
+.cat-stars .s6 {
+  --beat: 4.6s;
+  --wait: -2.9s;
+}
+
+@keyframes cat-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.12;
+  }
+}
+
+/* a shooting star crosses the sky about every twenty seconds, head first */
+.meteor {
+  animation: meteor 21s linear 6s infinite;
+  color: var(--ink-2);
+  font-size: calc(var(--art-width) / 180 / 0.4);
+  left: 86%;
+  letter-spacing: -0.2em;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 4%;
+  white-space: pre;
+}
+
+/* the tail fades behind the head */
+.meteor::before {
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-image: linear-gradient(to right, var(--ink) 20%, rgb(238 241 246 / 0.12));
+  color: transparent;
+  content: "\2022\00B7\00B7\00B7";
+}
+
+@keyframes meteor {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(-24deg);
+  }
+
+  0.6% {
+    opacity: 1;
+  }
+
+  4.5% {
+    opacity: 0;
+    transform: translate(calc(var(--art-width) * -0.2), calc(var(--art-width) * 0.09))
+      rotate(-24deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--art-width) * -0.2), calc(var(--art-width) * 0.09))
+      rotate(-24deg);
+  }
+}
+
+/* nothing in the sky moves while the banner is out of view */
+.banner--still .cat-stars span,
+.banner--still .meteor {
+  animation-play-state: paused;
+}
+
+/* cat.js draws the same dots on a canvas over the text once a mouse arrives;
+   the text stays for screen readers */
+.cat--live {
+  opacity: 0;
+}
+
+.cat__live {
+  pointer-events: none;
+  position: absolute;
+}
+
+.cat.t1,
+.cat .t1 {
+  color: var(--ink-4);
+}
+
+.cat.t2,
+.cat .t2 {
+  color: var(--ink-3);
+}
+
+.cat .t3 {
+  color: var(--ink-2);
+}
+
+.cat .t4 {
+  color: var(--ink);
+}
+
+.cat .b1 {
+  color: var(--earth);
+}
+
+.cat .b2 {
+  color: var(--accent-2);
+}
+
+.cat .b3 {
+  color: var(--accent);
+}
+
+.cat .w1 {
+  color: var(--fur);
+}
+
+.cat .w2 {
+  color: var(--warm-2);
+}
+
+.cat .w3 {
+  color: var(--warm);
+}
+
+.cat .g {
+  color: var(--eye);
+}
+
+/* phones: a wider crop, centred on the cat's face (31% across the art) */
+@media (max-width: 599px) {
+  .banner {
+    --art-width: 600px;
+  }
+
+  .art {
+    margin-left: calc(50vw - 0.31 * var(--art-width));
+  }
+}
+
+/* the art is narrower than the window; fade its sides into the page */
+@media (min-width: 600px) {
+  .banner::before {
+    background: linear-gradient(
+      to right,
+      var(--bg),
+      rgb(14 16 22 / 0) 10%,
+      rgb(14 16 22 / 0) 90%,
+      var(--bg)
+    );
+    content: "";
+    inset: 0 auto 0 50%;
+    pointer-events: none;
+    position: absolute;
+    transform: translateX(-50%);
+    width: var(--art-width);
+    z-index: 1;
+  }
+}
+
+/* section heads read like markdown: "## name -------" */
+
+.home-section-heading {
+  align-items: baseline;
+  color: var(--ink);
+  display: flex;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 400;
+  gap: 1ch;
+  letter-spacing: 0;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.home-section-heading::before {
+  color: var(--accent-2);
+  content: "##";
+}
+
+.home-section-heading::after {
+  color: var(--ink-4);
+  content: "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------";
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
 /* header */
 
 .site-header {
   align-items: baseline;
-  border-bottom: 1px solid var(--line-soft);
   display: flex;
   gap: 24px;
   justify-content: space-between;
@@ -249,7 +532,6 @@ h3 {
 .site-identity {
   align-items: baseline;
   display: flex;
-  gap: 14px;
   min-width: 0;
 }
 
@@ -268,33 +550,6 @@ h3 {
 }
 
 .site-title:hover {
-  color: var(--ink);
-}
-
-.site-name {
-  color: var(--ink-3);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 24px;
-}
-
-.site-nav a {
-  align-items: center;
-  color: var(--ink-3);
-  display: inline-flex;
-  font-size: 13px;
-  line-height: 1.4;
-  min-height: 44px;
-  text-decoration: none;
-}
-
-.site-nav a:hover,
-.site-nav a[aria-current] {
   color: var(--ink);
 }
 
@@ -376,72 +631,71 @@ main {
   min-height: 44px;
 }
 
-.rail--home {
-  container-type: inline-size;
-}
-
-.portrait {
-  color: var(--ink-4);
-  font-family: var(--art);
-  font-size: calc(100cqw / (var(--cols) * 0.6));
-  font-variant-ligatures: none;
-  letter-spacing: 0;
-  line-height: 1;
-  margin: 0 0 28px;
-  max-width: 100%;
-  overflow: hidden;
-  user-select: none;
-  white-space: pre;
-}
-
-.portrait .p0 {
-  color: var(--ink-4);
-}
-
-.portrait .p1 {
-  color: var(--ink-3);
-}
-
-.portrait .p2 {
-  color: var(--ink-2);
-}
-
-.portrait .p3 {
-  color: var(--ink);
-}
-
-.portrait .p4 {
-  color: var(--accent-2);
-}
-
-.portrait .p5 {
-  color: var(--accent);
-}
-
-.portrait .p6 {
-  color: var(--accent-soft);
-}
-
+/* the links are one line of text; on phones it breaks into balanced lines,
+   never between a name and its slash */
 .socials {
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 2;
   list-style: none;
   margin: 0;
   padding: 0;
+  text-wrap: balance;
+}
+
+.socials li {
+  display: inline;
+  white-space: nowrap;
+}
+
+/* no separators: the logos mark where each link starts, with a little room
+   before the next */
+.socials li:not(:last-child) {
+  margin-right: 1rem;
 }
 
 .socials a {
-  align-items: center;
-  color: var(--ink-3);
-  display: inline-flex;
-  min-height: 28px;
+  color: var(--ink-2);
+}
+
+/* home: one column centred under the cat (the name and footer line up with
+   it), on one spacing scale */
+
+body.home-page {
+  max-width: calc(760px + 2 * clamp(20px, 4vw, 48px));
+}
+
+.home {
+  --section: 3.5rem; /* between sections */
+  --heading: 1rem; /* from a heading to its list */
+  --item: 1.15rem; /* between entries that carry a description */
+  --row: 0.55rem; /* between one-line rows */
+  display: flex;
+  flex-direction: column;
+  max-width: 760px;
+  padding-top: 10px; /* the intro sits close under the name */
+  width: 100%;
+}
+
+.home > section,
+.home > .now-slot {
+  margin-top: var(--section);
+}
+
+/* the untitled links row closes out the lists, so it sits nearer to them
+   than a new section would */
+.home > .socials {
+  margin-top: calc(var(--section) * 0.6);
+}
+
+/* links on the home page carry no underline; they take the accent on hover
+   (keyboard focus keeps its outline) */
+.home a {
   text-decoration: none;
 }
 
-.socials a:hover {
-  color: var(--ink);
+.home a:hover {
+  color: var(--accent);
 }
-
-/* home */
 
 .home-intro p {
   max-width: 68ch;
@@ -454,10 +708,7 @@ main {
 
 .home-intro p:last-child {
   color: var(--ink-3);
-}
-
-.home-intro a {
-  text-decoration: underline;
+  margin-bottom: 0;
 }
 
 .home-intro ul,
@@ -479,50 +730,35 @@ main {
   position: absolute;
 }
 
-.home-section-heading {
-  color: var(--ink);
-  font-size: 1.45rem;
-  margin-top: 2.4rem;
-}
-
-.home-writing,
-.home-projects,
-.home-experience {
-  margin-top: 0.5rem;
-}
-
-.home-writing-all,
+/* a tall tap target that takes no extra room: the padding is paid back by
+   the margins */
 .home-projects-all {
-  align-items: center;
+  align-self: start;
   color: var(--ink-3);
-  display: inline-flex;
+  display: inline-block;
   font-size: 13px;
-  margin-top: 0.4rem;
-  min-height: 44px;
+  margin: calc(var(--heading) - 0.6rem) 0 -0.6rem;
+  padding: 0.6rem 0;
   text-decoration: none;
 }
 
-.home-writing-all:hover,
 .home-projects-all:hover {
   color: var(--ink);
 }
 
-.home-project-list,
 .home-experience-list {
   display: grid;
-  gap: 0.65rem;
+  gap: var(--item);
   list-style: none;
-  margin: 0.7rem 0 0;
+  margin: var(--heading) 0 0;
   padding: 0;
 }
 
-.home-project,
 .home-experience__item {
-  padding: 0.2rem 0 0.2rem 1.15rem;
+  padding: 0 0 0 1.15rem;
   position: relative;
 }
 
-.home-project::before,
 .home-experience__item::before {
   color: var(--ink-4);
   content: "-";
@@ -530,7 +766,6 @@ main {
   position: absolute;
 }
 
-.home-project__header,
 .home-experience__header {
   align-items: baseline;
   column-gap: 1.5rem;
@@ -538,24 +773,14 @@ main {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.home-project__header,
 .home-experience__header,
 .home-experience__position {
   min-width: 0;
 }
 
-.home-project__name {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: var(--ink-4);
-  text-underline-offset: 0.2em;
-}
-
-.home-experience__company {
-  text-decoration: underline;
-}
-
-.home-experience__logo {
+/* company logos and the links' marks share one tile size */
+.home-experience__logo,
+.logo {
   border-radius: 4px;
   display: inline-block;
   height: 22px;
@@ -564,23 +789,19 @@ main {
   width: 22px;
 }
 
-.home-project__tech,
 .home-experience__period {
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: 12.5px;
   white-space: nowrap;
 }
 
-.home-experience__period {
-  color: var(--ink-2);
-}
-
-.home-project__description,
+/* set like a project's description, so the two lists read alike */
 .home-experience__description {
   color: var(--ink-3);
   display: block;
-  font-size: 0.9rem;
-  margin-top: 0.12rem;
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin-top: 4px;
   max-width: min(64ch, 100%);
   overflow-wrap: anywhere;
   text-wrap: pretty;
@@ -588,80 +809,78 @@ main {
 
 /* ledger */
 
-.writing-list {
+/* projects are set like the writing list: the tech sits where a post's date
+   does, and the description where its summary does */
+.writing-list,
+.home-project-list {
+  display: grid;
+  gap: var(--row, 0.55rem);
   list-style: none;
-  margin: 0.6rem 0 0;
+  margin: var(--heading, 1rem) 0 0;
   padding: 0;
 }
 
-.writing-row {
+.home-project-list {
+  gap: var(--item);
+}
+
+.writing-row,
+.home-project {
   align-items: baseline;
-  border-bottom: 1px solid var(--line-soft);
-  column-gap: 14px;
+  column-gap: 1.5rem;
   display: grid;
   grid-template-areas:
-    "mark title meta"
-    "mark summary summary";
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+    "title meta"
+    "summary summary";
+  grid-template-columns: minmax(0, 1fr) auto;
   margin: 0;
-  padding: 12px 0;
-  transition: opacity 0.25s var(--ease);
+  padding: 0 0 0 1.15rem;
+  position: relative;
 }
 
-@media (hover: hover) {
-  .writing-list:hover .writing-row:not(:hover) {
-    opacity: 0.45;
-  }
+/* a grid ignores the marker's static position, so pin it to the first line */
+.writing-row::before,
+.home-project::before {
+  color: var(--ink-4);
+  content: "-";
+  left: 0;
+  position: absolute;
+  top: 0;
 }
 
-.writing-row__meta {
+.writing-row__meta,
+.home-project__tech {
   color: var(--ink-3);
   font-size: 12.5px;
   grid-area: meta;
   white-space: nowrap;
 }
 
-.writing-row__mark {
-  align-self: start;
-  grid-area: mark;
-  line-height: 0;
-  padding-top: 5px;
-}
-
-.writing-row__mark svg {
-  display: block;
-}
-
-.writing-row__title {
+.writing-row__title,
+.home-project__name {
   color: var(--ink);
-  font-family: var(--serif);
-  font-size: 1.25rem;
   grid-area: title;
-  line-height: 1.2;
   min-width: 0;
-  text-decoration: none;
+  text-decoration-color: var(--ink-4);
 }
 
-.writing-row__title:hover {
-  text-decoration: underline;
-  text-decoration-color: var(--ink-3);
+.writing-row__title:hover,
+a.home-project__name:hover {
+  text-decoration-color: var(--ink-2);
 }
 
-.writing-row__summary {
+.writing-row__summary,
+.home-project__description {
   color: var(--ink-3);
   font-size: 13.5px;
   grid-area: summary;
   line-height: 1.55;
   margin: 4px 0 0;
   max-width: 64ch;
+  overflow-wrap: anywhere;
 }
 
 /* article */
-
-.blog-header .mark {
-  display: block;
-  margin-bottom: 20px;
-}
 
 .blog-heading {
   color: var(--ink);
@@ -689,7 +908,7 @@ main {
 }
 
 .blog-draft {
-  border: 1px solid rgb(180 163 230 / 0.35);
+  border: 1px solid rgb(157 184 239 / 0.35);
   color: var(--ink-2);
   font-size: 13px;
   line-height: 1.55;
@@ -704,7 +923,7 @@ main {
 }
 
 .writing-row__draft {
-  border: 1px solid rgb(180 163 230 / 0.4);
+  border: 1px solid rgb(157 184 239 / 0.4);
   color: var(--accent);
   font-family: var(--mono);
   font-size: 11px;
@@ -742,16 +961,31 @@ main {
   text-decoration: underline;
 }
 
-.blog-article h2 {
-  font-size: 1.9rem;
-  margin: 3rem 0 1rem;
+.blog-article h2,
+.blog-article h3 {
+  font-family: var(--mono);
+  line-height: 1.4;
   scroll-margin-top: 1.5rem;
 }
 
+.blog-article h2 {
+  font-size: 1.2rem;
+  margin: 3rem 0 1rem;
+}
+
 .blog-article h3 {
-  font-size: 1.45rem;
+  font-size: 1.05rem;
   margin: 2.35rem 0 0.85rem;
-  scroll-margin-top: 1.5rem;
+}
+
+.blog-article h2::before,
+.blog-article h3::before {
+  color: var(--accent-2);
+  content: "## ";
+}
+
+.blog-article h3::before {
+  content: "### ";
 }
 
 .blog-article ul,
@@ -970,60 +1204,21 @@ blockquote p {
   color: var(--ink);
 }
 
-/* writings and tags */
+/* tags */
 
-.writings-header {
-  padding-top: 0;
-}
-
-.writings-heading,
 .tags-heading {
   font-size: clamp(2.4rem, 5vw, 3.6rem);
   max-width: 14ch;
   text-wrap: balance;
 }
 
-.writings-summary {
+.tags-summary {
   color: var(--ink-3);
   margin-top: 0.75rem;
 }
 
-.writings-year__heading {
-  align-items: center;
-  color: var(--ink-3);
-  display: flex;
-  font-family: var(--mono);
-  font-size: 12.5px;
-  font-weight: 400;
-  gap: 12px;
-  letter-spacing: 0.04em;
-  line-height: 1.5;
-  margin: 34px 0 0;
-}
-
-.writings-year__heading::after {
-  border-top: 1px solid var(--line-soft);
-  content: "";
-  flex: 1;
-}
-
-.writings-page .writing-list,
 .tags-page .writing-list {
   margin-top: 0.4rem;
-}
-
-.pagination {
-  color: var(--ink-3);
-  display: flex;
-  font-size: 12.5px;
-  gap: 1.25rem;
-  margin-top: 2.5rem;
-}
-
-.pagination a {
-  align-items: center;
-  display: inline-flex;
-  min-height: 44px;
 }
 
 
@@ -1109,6 +1304,23 @@ body > .layout {
   position: relative;
 }
 
+/* home keeps only the line; the city stays on the writing pages */
+.footer--plain {
+  border-top: 0;
+  color: var(--ink-3);
+  font-size: 12.5px;
+  margin-top: 4.5rem;
+  padding: 0 0 3rem;
+}
+
+.footer--plain .footer__copy {
+  margin: 0;
+  max-width: none;
+  padding: 0;
+  pointer-events: auto;
+  position: static;
+}
+
 .footer--city {
   border-top: 0;
   display: block;
@@ -1134,14 +1346,14 @@ body > .layout {
 }
 
 .footer__copy span {
-  background: rgb(22 21 26 / 0.82);
+  background: rgb(14 16 22 / 0.82);
   display: inline-block;
   padding: 5px 9px;
 }
 
 .city {
   --city-near: var(--ink-4);
-  --city-far: #322f39;
+  --city-far: #232836;
   bottom: 0;
   container-type: inline-size;
   height: 280px;
@@ -1156,11 +1368,11 @@ body > .layout {
   background:
     radial-gradient(
       ellipse 95% 80% at 50% 85%,
-      rgb(143 127 196 / 0.03),
-      rgb(143 127 196 / 0.012) 50%,
+      rgb(111 143 207 / 0.03),
+      rgb(111 143 207 / 0.012) 50%,
       transparent 90%
     ),
-    linear-gradient(to top, rgb(143 127 196 / 0.02), transparent 45%),
+    linear-gradient(to top, rgb(111 143 207 / 0.02), transparent 45%),
     linear-gradient(to right, rgb(0 0 0 / 0.35), transparent 22%, transparent 78%, rgb(0 0 0 / 0.35));
   inset: 0;
   mask-image: linear-gradient(to bottom, transparent, #000 38%);
@@ -1226,7 +1438,7 @@ body > .layout {
 
 .city .beacon {
   animation: city-beacon 7s ease-in-out infinite;
-  color: var(--accent);
+  color: var(--warm);
 }
 
 .city .beacon ~ .beacon {
@@ -1299,7 +1511,7 @@ body > .layout {
 }
 
 .ship .thrust {
-  color: var(--accent-2);
+  color: var(--warm-2);
 }
 
 .ship--far .hi {
@@ -1331,17 +1543,35 @@ body > .layout {
   animation-play-state: paused;
 }
 
-/* now playing: a worker answers with the spotify track, the browser prints it */
+/* now playing: a worker answers with the spotify track. it is the one part of
+   the page that changes by itself, so it is set apart as a small terminal pane:
+   a rounded frame with its title cut into the top edge, and where the track
+   comes from cut into the other end */
 
-.now {
-  background: rgb(143 127 196 / 0.05);
-  border: 1px solid rgb(180 163 230 / 0.16);
-  margin-top: 26px;
-  min-height: 118px;
-  padding: 11px 12px 12px;
+/* the slot keeps the pane's place while the worker answers, so nothing below
+   it shifts; on phones the artists usually take a second line. the frame
+   itself only ever wraps what it holds */
+.now-slot {
+  min-height: 169px;
 }
 
-/* the card keeps its place while the worker answers, so nothing below it shifts */
+@media (max-width: 640px) {
+  .now-slot {
+    min-height: 190px;
+  }
+}
+
+.now-slot:has(.now--off) {
+  min-height: 0;
+}
+
+.now {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 20px 20px 16px 14px;
+  position: relative;
+}
+
 .now[hidden] {
   display: block;
   visibility: hidden;
@@ -1351,86 +1581,183 @@ body > .layout {
   display: none;
 }
 
-.now__label {
-  align-items: center;
-  color: var(--ink-3);
-  display: flex;
+/* the labels sit on the frame's top edge, the page colour behind them hiding
+   the line where they cross it */
+.now__head,
+.now__source {
+  background: var(--bg);
   font-family: var(--mono);
   font-size: 12.5px;
-  gap: 12px;
-  letter-spacing: 0.04em;
-  line-height: 1.5;
-  margin: 0 0 8px;
-}
-
-.now__label::after {
-  border-top: 1px solid rgb(180 163 230 / 0.18);
-  content: "";
-  flex: 1;
-}
-
-.now--playing .now__state {
-  color: var(--accent-2);
-}
-
-.now__pre {
-  color: var(--ink-2);
-  font-family: var(--art);
-  font-size: 12.5px;
-  font-variant-ligatures: none;
+  font-weight: 400;
   letter-spacing: 0;
-  line-height: 1.7;
+  line-height: 1.5;
   margin: 0;
-  overflow: hidden;
-  white-space: pre;
+  padding: 0 1ch;
+  position: absolute;
+  top: 0;
+  transform: translateY(-50%);
 }
 
-.now__mark {
+.now__head {
+  color: var(--ink-2);
+  left: 1.5ch;
+}
+
+.now__source {
+  color: var(--ink-4);
+  right: 1.5ch;
+}
+
+/* the player: the disc in its own column, the track beside it */
+.now__track {
+  column-gap: 0;
+  display: grid;
+  grid-template-columns: 1.15rem minmax(0, 1fr);
+}
+
+/* a one-em box around the glyph, so it turns about its own centre; nudged
+   down to sit in the middle of the title's line */
+.now__disc {
+  color: var(--ink-4);
+  display: inline-block;
+  font-family: var(--art);
+  grid-row: 1;
+  height: 1em;
+  justify-self: start;
+  line-height: 1;
+  margin-top: 0.35em;
+  width: 0.6em;
+}
+
+.now__disc::before {
+  content: "\25D0";
+}
+
+/* a quarter turn at a time, like a terminal spinner */
+.now--playing .now__disc {
+  animation: now-spin 1.2s steps(4) infinite;
   color: var(--accent-2);
+}
+
+.now--away .now__disc {
+  animation-play-state: paused;
+}
+
+@keyframes now-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .now__title {
   color: var(--ink);
-  text-decoration: none;
+  grid-column: 2;
+  min-width: 0;
 }
 
-.now__title:hover {
-  text-decoration: underline;
-}
-
-.now__meta {
+/* long casts and soundtrack names stop at two lines */
+.now__by {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   color: var(--ink-3);
+  display: -webkit-box;
+  font-size: 13.5px;
+  grid-column: 2;
+  line-clamp: 2;
+  line-height: 1.55;
+  margin: 4px 0 0;
+  overflow: hidden;
+  text-wrap: pretty;
 }
 
-.now__meter {
+/* the spectrum: two layers of dots on square cells, like the cat's. the dim
+   field stays put; the lit dots above it are redrawn by site.js, coloured by
+   height so only the peaks reach the warm of the cat's fur */
+.now__viz {
+  contain: strict; /* a redraw stays inside the strip */
+  font-family: var(--art);
+  font-size: 15px;
+  grid-column: 2;
+  height: calc(6 * 0.4em);
+  letter-spacing: -0.2em;
+  line-height: 0.4;
+  margin: 14px 0 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.now__viz pre {
+  font: inherit;
+  inset: 0;
+  letter-spacing: inherit;
+  line-height: inherit;
+  margin: 0;
+  overflow: hidden;
+  position: absolute;
+  white-space: pre;
+}
+
+.now__rest {
+  color: var(--ink-4);
+  opacity: 0.45;
+}
+
+.now__lit {
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-image: linear-gradient(
+    to top,
+    var(--accent-2),
+    var(--accent) 45%,
+    var(--accent-soft) 72%,
+    var(--warm)
+  );
+  color: transparent;
+}
+
+.now__time {
+  align-items: center;
+  color: var(--ink-3);
+  display: flex;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  gap: 1.5ch;
+  grid-column: 2;
+  line-height: 1.5;
+  margin: 10px 0 0;
+  white-space: nowrap;
+}
+
+/* how far the track has got: a light rule, overdrawn in heavy rule up to now */
+.now__rail {
+  color: var(--ink-4);
+  flex: 1;
+  font-family: var(--art);
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.now__rail::before {
+  content: "\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500\2500";
+}
+
+.now__done {
   color: var(--accent-2);
+  inset: 0 auto 0 0;
+  overflow: hidden;
+  position: absolute;
+  width: calc(var(--progress, 0) * 100%);
 }
 
-.now__eq {
-  color: var(--accent);
-  display: inline-block;
+.now__done::before {
+  content: "\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501\2501";
 }
 
-.now__eq span {
-  animation: now-eq calc(0.9s + var(--i, 0) * 0.17s) ease-in-out calc(var(--i, 0) * -0.3s) infinite alternate;
-  display: inline-block;
-  transform-origin: bottom;
-}
-
-@keyframes now-eq {
-  from {
-    transform: scaleY(0.3);
-  }
-
-  to {
-    transform: scaleY(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .now__eq span {
-    animation: none;
-  }
+/* nothing to measure when it isn't playing: the note stands alone */
+.now:not(.now--playing) .now__rail,
+.now:not(.now--playing) .now__length {
+  display: none;
 }
 
 /* reading meter in the article rail */
@@ -1466,27 +1793,6 @@ math[display="block"] {
 
 .math-source {
   color: var(--ink-3);
-}
-
-/* motion */
-
-/* Starts above zero on purpose: Chrome drops fully transparent paints from
-   largest-contentful-paint, which pushed the metric onto a late text repaint. */
-@keyframes rise {
-  from {
-    opacity: 0.3;
-    transform: translateY(14px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-main,
-.rail {
-  animation: rise 0.5s var(--ease) both;
 }
 
 /* scrollbars */
@@ -1551,51 +1857,14 @@ main,
   .layout--article main {
     padding-top: 24px;
   }
-
-  .layout--home .rail {
-    margin-bottom: 28px;
-    margin-top: 28px;
-    order: -1;
-  }
-
-  .rail--home .now {
-    max-width: 240px;
-  }
-
-  .layout--home main {
-    padding-top: 12px;
-  }
-
-  .rail--home {
-    padding-top: 0;
-  }
-
-  .rail--home .portrait {
-    font-size: calc(240px / (var(--cols) * 0.6));
-    margin: 0 0 14px;
-    max-width: 240px;
-  }
-
-  .rail--home .socials {
-    display: flex;
-    flex-wrap: wrap;
-    font-size: 13px;
-    gap: 0 20px;
-  }
-
-  .rail--home .socials a {
-    min-height: 32px;
-  }
 }
 
 @media (max-width: 760px) {
-  .home-project__header,
   .home-experience__header {
     grid-template-columns: 1fr;
     row-gap: 0.1rem;
   }
 
-  .home-project__tech,
   .home-experience__period {
     white-space: normal;
   }
@@ -1613,27 +1882,22 @@ main,
     padding-top: 20px;
   }
 
-  .site-nav {
-    gap: 0 20px;
+  .home {
+    --section: 2.75rem;
   }
 
   main {
     padding-top: 28px;
   }
 
-  .writing-row {
-    column-gap: 10px;
+  .writing-row,
+  .home-project {
     grid-template-areas:
-      "mark title"
-      "mark meta"
-      "mark summary";
-    grid-template-columns: 18px minmax(0, 1fr);
+      "title"
+      "meta"
+      "summary";
+    grid-template-columns: minmax(0, 1fr);
     row-gap: 2px;
-  }
-
-  .writing-row__mark {
-    align-self: start;
-    padding-top: 6px;
   }
 
   .blog-heading {
@@ -1667,10 +1931,6 @@ main,
 
   .not-found-content {
     padding: 1.5rem 0 2rem;
-  }
-
-  .writings-header {
-    padding-top: 0;
   }
 
   .footer {

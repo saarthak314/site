@@ -1,10 +1,11 @@
-title: sλrthak
+title: sλrthak tomar
 date: 2025-12-22
 updated: 2026-08-29
 description: notes on inference systems, high-performance computing, distributed systems, and whatever i'm building next.
 now_playing: https://sarrthak-now.shinero-voldemort.workers.dev/now
 aliases:
   - /about/
+  - /blogs/
 experience:
   - role: systems engineer
     company: math.inc
@@ -41,10 +42,8 @@ projects:
     tech: [python, agents]
 -----
 
-hey, i'm sarthak. 20 y/o cs undergrad into **inference systems**, **high-performance computing**, and **distributed systems**.
+systems engineer, currently dabbling in **inference systems**, **high perf computing** and **agentic workloads**.
 
-mostly obsessed with the machinery behind intelligence: how a pile of matmuls turns into useful behaviour, how **agent harnesses** turn that behaviour into useful work, and how to make the systems around it fast, reliable, and efficient.
-
-can work across any stack, but most proficient in **ai systems**, **infra**, and **post-training**.
+mostly obsessed with the machinery behind intelligence: how a pile of matmuls turns into useful behaviour, how **agents** turn that behaviour into useful work, and how to make the systems around it fast, reliable, and efficient.
 
 this site is a log of things i'm learning, building, or overthinking. usually the latter.

@@ -35,7 +35,6 @@ class TestContentRepository(unittest.TestCase):
           "site_url": "https://example.com",
           "email": "hello@example.com",
           "social_image": "/images/default.png",
-          "posts_per_page": 2,
         }
       )
     )
@@ -44,7 +43,6 @@ class TestContentRepository(unittest.TestCase):
     self.root.joinpath("content/_index.md").write_text(
       "title: home\ndate: 2026-08-20\n-----\nhome body"
     )
-    blogs.joinpath("_index.md").write_text("title: writings\ndate: 2026-08-20\n-----\n")
     self._write_post(
       "alpha",
       "title: alpha\ndate: 2026-08-24\ntags: [systems, inference]",
@@ -81,8 +79,8 @@ class TestContentRepository(unittest.TestCase):
       [post.route for post in index.posts],
       ["/blogs/alpha/", "/blogs/custom_beta/", "/notes/gamma/"],
     )
-    self.assertEqual(len(index.pages), 5)
-    self.assertEqual(len(self.renderer.calls), 5)
+    self.assertEqual(len(index.pages), 4)
+    self.assertEqual(len(self.renderer.calls), 4)
     self.assertEqual(
       index.posts[0].social_image_url, "https://example.com/images/default.png"
     )
@@ -90,11 +88,7 @@ class TestContentRepository(unittest.TestCase):
       index.posts[1].social_image_url, "https://example.com/images/beta.png"
     )
 
-    self.assertEqual(
-      [page.route for page in index.pagination], ["/blogs/", "/blogs/page/2/"]
-    )
-    self.assertEqual(index.pagination[0].next_url, "/blogs/page/2/")
-    self.assertEqual(index.pagination[1].previous_url, "/blogs/")
+    self.assertIsNone(index.page_for_route("/blogs/"))
     systems = next(tag for tag in index.tags if tag.slug == "systems")
     self.assertEqual([post.title for post in systems.items], ["alpha", "beta"])
     self.assertTrue(index.digest)
@@ -108,7 +102,7 @@ class TestContentRepository(unittest.TestCase):
     self.assertTrue(index.posts[0].noindex)
     self.assertFalse(index.posts[1].noindex)
 
-  def test_home_page_lists_up_to_five_recent_posts(self) -> None:
+  def test_there_is_no_archive_page_so_the_index_keeps_every_post(self) -> None:
     for number in range(4):
       self._write_post(
         f"extra{number}", f"title: extra{number}\ndate: 2026-09-0{number + 1}"
@@ -117,8 +111,9 @@ class TestContentRepository(unittest.TestCase):
     index = ContentRepository(self.config, self.renderer).discover()
 
     self.assertEqual(len(index.posts), 8)
-    self.assertEqual(len(index.recent_posts), 5)
-    self.assertEqual(index.recent_posts, index.posts[:5])
+    self.assertEqual([page.route for page in index.pages if not page.is_post], ["/"])
+    self.assertFalse(hasattr(index, "recent_posts"))
+    self.assertFalse(hasattr(index, "pagination"))
 
   def test_carries_structured_homepage_sections_to_the_home_page(self) -> None:
     self.root.joinpath("content/_index.md").write_text(

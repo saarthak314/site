@@ -1,4 +1,6 @@
+import html
 import json
+import re
 import shutil
 import tempfile
 import unittest
@@ -26,21 +28,26 @@ class TestSiteRendering(unittest.TestCase):
   def tearDown(self) -> None:
     self.temp_dir.cleanup()
 
-  def test_real_site_renders_shared_metadata_and_complete_archive(self) -> None:
+  def test_real_site_renders_shared_metadata_and_every_post_on_home(self) -> None:
     home = self.output_dir.joinpath("index.html").read_text()
-    archive = self.output_dir.joinpath("blogs/index.html").read_text()
     article = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
     not_found = self.output_dir.joinpath("404.html").read_text()
 
-    for page in (home, archive, article):
+    for page in (home, article):
       self.assertIn('type="application/rss+xml"', page)
       self.assertIn('property="og:title"', page)
       self.assertIn('name="twitter:card" content="summary_large_image"', page)
-      self.assertIn('href="/feed.xml">rss</a>', page)
-    self.assertIn('href="mailto:hey@sarrthak.com">email</a>', home)
-    self.assertNotIn('href="mailto:hey@sarrthak.com">email</a>', article)
+      self.assertNotIn('href="/feed.xml">rss</a>', page)
+      self.assertNotIn('href="/blogs/"', page)
+    self.assertIn('href="mailto:hey@sarrthak.com"><svg class="logo"', home)
+    self.assertNotIn('href="mailto:hey@sarrthak.com"><svg class="logo"', article)
 
-    for page in (home, archive, article):
+    home_footer = home[
+      home.index('<footer class="footer footer--plain">') : home.index("</footer>")
+    ]
+    self.assertIn("sarthak tomar. built with love.", home_footer)
+    self.assertNotIn("data-city", home)
+    for page in (article,):
       footer = page[
         page.index('<footer class="footer footer--city">') : page.index("</footer>")
       ]
@@ -61,7 +68,8 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('property="article:modified_time" content="2026-08-26"', article)
     self.assertIn('type="application/ld+json"', article)
     self.assertIn('name="robots" content="noindex, nofollow"', not_found)
-    self.assertIn('class="home-writing-all" href="/blogs/">all writings</a>', home)
+    self.assertNotIn("all writings", home)
+    self.assertIn('<a href="/">home</a>', article)
     self.assertIn(
       'class="home-projects-all" href="https://github.com/saarthak314">'
       "all projects</a>",
@@ -71,6 +79,9 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn(
       '<img class="home-experience__logo" src="/images/logos/mathinc.png"', home
     )
+    # the role runs straight into the company's mark, with no "@" between
+    self.assertIn("<strong>systems engineer</strong> <img", home)
+    self.assertNotIn("<span> @ </span>", home)
     self.assertIn('class="home-project__tech">python · agents</span>', home)
     self.assertLess(home.index(">kurama</a>"), home.index(">sakura</a>"))
     self.assertLess(home.index(">sakura</a>"), home.index(">web server</span>"))
@@ -79,16 +90,112 @@ class TestSiteRendering(unittest.TestCase):
       self.assertNotIn(removed_project, home)
     self.assertLess(home.index('id="experience"'), home.index('id="writing"'))
     self.assertLess(home.index('id="writing"'), home.index('id="projects"'))
-    for slug in ("make_cool_stuff", "learn_ocaml", "randomness_impl"):
-      self.assertIn(f'href="/blogs/{slug}/"', archive)
-    for published in ("30 aug", "30 jul", "19 jul"):
-      self.assertIn(f'<span class="writing-row__date">{published}</span>', archive)
+    # with no archive page, home lists every post
+    for slug in (
+      "amazon_ml_hackathon",
+      "make_cool_stuff",
+      "learn_ocaml",
+      "randomness_impl",
+    ):
+      self.assertIn(f'href="/blogs/{slug}/"', home)
+    for published in ("oct 2026", "aug 2025", "jul 2025"):
+      self.assertIn(f'<span class="writing-row__date">{published}</span>', home)
+
+  def test_home_art_draws_only_from_the_preloaded_symbol_font(self) -> None:
+    from fontTools.ttLib import TTFont
+
+    home = self.output_dir.joinpath("index.html").read_text()
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    cmap = TTFont(
+      str(PROJECT_ROOT / "static" / "fonts" / "jetbrains-mono-symbols.woff2")
+    ).getBestCmap()
+    art = re.search(r'<pre class="cat[^>]*>(.*?)</pre>', home, re.S).group(1)
+    article = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
+    city = re.search(r'<div class="city".*?</footer>', article, re.S).group(0)
+    drawn = set(html.unescape(re.sub(r"<[^>]+>", "", art + city))) - {"\n"}
+    drawn |= {"λ"}
+
+    self.assertEqual(sorted(c for c in drawn if ord(c) not in cmap), [])
+    self.assertIn('--art: "JBM Symbols", "JetBrains Mono"', stylesheet)
     self.assertIn(
-      '<h2 class="writings-year__heading" id="year-2025">2025</h2>', archive
+      '<link rel="preload" href="/fonts/jetbrains-mono-symbols.woff2"', home
     )
-    self.assertNotIn('class="tree"', archive)
-    self.assertIn('<p class="writing-row__summary">', archive)
-    self.assertNotIn("&lt;- home", archive)
+
+  def test_the_sky_twinkles_without_any_script(self) -> None:
+    home = self.output_dir.joinpath("index.html").read_text()
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
+    art = re.search(r'<pre class="cat [^>]*>(.*?)</pre>', home, re.S).group(1)
+    stars = re.search(
+      r'<pre class="cat-stars" aria-hidden="true"[^>]*>(.*?)</pre>', home, re.S
+    ).group(1)
+
+    # the star layer sits on the art's grid: same number of lines
+    self.assertEqual(stars.count("\n"), art.count("\n"))
+    self.assertGreaterEqual(stars.count("<span"), 20)
+    self.assertRegex(stars, r'<span class="s[1-6]( hi)?">·</span>')
+    self.assertIn('<span class="meteor" aria-hidden="true"></span>', home)
+    self.assertIn("@keyframes cat-twinkle", stylesheet)
+    self.assertIn("@keyframes meteor", stylesheet)
+    self.assertIn(".banner--still .cat-stars span", stylesheet)
+    self.assertIn(
+      'banner.classList.toggle("banner--still", !entry.isIntersecting)', script
+    )
+
+  def test_the_player_spectrum_moves_only_while_a_track_plays_on_screen(self) -> None:
+    script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+
+    # drawn as text in the cat's two dots, on the cat's square cells
+    self.assertIn('lit.textContent = lines.join("\\n")', script)
+    self.assertIn('"\\u2022"', script)
+    self.assertIn('"\\u00b7".repeat(columns)', script)
+    viz = re.search(r"\n\.now__viz \{[^}]*\}", stylesheet).group(0)
+    self.assertIn("font-family: var(--art)", viz)
+    self.assertIn("letter-spacing: -0.2em", viz)
+    self.assertIn("line-height: 0.4", viz)
+    self.assertIn("contain: strict", viz)
+    # it runs only while the block is on screen, the tab is open, and a track
+    # plays (or the bars are still settling); reduced motion gets one still frame
+    self.assertRegex(
+      script,
+      r"const moving = \(\) =>\s*visible && !document\.hidden && "
+      r"\(box\.classList\.contains\(\"now--playing\"\) \|\| caps\.some",
+    )
+    self.assertIn('window.matchMedia("(prefers-reduced-motion: reduce)")', script)
+    self.assertIn("step(true);", script)
+    self.assertNotIn("requestAnimationFrame(animate", script)
+    # the reserved space sits on the slot, never as empty room inside the frame
+    frame = re.search(r"\n\.now \{[^}]*\}", stylesheet).group(0)
+    self.assertNotIn("min-height", frame)
+    self.assertIn(".now-slot:has(.now--off)", stylesheet)
+
+  def test_banner_hover_code_loads_only_when_a_mouse_arrives(self) -> None:
+    home = self.output_dir.joinpath("index.html").read_text()
+    script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
+    hover = self.output_dir.joinpath("cat.js").read_text()
+
+    self.assertNotIn("cat.js", home)
+    # a real move loads it; the page scrolling under a resting cursor does not
+    self.assertIn(
+      'banner.addEventListener("pointermove", wake, { passive: true })', script
+    )
+    self.assertIn("!event.movementX && !event.movementY", script)
+    self.assertIn('import("/cat.js")', script)
+    self.assertIn("(hover: hover) and (pointer: fine)", script)
+    self.assertIn("prefers-reduced-motion: no-preference", script)
+    self.assertIn("export function start", hover)
+    self.assertIn("requestAnimationFrame", hover)
+    # one simple wave that follows the cursor; hovering is the only input
+    self.assertIn("centre", hover)
+    self.assertIn("Math.sin", hover)
+    self.assertNotIn("Math.cos", hover)
+    self.assertRegex(hover, r"move\.screenX\s*!==\s*screen\.x")
+    self.assertNotIn("pointerdown", hover)
+    self.assertNotIn("click", hover)
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    banner = re.search(r"\n\.banner \{[^}]*\}", stylesheet).group(0)
+    self.assertNotIn("mask-image", banner)
 
   def test_shipped_script_and_stylesheet_are_minified_copies(self) -> None:
     script = self.output_dir.joinpath("site.js").read_text()
@@ -105,6 +212,30 @@ class TestSiteRendering(unittest.TestCase):
     self.assertNotIn("Each ship is one CSS transform animation", script)
     self.assertNotIn("/* ledger */", stylesheet)
 
+  def test_social_links_read_as_one_balanced_line_of_text(self) -> None:
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    links = re.search(r"\n\.socials a \{[^}]*\}", stylesheet).group(0)
+    items = re.search(r"\n\.socials li \{[^}]*\}", stylesheet).group(0)
+    block = re.search(r"\n\.socials \{[^}]*\}", stylesheet).group(0)
+
+    self.assertNotIn("underline", links)
+    home_links = re.search(r"\n\.home a \{[^}]*\}", stylesheet).group(0)
+    self.assertIn("text-decoration: none", home_links)
+    self.assertIn(
+      "color: var(--accent)",
+      re.search(r"\n\.home a:hover \{[^}]*\}", stylesheet).group(0),
+    )
+    self.assertIn("display: inline", items)
+    self.assertIn("white-space: nowrap", items)
+    self.assertIn("text-wrap: balance", block)
+    # no "/" between the links; the logos set them apart
+    self.assertNotIn('content: " /"', stylesheet)
+    self.assertRegex(
+      stylesheet, r"\.socials li:not\(:last-child\) \{\s*margin-right: 1rem;"
+    )
+    # the spotify block is last in the page itself, so no width reorders it
+    self.assertNotRegex(stylesheet, r"\.now-slot \{[^}]*(?<![-\w])order:")
+
   def test_about_route_redirects_home_and_the_header_drops_it(self) -> None:
     redirect = self.output_dir.joinpath("about/index.html").read_text()
     home = self.output_dir.joinpath("index.html").read_text()
@@ -118,13 +249,15 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<meta http-equiv="refresh" content="0; url=/" />', redirect)
     self.assertIn('<meta name="robots" content="noindex, follow" />', redirect)
     header = home[home.index('<header class="site-header">') : home.index("</header>")]
-    self.assertIn(">writing</a>", header)
-    self.assertIn(">rss</a>", header)
+    self.assertNotIn("<nav", header)
+    self.assertNotIn(">writing</a>", header)
+    self.assertNotIn(">rss</a>", header)
     self.assertNotIn("/about/", header)
     self.assertNotIn('rel="me"', header)
-    self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', home)
-    self.assertIn('rel="me">github</a>', home)
-    self.assertIn('class="city" aria-hidden="true" data-city', home)
+    self.assertIn('<ul class="socials" aria-label="elsewhere">', home)
+    self.assertIn('rel="me"><svg class="logo"', home)
+    self.assertIn("</svg>github</a>", home)
+    self.assertNotIn('class="city" aria-hidden="true" data-city', home)
     for removed in (
       "page--annotated",
       "portrait-bracket",
@@ -137,6 +270,32 @@ class TestSiteRendering(unittest.TestCase):
       self.assertNotIn(removed, home)
     self.assertNotIn("https://sarrthak.com/about/", locations)
     self.assertNotIn("/about/", llms)
+
+  def test_writing_page_is_gone_and_its_address_redirects_home(self) -> None:
+    redirect = self.output_dir.joinpath("blogs/index.html").read_text()
+    llms = self.output_dir.joinpath("llms.txt").read_text()
+    script = self.output_dir.joinpath("site.js").read_text()
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    locations = [
+      element.text
+      for element in ET.parse(self.output_dir / "sitemap.xml").getroot().iter()
+      if element.tag.endswith("loc")
+    ]
+
+    self.assertIn('<meta http-equiv="refresh" content="0; url=/" />', redirect)
+    self.assertIn('<meta name="robots" content="noindex, follow" />', redirect)
+    self.assertFalse(self.output_dir.joinpath("blogs/page").exists())
+    self.assertFalse(PROJECT_ROOT.joinpath("templates", "writings.html").exists())
+    self.assertFalse(PROJECT_ROOT.joinpath("content", "blogs", "_index.md").exists())
+    self.assertNotIn("https://sarrthak.com/blogs/", locations)
+    self.assertNotIn("(/blogs/)", llms)
+    self.assertNotIn('"/blogs/"', script)
+    for removed in (".site-nav", ".writings-", ".pagination", ".home-writing-all"):
+      self.assertNotIn(removed, stylesheet)
+    for page in self.output_dir.rglob("*.html"):
+      if page.name == "index.html" and page.parent.name == "blogs":
+        continue
+      self.assertNotIn('href="/blogs/"', page.read_text(), page)
 
   def test_real_articles_preserve_accessibility_and_image_stability(self) -> None:
     ocaml = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
@@ -202,7 +361,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<h1 class="not-found-heading"', not_found)
     self.assertIn('class="not-found-links"', not_found)
     self.assertIn('href="/">go home</a>', not_found)
-    self.assertIn('href="/blogs/">all writings</a>', not_found)
+    self.assertNotIn("all writings", not_found)
     self.assertNotIn('class="writings-header"', not_found)
     self.assertNotIn('class="home-intro"', not_found)
     self.assertIn("url=/404.html", short_route)
@@ -230,7 +389,6 @@ class TestSiteRendering(unittest.TestCase):
       locations,
       [
         "https://sarrthak.com/",
-        "https://sarrthak.com/blogs/",
         "https://sarrthak.com/blogs/amazon_ml_hackathon/",
         "https://sarrthak.com/blogs/learn_ocaml/",
         "https://sarrthak.com/blogs/make_cool_stuff/",
@@ -253,7 +411,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertEqual(self.output_dir.joinpath("CNAME").read_text(), "sarrthak.com\n")
     self.assertIn("# sλrthak", llms)
     self.assertIn("┏━┓┏━┓┏━┓", llms)
-    self.assertIn("[all writings](/blogs/)", llms)
+    self.assertNotIn("all writings", llms)
     self.assertTrue(self.output_dir.joinpath("site.js").is_file())
     self.assertRegex(css, r"\.blog-article p \{\s+max-width: 68ch;")
     self.assertIn('font-family: "IBM Plex Mono";', css)
@@ -267,24 +425,40 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<div class="home-experience__header">', home)
     self.assertRegex(
       css,
-      r"\.home-project__header,\s+\.home-experience__header \{[^}]+"
+      r"\n\.home-experience__header \{[^}]+"
       r"grid-template-columns: minmax\(0, 1fr\) auto;",
     )
     self.assertRegex(
       css,
-      r"\.home-project__header,\s+\.home-experience__header,\s+"
+      r"\.home-experience__header,\s+"
       r"\.home-experience__position \{[^}]+min-width: 0;",
     )
     self.assertRegex(
       css,
-      r"\.home-project__description,\s+\.home-experience__description \{[^}]+"
+      r"\n\.home-experience__description \{[^}]+"
       r"max-width: min\(64ch, 100%\);[^}]+overflow-wrap: anywhere;",
     )
     self.assertRegex(
       css,
-      r"@media \(max-width: 760px\) \{[^}]+\.home-project__header,\s+"
+      r"@media \(max-width: 760px\) \{[^}]+"
       r"\.home-experience__header \{[^}]+grid-template-columns: 1fr;",
     )
+
+  def test_projects_are_set_like_the_writing_list(self) -> None:
+    css = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+    home = self.output_dir.joinpath("index.html").read_text()
+    projects = home[home.index('<ul class="home-project-list">') :]
+    projects = projects[: projects.index("</ul>")]
+
+    self.assertNotIn("home-project__header", projects)
+    self.assertIn('<p class="home-project__description">', projects)
+    for shared in (
+      r"\.writing-row,\s+\.home-project \{[^}]+grid-template-areas:",
+      r"\.writing-row__meta,\s+\.home-project__tech \{",
+      r"\.writing-row__title,\s+\.home-project__name \{",
+      r"\.writing-row__summary,\s+\.home-project__description \{",
+    ):
+      self.assertRegex(css, shared)
 
 
 if __name__ == "__main__":

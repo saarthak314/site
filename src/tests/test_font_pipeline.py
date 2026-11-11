@@ -18,7 +18,20 @@ class TestFontPipeline(unittest.TestCase):
       cmap = TTFont(str(output)).getBestCmap()
 
     self.assertLess(size, 12_000)
-    for codepoint in (0x03BB, 0x2500, 0x2571, 0x2588, 0x259F, 0x25B6, 0x2192):
+    for codepoint in (
+      0x0020,
+      0x0023,
+      0x005C,
+      0x00B7,
+      0x2022,
+      0x03BB,
+      0x2500,
+      0x2571,
+      0x2588,
+      0x259F,
+      0x25B6,
+      0x2192,
+    ):
       self.assertIn(codepoint, cmap)
     self.assertNotIn(ord("a"), cmap)
 

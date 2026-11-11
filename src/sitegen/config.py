@@ -14,7 +14,6 @@ class SiteConfig:
   social_image: str
   author_name: str
   twitter_handle: str
-  posts_per_page: int
   content_dir: Path
   template_dir: Path
   static_dir: Path
@@ -47,12 +46,6 @@ class SiteConfig:
       raise ContentError(f"{config_path}: author_name must be a non-empty string")
     if not isinstance(twitter_handle, str) or not twitter_handle.startswith("@"):
       raise ContentError(f"{config_path}: twitter_handle must start with @")
-    posts_per_page = raw.get("posts_per_page", 10)
-    if not isinstance(posts_per_page, int) or isinstance(posts_per_page, bool):
-      raise ContentError(f"{config_path}: posts_per_page must be an integer")
-    if posts_per_page < 1:
-      raise ContentError(f"{config_path}: posts_per_page must be greater than zero")
-
     return cls(
       project_root=root,
       site_url=site_url,
@@ -60,7 +53,6 @@ class SiteConfig:
       social_image=social_image,
       author_name=author_name.strip(),
       twitter_handle=twitter_handle,
-      posts_per_page=posts_per_page,
       content_dir=_path_setting(raw, "content_dir", root / "content", root),
       template_dir=_path_setting(raw, "template_dir", root / "templates", root),
       static_dir=_path_setting(raw, "static_dir", root / "static", root),

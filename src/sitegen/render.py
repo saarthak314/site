@@ -9,9 +9,8 @@ from jinja2 import Environment
 from markupsafe import Markup
 
 from sitegen.city import city_layers
-from sitegen.marks import mark_svg
 
-HOME_TITLE = "sλrthak // systems, models, machines"
+SITE_TITLE = "sλrthak"
 
 
 class TemplateRenderer:
@@ -31,19 +30,12 @@ class TemplateRenderer:
       values["index"] = context
     if self.config is not None:
       values.setdefault("config", self.config)
-    _normalize_pagination(values)
     _normalize_tag(values)
-    if page.template == "tags.html":
-      values.setdefault("page_number", 1)
-      values.setdefault("total_pages", 1)
-      values.setdefault("previous_url", None)
-      values.setdefault("next_url", None)
     footer_phrase = (
       "built by hand." if page.template == "blog.html" else "built with love."
     )
     values.update(
       page=page,
-      page_mark=Markup(mark_svg(page.route, 56)),
       city=city_layers(),
       content=Markup(page.rendered.html),
       current_year=date.today().year,
@@ -59,17 +51,6 @@ class TemplateRenderer:
     )
     output = self.environment.get_template(page.template).render(**values)
     return "\n".join(line.rstrip() for line in output.splitlines()) + "\n"
-
-  def render_archive(self, page: Any, pagination: Any, index: Any) -> str:
-    archive_page = _page_at_route(page, pagination.route, self._site_url())
-    return self.render_page(
-      archive_page,
-      {
-        "config": self._config(),
-        "index": index,
-        "pagination": pagination,
-      },
-    )
 
   def render_tag(self, tag: Any, index: Any) -> str:
     items = tuple(tag.items)
@@ -126,7 +107,7 @@ class TemplateRenderer:
 
   def _config(self) -> Any:
     if self.config is None:
-      raise ValueError("archive and tag rendering require a site configuration")
+      raise ValueError("tag rendering requires a site configuration")
     return self.config
 
   def _site_url(self) -> str:
@@ -143,28 +124,7 @@ def _context_values(context: Any) -> dict[str, Any]:
 
 
 def _is_content_index(context: Any) -> bool:
-  return all(hasattr(context, name) for name in ("posts", "recent_posts"))
-
-
-def _normalize_pagination(values: dict[str, Any]) -> None:
-  pagination = values.get("pagination")
-  if pagination is not None and all(
-    hasattr(pagination, name)
-    for name in ("items", "page", "total_pages", "previous_url", "next_url")
-  ):
-    values.pop("pagination")
-    for name in (
-      "items",
-      "page",
-      "total_pages",
-      "previous_url",
-      "next_url",
-    ):
-      values.setdefault(name, getattr(pagination, name))
-
-  page_number = values.get("page")
-  if isinstance(page_number, int):
-    values["page_number"] = values.pop("page")
+  return all(hasattr(context, name) for name in ("posts", "tags"))
 
 
 def _normalize_tag(values: dict[str, Any]) -> None:
@@ -176,9 +136,10 @@ def _normalize_tag(values: dict[str, Any]) -> None:
 
 
 def _document_title(page: Any) -> str:
-  if page.route == "/":
-    return HOME_TITLE
-  return f"{page.title} // sλrthak"
+  """A post's tab reads its own title alone; every other page reads the name."""
+  if page.template == "blog.html":
+    return page.title
+  return SITE_TITLE
 
 
 def _meta_description(page: Any) -> str:
@@ -196,17 +157,10 @@ def _origin(url: Any) -> str:
 def _body_class(template_name: str) -> str:
   return {
     "home.html": "home-page",
-    "writings.html": "writings-page",
     "blog.html": "blog-page",
     "tags.html": "tags-page",
     "404.html": "not-found-page",
   }[template_name]
-
-
-def _page_at_route(page: Any, route: str, site_url: str) -> SimpleNamespace:
-  values = _context_values(page)
-  values.update(route=route, canonical_url=f"{site_url}{route}")
-  return SimpleNamespace(**values)
 
 
 def _structured_data(page: Any, config: Any) -> dict[str, Any]:

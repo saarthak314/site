@@ -4,9 +4,7 @@ from datetime import date
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
-from markupsafe import Markup
 
-from sitegen.marks import mark_svg
 from sitegen.render import TemplateRenderer
 
 
@@ -20,7 +18,6 @@ def create_environment(template_dir: Path) -> Environment:
     day_month=_day_month,
     full_date=_full_date,
     iso_date=_iso_date,
-    mark=_mark,
     month_year=_month_year,
     tag_slug=_tag_slug,
   )
@@ -33,10 +30,6 @@ def _full_date(value: date) -> str:
 
 def _day_month(value: date) -> str:
   return value.strftime("%d %b").lower()
-
-
-def _mark(route: str, size: int = 18) -> Markup:
-  return Markup(mark_svg(route, size))
 
 
 def _iso_date(value: date) -> str:

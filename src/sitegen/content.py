@@ -1,6 +1,5 @@
 import hashlib
 import json
-import math
 import mimetypes
 import re
 import unicodedata
@@ -19,16 +18,6 @@ class MarkdownRendererProtocol(Protocol):
 
 
 @dataclass(frozen=True)
-class PaginationPage:
-  items: tuple[Page, ...]
-  page: int
-  total_pages: int
-  route: str
-  previous_url: str | None
-  next_url: str | None
-
-
-@dataclass(frozen=True)
 class TagPage:
   name: str
   slug: str
@@ -40,8 +29,6 @@ class TagPage:
 class ContentIndex:
   pages: tuple[Page, ...]
   posts: tuple[Page, ...]
-  recent_posts: tuple[Page, ...]
-  pagination: tuple[PaginationPage, ...]
   tags: tuple[TagPage, ...]
   digest: str
 
@@ -58,14 +45,12 @@ class ContentRepository:
     content_dir = self.config.content_dir
     home_path = content_dir / "_index.md"
     blogs_dir = content_dir / "blogs"
-    archive_path = blogs_dir / "_index.md"
-    for required in (home_path, archive_path):
-      if not required.is_file():
-        raise ContentError(f"{required}: required content file not found")
+    if not home_path.is_file():
+      raise ContentError(f"{home_path}: required content file not found")
 
+    # the home page lists every post; there is no separate archive page
     pages: list[Page] = [
       self._create_page(home_path, "/", "home.html", is_post=False),
-      self._create_page(archive_path, "/blogs/", "writings.html", is_post=False),
     ]
     not_found_path = content_dir / "404.md"
     if not_found_path.is_file():
@@ -78,7 +63,12 @@ class ContentRepository:
         )
       )
 
-    for child in sorted(blogs_dir.iterdir(), key=lambda path: path.name):
+    children = (
+      sorted(blogs_dir.iterdir(), key=lambda path: path.name)
+      if blogs_dir.is_dir()
+      else []
+    )
+    for child in children:
       if not child.is_dir():
         continue
       source_path = child / "index.md"
@@ -103,14 +93,11 @@ class ContentRepository:
         reverse=True,
       )
     )
-    pagination = self._paginate(posts)
     tags = self._build_tags(posts)
-    digest = self._digest(pages, pagination, tags, include_drafts)
+    digest = self._digest(pages, tags, include_drafts)
     return ContentIndex(
       pages=tuple(pages),
       posts=posts,
-      recent_posts=posts[:5],
-      pagination=pagination,
       tags=tags,
       digest=digest,
     )
@@ -184,33 +171,6 @@ class ContentRepository:
           )
         sources_by_route[route] = page.source_path
 
-  def _paginate(self, posts: tuple[Page, ...]) -> tuple[PaginationPage, ...]:
-    total_pages = max(1, math.ceil(len(posts) / self.config.posts_per_page))
-    pages: list[PaginationPage] = []
-    for page_number in range(1, total_pages + 1):
-      start = (page_number - 1) * self.config.posts_per_page
-      end = start + self.config.posts_per_page
-      route = "/blogs/" if page_number == 1 else f"/blogs/page/{page_number}/"
-      previous_url = None
-      if page_number == 2:
-        previous_url = "/blogs/"
-      elif page_number > 2:
-        previous_url = f"/blogs/page/{page_number - 1}/"
-      next_url = (
-        f"/blogs/page/{page_number + 1}/" if page_number < total_pages else None
-      )
-      pages.append(
-        PaginationPage(
-          items=posts[start:end],
-          page=page_number,
-          total_pages=total_pages,
-          route=route,
-          previous_url=previous_url,
-          next_url=next_url,
-        )
-      )
-    return tuple(pages)
-
   def _build_tags(self, posts: tuple[Page, ...]) -> tuple[TagPage, ...]:
     grouped: dict[str, tuple[str, list[Page]]] = {}
     for post in posts:
@@ -234,7 +194,6 @@ class ContentRepository:
   def _digest(
     self,
     pages: list[Page],
-    pagination: tuple[PaginationPage, ...],
     tags: tuple[TagPage, ...],
     include_drafts: bool,
   ) -> str:
@@ -280,7 +239,6 @@ class ContentRepository:
         }
         for page in pages
       ],
-      "pagination": [page.route for page in pagination],
       "tags": [tag.route for tag in tags],
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()

@@ -9,7 +9,6 @@
 ## navigation
 
 - [home](/): who i am, what i'm into, experience, projects.
-- [all writings](/blogs/): everything i've written, newest first.
 - [rss feed](/feed.xml): rss feed.
 
 ## writings

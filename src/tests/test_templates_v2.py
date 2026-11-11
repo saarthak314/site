@@ -88,26 +88,6 @@ def config() -> SimpleNamespace:
   )
 
 
-def pagination_context(
-  items: tuple[SimpleNamespace, ...],
-  *,
-  page_number: int = 2,
-  total_pages: int = 3,
-  previous_url: str | None = "/blogs/",
-  next_url: str | None = "/blogs/page/3/",
-  **extra: object,
-) -> SimpleNamespace:
-  return namespace(
-    config=config(),
-    items=items,
-    page=page_number,
-    total_pages=total_pages,
-    previous_url=previous_url,
-    next_url=next_url,
-    **extra,
-  )
-
-
 class TemplateRenderingTestCase(unittest.TestCase):
   def setUp(self) -> None:
     self.environment = create_environment(TEMPLATE_ROOT)
@@ -139,7 +119,7 @@ class TestTemplateEnvironment(unittest.TestCase):
       with self.assertRaises(UndefinedError):
         environment.get_template("escaped.html").render()
 
-  def test_renderer_supports_build_facing_construction_and_archives(self) -> None:
+  def test_renderer_supports_build_facing_construction(self) -> None:
     from sitegen.templates import TemplateRenderer as BuildTemplateRenderer
 
     site_config = namespace(
@@ -157,17 +137,8 @@ class TestTemplateEnvironment(unittest.TestCase):
       template="blog.html",
       tags=("systems",),
     )
-    index = namespace(posts=(post,), recent_posts=(post,))
+    index = namespace(posts=(post,), tags=())
     home = page(title="home", route="/", template="home.html")
-    archive = page(title="all writings", route="/blogs/", template="writings.html")
-    pagination = namespace(
-      items=(post,),
-      page=1,
-      total_pages=1,
-      route="/blogs/",
-      previous_url=None,
-      next_url=None,
-    )
     tag = namespace(
       name="systems",
       slug="systems",
@@ -176,7 +147,7 @@ class TestTemplateEnvironment(unittest.TestCase):
     )
 
     self.assertIn("systems post", renderer.render_page(home, index))
-    self.assertIn("systems post", renderer.render_archive(archive, pagination, index))
+    self.assertFalse(hasattr(renderer, "render_archive"))
     self.assertIn("systems post", renderer.render_tag(tag, index))
     self.assertTrue(renderer.template_digest("home.html"))
 
@@ -191,7 +162,7 @@ class TestSharedLayout(TemplateRenderingTestCase):
     )
     context = namespace(
       config=config(),
-      index=namespace(posts=(), recent_posts=()),
+      index=namespace(posts=(), tags=()),
     )
 
     html = self.render(home, context)
@@ -208,12 +179,14 @@ class TestSharedLayout(TemplateRenderingTestCase):
     )
     context = namespace(
       config=config(),
-      index=namespace(posts=(), recent_posts=()),
+      index=namespace(posts=(), tags=()),
     )
 
     html = self.render(home, context)
 
-    self.assertIn("<title>sλrthak // systems, models, machines</title>", html)
+    # the tab reads the name alone, on social cards too
+    self.assertIn("<title>sλrthak</title>", html)
+    self.assertIn('<meta property="og:title" content="sλrthak"', html)
     self.assertIn('<link rel="canonical" href="https://sarrthak.com/"', html)
     self.assertIn('<meta property="og:type" content="website"', html)
     self.assertIn('<meta property="og:site_name" content="sλrthak"', html)
@@ -235,40 +208,51 @@ class TestSharedLayout(TemplateRenderingTestCase):
     self.assertIn('<body class="home-page">', html)
     self.assertIn('<a class="skip-link" href="#main-content">skip to content</a>', html)
     self.assertIn(
-      '<a class="site-title" href="/">s<span class="lam">λ</span>rthak</a>', html
+      '<a class="site-title" href="/">s<span class="lam">λ</span>rthak tomar</a>', html
     )
-    self.assertIn('<span class="site-name">sarthak tomar</span>', html)
+    # the wordmark stands alone, without the full name beside it
+    self.assertNotIn("site-name", html)
     self.assertIn('<script defer src="/site.js"></script>', html)
 
     header = html[html.index('<header class="site-header">') : html.index("</header>")]
-    self.assertIn('<a href="/blogs/">writing</a>', header)
-    self.assertIn('<a href="/feed.xml">rss</a>', header)
+    # the header is the name alone: no writing or rss links
+    self.assertNotIn("<nav", header)
+    self.assertNotIn("/blogs/", header)
+    self.assertNotIn("/feed.xml", header)
     self.assertNotIn("/about/", header)
-    self.assertEqual(header.count("<a "), 3)
+    self.assertEqual(header.count("<a "), 1)
     self.assertNotIn('rel="me"', header)
 
-    rail_start = html.index('<aside class="rail rail--home" aria-label="elsewhere">')
-    rail = html[rail_start : html.index("</aside>", rail_start)]
-    self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', rail)
-    self.assertIn('href="https://x.com/sarthak2143" rel="me">twitter</a>', rail)
+    rail_start = html.index('<ul class="socials" aria-label="elsewhere">')
+    rail = html[rail_start : html.index("</ul>", rail_start)]
     self.assertIn(
-      'href="https://linkedin.com/in/sarthaktomar2143" rel="me">linkedin</a>',
+      'href="https://github.com/saarthak314" rel="me"><svg class="logo"', rail
+    )
+    self.assertIn('href="https://x.com/sarthak2143" rel="me"><svg class="logo"', rail)
+    self.assertIn(
+      'href="https://linkedin.com/in/sarthaktomar2143" rel="me"><svg class="logo"',
       rail,
     )
     self.assertIn(
-      'href="https://discord.com/users/1226399791362080820" rel="me">discord</a>',
+      'href="https://discord.com/users/1226399791362080820" rel="me"><svg class="logo"',
       rail,
     )
-    self.assertIn('href="mailto:hey@sarrthak.com">email</a>', rail)
+    self.assertIn('href="mailto:hey@sarrthak.com"><svg class="logo"', rail)
+    # every link leads with a decorative 22px mark; the word stays the label
+    self.assertEqual(
+      rail.count(
+        '<svg class="logo" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"'
+      ),
+      5,
+    )
+    for label in ("github", "twitter", "linkedin", "discord", "email"):
+      self.assertIn(f"</svg>{label}</a>", rail)
 
     footer = html[
-      html.index('<footer class="footer footer--city">') : html.index("</footer>")
+      html.index('<footer class="footer footer--plain">') : html.index("</footer>")
     ]
     self.assertRegex(footer, r"© \d{4} sarthak tomar\. built with love\.")
-    self.assertIn('<div class="city" aria-hidden="true" data-city', footer)
-    self.assertIn('<pre class="city__layer city__layer--far">', footer)
-    self.assertIn('<div class="city__ships"></div>', footer)
-    self.assertIn('<pre class="city__layer city__layer--near">', footer)
+    self.assertNotIn("data-city", html)
     self.assertNotIn("<a ", footer)
     self.assertNotIn("<img", footer)
     self.assertNotIn('aria-label="Footer navigation"', html)
@@ -379,7 +363,7 @@ class TestSharedLayout(TemplateRenderingTestCase):
 
 
 class TestHomeTemplate(TemplateRenderingTestCase):
-  def test_home_renders_intro_recent_posts_and_archive_link(self) -> None:
+  def test_home_renders_intro_and_every_post(self) -> None:
     recent = page(
       title="recent post",
       route="/blogs/recent/",
@@ -423,7 +407,7 @@ class TestHomeTemplate(TemplateRenderingTestCase):
     )
     context = namespace(
       config=config(),
-      index=namespace(posts=(recent, older), recent_posts=(recent,)),
+      index=namespace(posts=(recent, older), tags=()),
     )
 
     html = self.render(home, context)
@@ -435,18 +419,27 @@ class TestHomeTemplate(TemplateRenderingTestCase):
     self.assertIn('<ul class="writing-list">', html)
     self.assertIn('<li class="writing-row">', html)
     self.assertIn('<span class="writing-row__date">aug 2026</span>', html)
-    self.assertIn('<span class="writing-row__mark"><svg class="mark"', html)
+    self.assertNotIn("writing-row__mark", html)
     self.assertIn(
       '<a class="writing-row__title" href="/blogs/recent/">recent post</a>',
       html,
     )
-    self.assertIn('<span class="writing-row__time">1 min read</span>', html)
-    self.assertNotIn("older post", html)
     self.assertIn(
-      '<pre class="portrait" role="img" aria-label="ascii portrait of asuka langley soryu, chin on her hand, unimpressed"',
+      '<span class="writing-row__meta"><span class="writing-row__date">aug 2026</span></span>',
       html,
     )
-    self.assertIn('<a class="home-writing-all" href="/blogs/">all writings</a>', html)
+    self.assertNotIn("writing-row__time", html)
+    # with no archive page, home lists every post
+    self.assertIn(
+      '<a class="writing-row__title" href="/blogs/older/">older post</a>', html
+    )
+    self.assertIn(
+      '<div class="banner"><div class="art"><pre class="cat t2" role="img" aria-label="ascii art of a cat in a spacesuit waving, the earth behind it"',
+      html,
+    )
+    self.assertNotIn("portrait", html)
+    self.assertNotIn("all writings", html)
+    self.assertNotIn('href="/blogs/"', html)
     self.assertIn('<section class="home-projects" id="projects"', html)
     self.assertIn('class="home-project__tech">python · agents</span>', html)
     self.assertIn('<span class="home-project__name">web server</span>', html)
@@ -481,80 +474,6 @@ class TestHomeTemplate(TemplateRenderingTestCase):
     self.assertLess(html.index('id="writing"'), html.index('id="projects"'))
 
 
-class TestWritingsTemplate(TemplateRenderingTestCase):
-  def test_writings_renders_full_dates_and_pagination(self) -> None:
-    first = page(
-      title="first post",
-      route="/blogs/first/",
-      template="blog.html",
-      published=date(2026, 8, 24),
-    )
-    second = page(
-      title="second post",
-      route="/blogs/second/",
-      template="blog.html",
-      published=date(2026, 7, 3),
-    )
-    archive = page(
-      title="all writings",
-      route="/blogs/page/2/",
-      template="writings.html",
-    )
-
-    html = self.render(archive, pagination_context((first, second)))
-
-    self.assertIn('<body class="writings-page">', html)
-    self.assertIn('<h1 class="writings-heading">all writings</h1>', html)
-    self.assertNotIn("everything i've written", html)
-    self.assertIn('<p class="writing-row__summary">systems notes</p>', html)
-    self.assertIn('<h2 class="writings-year__heading" id="year-2026">2026</h2>', html)
-    self.assertIn('<span class="writing-row__date">24 aug</span>', html)
-    self.assertIn('href="/blogs/first/">first post</a>', html)
-    self.assertIn('<span class="writing-row__date">03 jul</span>', html)
-    self.assertIn('href="/blogs/second/">second post</a>', html)
-    self.assertIn('<nav class="pagination" aria-label="Pagination">', html)
-    self.assertIn('rel="prev" href="/blogs/">previous</a>', html)
-    self.assertIn("<span>page 2 of 3</span>", html)
-    self.assertIn('rel="next" href="/blogs/page/3/">next</a>', html)
-    self.assertNotIn('class="tree"', html)
-
-  def test_writings_groups_years_newest_first(self) -> None:
-    newer = page(
-      title="newer post",
-      route="/blogs/newer/",
-      template="blog.html",
-      published=date(2026, 3, 1),
-    )
-    older = page(
-      title="older post",
-      route="/blogs/older/",
-      template="blog.html",
-      published=date(2025, 7, 19),
-    )
-    archive = page(
-      title="all writings",
-      route="/blogs/",
-      template="writings.html",
-    )
-    context = pagination_context(
-      (newer, older),
-      page_number=1,
-      total_pages=1,
-      previous_url=None,
-      next_url=None,
-      index=namespace(posts=(newer, older), recent_posts=(newer,)),
-    )
-
-    html = self.render(archive, context)
-
-    self.assertIn('<h2 class="writings-year__heading" id="year-2026">2026</h2>', html)
-    self.assertIn('<h2 class="writings-year__heading" id="year-2025">2025</h2>', html)
-    self.assertLess(html.index('id="year-2026"'), html.index('id="year-2025"'))
-    self.assertNotIn('aria-label="Pagination"', html)
-
-    self.assertNotIn('class="tree"', html)
-
-
 class TestBlogTemplate(TemplateRenderingTestCase):
   def test_blog_renders_article_metadata_content_and_tags(self) -> None:
     article = page(
@@ -575,7 +494,9 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     html = self.render(article, namespace(config=config()))
 
     self.assertIn('<body class="blog-page">', html)
-    self.assertIn("<title>strict templates // sλrthak</title>", html)
+    # a post's tab reads its own title, with no site name after it
+    self.assertIn("<title>strict templates</title>", html)
+    self.assertIn('<meta name="twitter:title" content="strict templates"', html)
     self.assertIn('<meta property="og:type" content="article"', html)
     self.assertIn('<meta property="article:published_time" content="2026-08-24"', html)
     self.assertIn('<meta property="article:modified_time" content="2026-08-25"', html)
@@ -598,10 +519,7 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     self.assertIn('<span class="blog-reading-time">4 min read</span>', html)
     self.assertIn('<h1 class="blog-heading">strict templates</h1>', html)
     self.assertIn('<p class="blog-deck">strict rendering without surprises</p>', html)
-    self.assertLess(
-      html.index('<svg class="mark"'),
-      html.index('<h1 class="blog-heading">strict templates</h1>'),
-    )
+    self.assertNotIn('class="mark"', html)
     meta_start = html.index('<p class="blog-meta">')
     metadata = html[meta_start : html.index("</p>", meta_start)]
     self.assertIn(
@@ -618,7 +536,8 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     self.assertIn('<nav class="blog-tags" aria-label="Article tags">', html)
     self.assertIn('href="/tags/systems/">systems</a>', html)
     self.assertIn('href="/tags/inference/">inference</a>', html)
-    self.assertIn('href="/blogs/">all writings</a>', html)
+    self.assertIn('<a href="/">home</a>', html)
+    self.assertNotIn('href="/blogs/"', html)
     self.assertIn('href="#main-content">top</a>', html)
     self.assertRegex(html, r"© \d{4} sarthak tomar\. built by hand\.")
 
@@ -695,7 +614,7 @@ class TestDraftTemplates(TemplateRenderingTestCase):
       home,
       namespace(
         config=config(),
-        index=namespace(posts=(draft, finished), recent_posts=(draft, finished)),
+        index=namespace(posts=(draft, finished), tags=()),
       ),
     )
 
@@ -731,7 +650,7 @@ class TestTagsTemplate(TemplateRenderingTestCase):
     self.assertIn('href="/blogs/tagged/">tagged post</a>', html)
     self.assertNotIn('aria-label="Pagination"', html)
 
-  def test_tags_archive_renders_items_and_pagination(self) -> None:
+  def test_tags_archive_lists_every_tagged_post_with_full_dates(self) -> None:
     tagged = page(
       title="tagged post",
       route="/blogs/tagged/",
@@ -740,26 +659,21 @@ class TestTagsTemplate(TemplateRenderingTestCase):
     )
     archive = page(
       title="systems",
-      route="/tags/systems/page/2/",
+      route="/tags/systems/",
       template="tags.html",
       description="writing tagged systems",
     )
-    context = pagination_context(
-      (tagged,),
-      previous_url="/tags/systems/",
-      next_url="/tags/systems/page/3/",
-      tag="systems",
+
+    html = self.render(
+      archive, namespace(config=config(), tag="systems", items=(tagged,))
     )
 
-    html = self.render(archive, context)
-
     self.assertIn('<body class="tags-page">', html)
-    self.assertIn('<h1 class="tags-heading">systems</h1>', html)
+    self.assertIn('<header class="tags-header">', html)
+    self.assertIn('<p class="tags-summary">writing tagged systems.</p>', html)
     self.assertIn('href="/blogs/tagged/">tagged post</a>', html)
     self.assertIn('<span class="writing-row__date">24 aug 2026</span>', html)
-    self.assertIn('rel="prev" href="/tags/systems/">previous</a>', html)
-    self.assertIn("<span>page 2 of 3</span>", html)
-    self.assertIn('rel="next" href="/tags/systems/page/3/">next</a>', html)
+    self.assertNotIn("writings-", html)
 
 
 if __name__ == "__main__":
@@ -782,11 +696,11 @@ class TestNotFoundTemplate(TemplateRenderingTestCase):
     self.assertIn('<p class="not-found-code">404</p>', html)
     self.assertIn('<h1 class="not-found-heading" id="not-found-title">', html)
     self.assertIn('href="/">go home</a>', html)
-    self.assertIn('href="/blogs/">all writings</a>', html)
+    self.assertNotIn("all writings", html)
 
 
 class TestHomeRailTemplate(TemplateRenderingTestCase):
-  def test_home_rail_is_portrait_socials_and_nothing_else(self) -> None:
+  def test_home_is_one_column_under_the_cat_banner(self) -> None:
     home = page(
       title="home",
       route="/",
@@ -796,14 +710,27 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
     )
 
     html = self.render(
-      home, namespace(config=config(), index=namespace(recent_posts=()))
+      home, namespace(config=config(), index=namespace(posts=(), tags=()))
     )
 
     self.assertIn('<body class="home-page">', html)
-    self.assertIn('<aside class="rail rail--home" aria-label="elsewhere">', html)
-    self.assertIn('<pre class="portrait" role="img"', html)
-    self.assertIn('href="https://github.com/saarthak314" rel="me">github</a>', html)
-    self.assertIn('class="city" aria-hidden="true" data-city', html)
+    self.assertNotIn("<aside", html)
+    self.assertNotIn("portrait", html)
+    self.assertLess(
+      html.index('<pre class="cat'), html.index('<header class="site-header">')
+    )
+    main = html[
+      html.index('<main id="main-content" class="home"') : html.index("</main>")
+    ]
+    # the links follow projects, untitled
+    self.assertLess(main.index('id="experience"'), main.index('id="writing"'))
+    self.assertLess(main.index('id="writing"'), main.index('id="projects"'))
+    self.assertLess(main.index('id="projects"'), main.index('<ul class="socials"'))
+    self.assertNotIn('id="links"', main)
+    self.assertIn(
+      'href="https://github.com/saarthak314" rel="me"><svg class="logo"', main
+    )
+    self.assertNotIn('class="city" aria-hidden="true" data-city', html)
     self.assertIn("© 2026 sarthak tomar. plain plate.", html)
     self.assertNotIn("built with love.", html)
     for removed in (
@@ -828,7 +755,7 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
     )
 
     html = self.render(
-      home, namespace(config=config(), index=namespace(recent_posts=()))
+      home, namespace(config=config(), index=namespace(posts=(), tags=()))
     )
 
     self.assertIn(
@@ -840,8 +767,41 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
       html,
     )
     self.assertIn(
-      '<div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
+      '<div class="now-slot"><div class="now" data-now="https://sarrthak-now.example.workers.dev/now" hidden>',
       html,
     )
-    self.assertIn('<p class="now__label"><span class="now__state"></span></p>', html)
-    self.assertIn('<pre class="now__pre" aria-label="playing on spotify"></pre>', html)
+    start = html.index('<ul class="socials"')
+    socials = html[start : html.index("</ul>", start)]
+    self.assertNotIn("data-now", socials)
+    self.assertLess(html.index('id="projects"'), html.index('class="now-slot"'))
+    self.assertLess(html.index('class="now-slot"'), html.index("</main>"))
+    # set apart from the sections as a small pane: its title sits on the
+    # frame rather than under a "## name ---" heading, with a turning disc,
+    # the track and its artists, and an ascii rail of how far it has got
+    self.assertLess(html.index('<ul class="socials"'), html.index('class="now-slot"'))
+    self.assertIn('<h2 class="now__head" id="now-title">listening</h2>', html)
+    self.assertIn('<span class="now__source">spotify</span>', html)
+    self.assertIn('<span class="now__disc" aria-hidden="true"></span>', html)
+    self.assertIn('<a class="now__title"></a>', html)
+    self.assertIn('<p class="now__by"></p>', html)
+    self.assertIn(
+      '<div class="now__viz" aria-hidden="true"><pre class="now__rest"></pre>'
+      '<pre class="now__lit"></pre></div>',
+      html,
+    )
+    self.assertIn(
+      '<p class="now__time"><span class="now__at"></span>'
+      '<span class="now__rail" aria-hidden="true"><span class="now__done"></span></span>'
+      '<span class="now__length"></span></p>',
+      html,
+    )
+    now = html[html.index('class="now-slot"') : html.index("</main>")]
+    for gone in (
+      "writing-row",
+      "home-section-heading",
+      "now__pre",
+      "now__label",
+      "now__eq",
+      "now__meter",
+    ):
+      self.assertNotIn(gone, now)

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#16151a" />
+    <meta name="theme-color" content="#0e1016" />
     <link rel="preload" href="/fonts/jetbrains-mono-symbols.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/ibm-plex-mono-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/instrument-serif-400.woff2" as="font" type="font/woff2" crossorigin />
@@ -55,10 +55,11 @@
   </head>
   <body class="{{ body_class }}">
     <a class="skip-link" href="#main-content">skip to content</a>
+    {% block banner %}{% endblock %}
     {% include "partials/header.html" %}
 
     {% block main %}{% endblock %}
 
-    {% include "partials/footer.html" %}
+    {% block footer %}{% include "partials/footer.html" %}{% endblock %}
   </body>
 </html>

@@ -238,11 +238,11 @@ class TestSiteConfig(unittest.TestCase):
       config = SiteConfig.load(root)
 
       self.assertEqual(config.site_url, "https://example.com")
-      self.assertEqual(config.posts_per_page, 10)
+      self.assertFalse(hasattr(config, "posts_per_page"))
       self.assertEqual(config.content_dir, root / "content")
       self.assertEqual(config.output_dir, root / "docs")
 
-  def test_rejects_invalid_site_url_and_page_size(self) -> None:
+  def test_rejects_invalid_site_url(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       root = Path(temp_dir)
       root.joinpath("config.json").write_text(
@@ -251,7 +251,6 @@ class TestSiteConfig(unittest.TestCase):
             "site_url": "example.com",
             "email": "hello@example.com",
             "social_image": "/images/social.png",
-            "posts_per_page": 0,
           }
         )
       )

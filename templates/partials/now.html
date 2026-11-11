@@ -1,4 +1,16 @@
+{# what's playing on spotify. the one part of the page that changes by itself,
+   so it is set apart as a small terminal pane rather than a section: a rounded
+   frame with its title cut into the top edge, a disc that turns while a track
+   plays, the track and its artists, a spectrum in dots that keeps a beat, and
+   an ascii rail of how far it has got -#}
 <div class="now" data-now="{{ page.now_playing }}" hidden>
-  <p class="now__label"><span class="now__state"></span></p>
-  <pre class="now__pre" aria-label="playing on spotify"></pre>
+  <h2 class="now__head" id="now-title">listening</h2>
+  <span class="now__source">spotify</span>
+  <div class="now__track" aria-labelledby="now-title">
+    <span class="now__disc" aria-hidden="true"></span>
+    <a class="now__title"></a>
+    <p class="now__by"></p>
+    <div class="now__viz" aria-hidden="true"><pre class="now__rest"></pre><pre class="now__lit"></pre></div>
+    <p class="now__time"><span class="now__at"></span><span class="now__rail" aria-hidden="true"><span class="now__done"></span></span><span class="now__length"></span></p>
+  </div>
 </div>

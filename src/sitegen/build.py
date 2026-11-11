@@ -104,12 +104,11 @@ class SiteBuilder:
       _minify_assets(staging_dir)
       config_digest = _config_digest(config, options)
 
-      archive_page = index.page_for_route("/blogs/")
       for page in index.pages:
         template_digest = self._template_digest(
           template_renderer, config, page.template
         )
-        context_digest = index.digest if page.route in {"/", "/blogs/"} else ""
+        context_digest = index.digest if page.route == "/" else ""
         page_digest = _hash_values(
           config_digest,
           template_digest,
@@ -117,21 +116,11 @@ class SiteBuilder:
           page.source_path.read_bytes(),
           page.rendered.html,
         )
-        if page.route == "/blogs/":
-          pagination = index.pagination[0]
-          emit(
-            page.output_path,
-            page_digest,
-            lambda page=page, pagination=pagination: template_renderer.render_archive(
-              page, pagination, index
-            ),
-          )
-        else:
-          emit(
-            page.output_path,
-            page_digest,
-            lambda page=page: template_renderer.render_page(page, index),
-          )
+        emit(
+          page.output_path,
+          page_digest,
+          lambda page=page: template_renderer.render_page(page, index),
+        )
 
         for alias in page.aliases:
           alias_digest = _hash_values(
@@ -147,27 +136,6 @@ class SiteBuilder:
               alias, page
             ),
           )
-
-      if archive_page is None:
-        raise BuildError("content index is missing the /blogs/ archive page")
-      archive_template_digest = self._template_digest(
-        template_renderer, config, archive_page.template
-      )
-      for pagination in index.pagination[1:]:
-        relative_path = _route_to_output_path(pagination.route)
-        digest = _hash_values(
-          config_digest,
-          archive_template_digest,
-          index.digest,
-          pagination.route,
-        )
-        emit(
-          relative_path,
-          digest,
-          lambda pagination=pagination: template_renderer.render_archive(
-            archive_page, pagination, index
-          ),
-        )
 
       tag_template_digest = self._template_digest(
         template_renderer, config, "tags.html"
@@ -278,7 +246,6 @@ def _config_digest(config: SiteConfig, options: BuildOptions) -> str:
     "social_image": config.social_image,
     "author_name": config.author_name,
     "twitter_handle": config.twitter_handle,
-    "posts_per_page": config.posts_per_page,
     "include_drafts": options.include_drafts,
     "year": date.today().year,
   }

@@ -1,6 +1,6 @@
 /* syntax highlighting in the site's own palette: ink ramp for structure,
-   lavender for the two things worth noticing (keywords, strings), and a
-   single warm tone reserved for errors and deletions. */
+   earth blue for keywords and numbers, the cat's warm fur for strings, and a
+   single red tone reserved for errors and deletions. */
 
 .blog-article pre code {
   color: var(--ink-2);
@@ -44,7 +44,7 @@
 .sr,
 .s1,
 .ss {
-  color: var(--accent-soft);
+  color: var(--warm);
 }
 
 /* numbers */

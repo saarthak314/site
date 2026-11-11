@@ -3,17 +3,10 @@
 
 {% block main %}
 <main id="main-content" tabindex="-1">
-  <header class="writings-header">
+  <header class="tags-header">
     <h1 class="tags-heading">{{ tag }}</h1>
-    <p class="writings-summary">writing tagged {{ tag }}.</p>
+    <p class="tags-summary">writing tagged {{ tag }}.</p>
   </header>
   {{ ledger(items) }}
-  {% if total_pages > 1 %}
-  <nav class="pagination" aria-label="Pagination">
-    {% if previous_url %}<a rel="prev" href="{{ previous_url }}">previous</a>{% endif %}
-    <span>page {{ page_number }} of {{ total_pages }}</span>
-    {% if next_url %}<a rel="next" href="{{ next_url }}">next</a>{% endif %}
-  </nav>
-  {% endif %}
 </main>
 {% endblock %}

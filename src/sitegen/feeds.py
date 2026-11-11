@@ -46,18 +46,6 @@ def render_sitemap(index: ContentIndex, site_url: str) -> str:
       continue
     modified = page.updated or page.date
     _append_entry(entries, seen, page.canonical_url, modified.isoformat())
-  for pagination in index.pagination:
-    if pagination.page == 1:
-      continue
-    modified = max(
-      (post.updated or post.date for post in pagination.items), default=None
-    )
-    _append_entry(
-      entries,
-      seen,
-      f"{normalized_site_url}{pagination.route}",
-      modified.isoformat() if modified else None,
-    )
   for tag in index.tags:
     modified = max((post.updated or post.date for post in tag.items), default=None)
     _append_entry(

@@ -17,9 +17,9 @@ class RouteExpectation:
 
 
 DEFAULT_EXPECTATIONS = (
-  RouteExpectation("/", 200, ("systems, models, machines",)),
+  RouteExpectation("/", 200, ("<title>sλrthak</title>",)),
   RouteExpectation("/about/", 200, ('url=/"',)),
-  RouteExpectation("/blogs/", 200, ("all writings",)),
+  RouteExpectation("/blogs/", 200, ('url=/"',)),
   RouteExpectation("/blogs/make_cool_stuff/", 200, ("make cool stuff",)),
   RouteExpectation("/feed.xml", 200, ("<rss",)),
   RouteExpectation("/sitemap.xml", 200, ("<urlset",)),
