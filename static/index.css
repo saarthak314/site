@@ -1,5 +1,5 @@
-/* Hallmark · checked: 2026-11-11 · genre: editorial and atmospheric (inferred; universal gates)
- * floor: 0 FAIL · fixed: 2a, 2b, 7a, 26b, 34, 40 (the cat, city, ships and spectrum drawn as svg and canvas, not text), 48, 63, 67, 73, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
+/* Hallmark · checked: 2026-11-20 · genre: editorial and atmospheric (inferred; universal gates)
+ * floor: 0 FAIL · fixed: 2a, 2b, 7a, 26b, 34, 40 (the cat, city and ships drawn as svg and the spectrum on a canvas, not text), 48, 63, 67, 73, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
  * finish-review: subagent · 4 findings · 4 resolved (bold phrases taken out of the intro copy; section heads at 20px and the gaps between sections varied by the owner)
  * built: the project · redesign: polish · v2.0.0 */
 /* Hallmark · waive 37 · JBM Symbols is a subset file of JetBrains Mono · the city, the ships, the player's disc and rail and the λ in the name load from that 5 KB subset before any code letters */
@@ -626,6 +626,28 @@ h3 {
 .site-title-heading {
   font-size: inherit;
   line-height: 1;
+}
+
+/* where he is: small and quiet opposite the name, like the dates opposite
+   each role; the pin takes the accent the "##" heads use */
+.site-location {
+  align-items: center;
+  color: var(--ink-3);
+  display: inline-flex;
+  font-size: 0.8rem;
+  gap: 0.5ch;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.site-location__pin {
+  color: var(--accent-2);
+  fill: none;
+  flex: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .site-title {
@@ -1706,26 +1728,23 @@ body > .layout {
    a rounded frame with its title cut into the top edge, and where the track
    comes from cut into the other end */
 
-/* the slot keeps the pane's place while the worker answers (its idle height:
-   the last track shows first), so nothing below it shifts; on phones the
-   artists usually take a second line. the frame only ever wraps what it holds */
+/* the slot keeps the pane's place while the worker answers, at the tallest the
+   pane can be: a one-line title and artists on two lines. so nothing below it
+   ever shifts, and the frame only ever wraps what it holds */
 .now-slot {
-  min-height: 119px;
-}
-
-@media (max-width: 640px) {
-  .now-slot {
-    min-height: 140px;
-  }
+  min-height: 176px;
 }
 
 .now-slot:has(.now--off) {
   min-height: 0;
 }
 
+/* narrower than the column, and centred in it */
 .now {
   border: 1px solid var(--line);
   border-radius: 6px;
+  margin-inline: auto;
+  max-width: 520px;
   padding: 20px 20px 16px 14px;
   position: relative;
 }
@@ -1773,8 +1792,8 @@ body > .layout {
   grid-template-columns: 1.15rem minmax(0, 1fr);
 }
 
-/* a one-em box around the glyph, so it turns about its own centre; nudged
-   down to sit in the middle of the title's line */
+/* a one-em box around the glyph, nudged down to sit in the middle of the
+   title's line */
 .now__disc {
   color: var(--ink-3);
   display: inline-block;
@@ -1784,7 +1803,6 @@ body > .layout {
   justify-self: start;
   line-height: 1;
   margin-top: 0.35em;
-  transform-origin: 0.28em 0.43em; /* the circle's own centre in this glyph */
   width: 0.6em;
 }
 
@@ -1792,26 +1810,20 @@ body > .layout {
   content: "\25D4";
 }
 
-/* a quarter turn at a time, like a terminal spinner */
+/* still, and lit while a track plays */
 .now--playing .now__disc {
-  animation: now-spin 1.2s steps(4) infinite;
   color: var(--accent-2);
 }
 
-.now--away .now__disc {
-  animation-play-state: paused;
-}
-
-@keyframes now-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
+/* one line, cut short by an ellipsis, so a long title never grows the pane
+   past its slot; the whole title shows on hover */
 .now__title {
   color: var(--ink);
   grid-column: 2;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* long casts and soundtrack names stop at two lines */
@@ -1829,16 +1841,16 @@ body > .layout {
   text-wrap: pretty;
 }
 
-/* the spectrum: a small canvas of dots on 6px square cells, like the cat's;
-   site.js reads its three colours from here */
+/* the spectrum: a small canvas of dots on 6px square cells, like the cat's,
+   four rows tall and there whether or not a track plays, so the pane keeps
+   one height; site.js reads its two colours from here */
 .now__viz {
   --bar: var(--accent-2);
-  --peak: var(--warm);
   --rest: var(--ink-4);
   contain: strict; /* a redraw stays inside the strip */
   grid-column: 2;
-  height: 36px;
-  margin: 14px 0 0;
+  height: 24px;
+  margin: 12px 0 0;
 }
 
 .now__viz canvas {
@@ -1887,7 +1899,6 @@ body > .layout {
 }
 
 /* nothing to measure or move when it isn't playing: the note stands alone */
-.now:not(.now--playing) .now__viz,
 .now:not(.now--playing) .now__rail,
 .now:not(.now--playing) .now__length {
   display: none;

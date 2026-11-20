@@ -7,7 +7,7 @@ no frontend framework: markdown goes in, and plain html, one stylesheet and two 
 ## map
 
 - `content/`: the pages
-  - `_index.md` is the home page: the intro copy, with experience, projects and `now_playing` in its front matter
+  - `_index.md` is the home page: the intro copy, with experience, projects, `now_playing` and `location` in its front matter
   - each writing lives at `blogs/<slug>/index.md`
   - `404.md` is the not-found page
 - `templates/`: jinja layouts (`base`, `home`, `blog`, `tags`, `404`, `redirect`) and partials (header, footer, the cat banner, the city under each post, the listening pane)
@@ -62,6 +62,8 @@ front matter takes:
 drafts (`draft: true`) publish like any other post but carry a draft notice and a badge in the lists, are `noindex`, and stay out of the feed and sitemap. pass `--no-drafts` to any command to leave them out entirely.
 
 `now_playing: https://.../now` on the home page turns on the listening pane under the social links. the browser fetches it from the worker, and the pane stays hidden until the worker answers.
+
+`location: new delhi` on the home page puts a small pin and the place in the header, and gives search engines the same place in the page's structured data.
 
 ## useful bits
 

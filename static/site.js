@@ -171,23 +171,23 @@
       if (done >= duration) load();
     };
 
-    // A spectrum in dots, drawn like the cat at the top: a dim field of small
-    // dots, bars of large ones in the earth's blue, and the dot each peak
-    // leaves behind in the warm of the fur. It isn't the song's real sound
-    // (spotify no longer shares that): the bars keep a beat taken from the
-    // track's place in the song, so they pause with it and settle flat when it
-    // stops. A small canvas, about twelve frames a second, only on screen.
+    // A spectrum in dots, drawn like the cat at the top: low bars of dots in
+    // the earth's blue on a floor of small dim ones. It isn't the song's real
+    // sound (spotify no longer shares that): the bars sway slowly and lift a
+    // little on a beat taken from the track's place in the song, so they pause
+    // with it and settle flat when it stops. A small canvas, redrawn only when
+    // a bar gains or loses a dot, and only on screen.
     const viz = box.querySelector(".now__viz");
     const canvas = viz && viz.querySelector("canvas");
     const pen = canvas && canvas.getContext("2d");
-    const ROWS = 6;
-    let ink = null; // the field's, the bars' and the peaks' colours, from the stylesheet
+    const ROWS = 4;
+    let ink = null; // the floor's and the bars' colours, from the stylesheet
     let cell = 6; // CSS pixels a dot's square
     let scale = 1;
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
     let columns = 0;
     let bars = [];
-    let caps = [];
+    let shown = ""; // the bar heights on the canvas now
     let bpm = 112;
     let frame = 0;
     const hash = (n) => {
@@ -209,50 +209,42 @@
     const fit = () => {
       if (!viz.clientWidth) return;
       const style = window.getComputedStyle(viz);
-      ink = ["--rest", "--bar", "--peak"].map((name) => style.getPropertyValue(name).trim());
+      ink = ["--rest", "--bar"].map((name) => style.getPropertyValue(name).trim());
       cell = viz.clientHeight / ROWS;
-      scale = Math.min(2, window.devicePixelRatio || 1);
+      scale = Math.min(3, window.devicePixelRatio || 1);
       const width = Math.round(viz.clientWidth * scale);
-      if (canvas.width !== width) {
+      const height = Math.round(viz.clientHeight * scale);
+      if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
-        canvas.height = Math.round(viz.clientHeight * scale);
+        canvas.height = height;
+        shown = "";
       }
-      const next = Math.max(12, Math.floor(viz.clientWidth / cell));
+      // as many bands as fit with the last dot whole (a dot reaches 1.05 cells in)
+      const next = Math.max(12, Math.floor(viz.clientWidth / cell - 0.05));
       if (next === columns) return;
       columns = next;
       bars = new Array(columns).fill(0);
-      caps = new Array(columns).fill(0);
+      shown = "";
     };
     const step = (settle) => {
       const playing = box.classList.contains("now--playing");
       const t = elapsed();
       const beat = (t / 60000) * bpm;
-      const kick = Math.exp(-(beat % 1) * 5);
-      const snare = Math.exp(-((beat + 1) % 2) * 4);
-      const hat = Math.exp(-((beat * 2) % 1) * 7);
-      const flicker = Math.floor(t / 83);
+      const kick = Math.exp(-(beat % 1) * 3);
       for (let c = 0; c < columns; c += 1) {
         const x = c / (columns - 1);
-        const n = noise(c * 0.45, t * 0.0016);
-        // the kick lifts the low end, the snare the middle, the hats the top
-        const hit =
-          Math.max(0, 1 - x * 3) * kick +
-          Math.max(0, 1 - Math.abs(x - 0.45) * 4) * snare * 0.8 +
-          Math.max(0, x * 1.6 - 0.6) * hat * 0.6;
+        // a slow swell, silent in places and falling off to the top end; each
+        // band keeps a reach of its own, and the beat lifts only the low end
+        const swell = Math.max(0, noise(c * 0.32, t * 0.0005) - 0.4) / 0.6;
         const level =
-          (0.1 + 0.75 * n * n) * (1 - 0.3 * x) +
-          0.6 * hit * (0.4 + n) +
-          0.12 * kick +
-          0.12 * (hash(c * 13 + flicker) - 0.5);
-        const target = playing ? Math.min(1, Math.max(0, level)) : 0;
-        // up at once, down under gravity; a dot left at each peak drifts after it
-        if (settle || target > bars[c]) bars[c] = target;
-        else bars[c] = Math.max(target, bars[c] - 0.07);
-        caps[c] = settle || bars[c] >= caps[c] ? bars[c] : caps[c] - 0.025;
+          swell * (1.3 - 0.45 * x) * (0.7 + 0.6 * hash(c * 7.3 + 1)) + 0.35 * kick * Math.max(0, 1 - x * 2.5);
+        const target = playing ? Math.min(1, level) : 0;
+        // eased both ways, so a bar climbs and sinks a dot at a time
+        bars[c] = settle ? target : bars[c] + (target - bars[c]) * 0.3;
       }
     };
     // each dot as the cat's are: a "·" is 0.41 of its cell across, a "•" 0.6,
-    // centred 0.75 cells in; one fill per colour
+    // centred 0.75 cells in
     const dot = (c, row, big) => {
       const x = (c + 0.75) * cell * scale;
       const y = (ROWS - row + (big ? 0.4875 : 0.5475)) * cell * scale;
@@ -260,19 +252,22 @@
       pen.moveTo(x + r, y);
       pen.arc(x, y, r, 0, Math.PI * 2);
     };
+    const heights = () => bars.map((v) => Math.round(v * ROWS));
     const draw = () => {
       if (!ink || !columns) return;
+      const now = heights();
+      const key = now.join("");
+      if (key === shown) return;
+      shown = key;
       pen.clearRect(0, 0, canvas.width, canvas.height);
-      const layers = [[], [], []];
-      for (let c = 0; c < columns; c += 1) {
-        const height = Math.round(bars[c] * ROWS);
-        const peak = Math.round(caps[c] * ROWS);
-        for (let row = 1; row <= ROWS; row += 1) {
-          layers[row <= height ? 1 : row === peak ? 2 : 0].push(c, row);
-        }
-      }
+      // a small dim dot where a bar is down to nothing, the bars over the rest
+      const layers = [[], []];
+      now.forEach((height, c) => {
+        if (!height) layers[0].push(c, 1);
+        for (let row = 1; row <= height; row += 1) layers[1].push(c, row);
+      });
       layers.forEach((cells, k) => {
-        pen.globalAlpha = k ? 1 : 0.45;
+        pen.globalAlpha = k ? 1 : 0.6;
         pen.fillStyle = ink[k];
         pen.beginPath();
         for (let n = 0; n < cells.length; n += 2) dot(cells[n], cells[n + 1], k > 0);
@@ -280,40 +275,43 @@
       });
     };
     const moving = () =>
-      visible && !document.hidden && (box.classList.contains("now--playing") || caps.some((v) => v > 0));
+      visible && !document.hidden && (box.classList.contains("now--playing") || heights().some(Boolean));
     const animate = () => {
       frame = 0;
       step(false);
       draw();
-      if (moving()) frame = window.setTimeout(animate, 83);
+      if (moving()) frame = window.setTimeout(animate, 100);
     };
     const wake = () => {
       if (!pen) return;
       fit();
-      if (calm.matches) {
-        step(true);
-        draw();
-      } else if (!frame && moving()) animate();
+      if (calm.matches) step(true);
+      if (!calm.matches && !frame && moving()) animate();
+      else draw();
     };
-    if (viz && "ResizeObserver" in window) {
-      new ResizeObserver(() => {
-        const before = columns;
-        fit();
-        if (columns !== before) draw();
-      }).observe(viz);
-    }
+    // a new width refits the bands; under reduced motion the still frame is
+    // drawn again rather than left flat
+    if (viz && "ResizeObserver" in window) new ResizeObserver(() => wake()).observe(viz);
 
+    // nothing to show: the pane goes, the room kept for it goes, and nothing in
+    // it keeps moving; a later answer brings it back
+    const off = () => {
+      box.hidden = true;
+      box.classList.add("now--off");
+      box.classList.remove("now--playing");
+    };
     const render = (note) => {
       const data = state && state.data;
       if (!data || !data.track) {
-        box.hidden = true;
-        box.classList.add("now--off");
+        off();
         return;
       }
+      box.classList.remove("now--off");
       const track = data.track;
       const playing = running() && !note;
       box.classList.toggle("now--playing", playing);
       title.textContent = lower(track.title);
+      title.title = title.textContent;
       if (track.url) {
         title.href = track.url;
         title.rel = "noopener";
@@ -378,8 +376,7 @@
       } catch {
         failures += 1;
         if (failures >= 2) {
-          box.hidden = true;
-          box.classList.add("now--off");
+          off();
           stop();
           loading = false;
           return;
@@ -389,7 +386,6 @@
       schedule();
     };
     const sync = () => {
-      box.classList.toggle("now--away", !visible || document.hidden);
       if (state) wake();
       if (visible && !document.hidden) {
         if (!state) load();

@@ -41,6 +41,13 @@ class TestSiteRendering(unittest.TestCase):
       self.assertNotIn('href="/blogs/"', page)
     self.assertIn('href="mailto:hey@sarrthak.com"><svg class="logo"', home)
     self.assertNotIn('href="mailto:hey@sarrthak.com"><svg class="logo"', article)
+    # the home header says where he is, read out as "based in new delhi";
+    # posts leave it out
+    header = home[home.index('<header class="site-header">') : home.index("</header>")]
+    self.assertIn('<p class="site-location">', header)
+    self.assertIn('<span class="visually-hidden">based in </span>new delhi</p>', header)
+    self.assertIn('"homeLocation": {"@type": "Place", "name": "new delhi"}', home)
+    self.assertNotIn("site-location", article)
 
     home_footer = home[
       home.index('<footer class="footer footer--plain">') : home.index("</footer>")
@@ -155,37 +162,70 @@ class TestSiteRendering(unittest.TestCase):
       'banner.classList.toggle("banner--still", !entry.isIntersecting)', script
     )
 
-  def test_the_player_spectrum_moves_only_while_a_track_plays_on_screen(self) -> None:
+  def test_the_player_spectrum_is_low_and_calm_and_moves_only_on_screen(self) -> None:
     script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
     stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
 
-    # drawn on a small canvas in the cat's two dot sizes and its colours
+    # drawn on a small canvas in the cat's two dot sizes: four rows of bars in
+    # one blue over a floor of dim dots, with no peaks and no field behind
     self.assertIn('viz.querySelector("canvas")', script)
     self.assertIn("pen.arc(x, y, r, 0, Math.PI * 2)", script)
     self.assertIn("(big ? 0.3 : 0.205) * cell * scale", script)
+    self.assertIn("const ROWS = 4;", script)
     viz = re.search(r"\n\.now__viz \{[^}]*\}", stylesheet).group(0)
-    for colour in (
+    for line in (
       "--bar: var(--accent-2)",
-      "--peak: var(--warm)",
       "--rest: var(--ink-4)",
+      "height: 24px",
     ):
-      self.assertIn(colour, viz)
+      self.assertIn(line, viz)
     self.assertIn("contain: strict", viz)
-    self.assertNotIn("textContent = lines", script)
+    self.assertNotIn("--peak", stylesheet)
+    self.assertNotIn("caps", script)
+    # no flicker: each bar eases toward a slow swell, and the canvas is drawn
+    # again only when a bar gains or loses a dot
+    self.assertNotIn("flicker", script)
+    self.assertIn("bars[c] + (target - bars[c]) * 0.3", script)
+    self.assertIn("if (key === shown) return;", script)
     # it runs only while the block is on screen, the tab is open, and a track
     # plays (or the bars are still settling); reduced motion gets one still frame
     self.assertRegex(
       script,
       r"const moving = \(\) =>\s*visible && !document\.hidden && "
-      r"\(box\.classList\.contains\(\"now--playing\"\) \|\| caps\.some",
+      r"\(box\.classList\.contains\(\"now--playing\"\) \|\| heights\(\)\.some",
     )
     self.assertIn('window.matchMedia("(prefers-reduced-motion: reduce)")', script)
     self.assertIn("step(true);", script)
     self.assertNotIn("requestAnimationFrame(animate", script)
-    # the reserved space sits on the slot, never as empty room inside the frame
+    # it lies flat rather than going away when nothing plays, so the pane keeps
+    # one height; the reserved space sits on the slot, never inside the frame
+    self.assertNotIn(".now:not(.now--playing) .now__viz", stylesheet)
     frame = re.search(r"\n\.now \{[^}]*\}", stylesheet).group(0)
     self.assertNotIn("min-height", frame)
+    # narrower than the column, and centred in it
+    self.assertIn("max-width: 520px", frame)
+    self.assertIn("margin-inline: auto", frame)
+    # a long title stays on one line, so the pane never outgrows its slot
+    heading = re.search(r"\n\.now__title \{[^}]*\}", stylesheet).group(0)
+    for line in ("white-space: nowrap", "text-overflow: ellipsis", "overflow: hidden"):
+      self.assertIn(line, heading)
+    self.assertIn("title.title = title.textContent;", script)
+    # when the worker gives out, the pane goes and stops moving, and a later
+    # answer brings it back
+    off = re.search(r"const off = \(\) => \{[^}]*\}", script).group(0)
+    self.assertIn('box.classList.add("now--off")', off)
+    self.assertIn('box.classList.remove("now--playing")', off)
+    self.assertIn('box.classList.remove("now--off");', script)
+    # a resize redraws through wake, so reduced motion keeps its still frame
+    self.assertIn("new ResizeObserver(() => wake()).observe(viz)", script)
     self.assertIn(".now-slot:has(.now--off)", stylesheet)
+    # the disc holds still and lights up while a track plays; the time and the
+    # rail move once a second
+    disc = re.search(r"\n\.now--playing \.now__disc \{[^}]*\}", stylesheet).group(0)
+    self.assertIn("color: var(--accent-2)", disc)
+    self.assertNotIn("animation", disc)
+    self.assertNotIn("now-spin", stylesheet)
+    self.assertIn("ticker = window.setInterval(tick, 1000)", script)
 
   def test_audit_holds_colour_overflow_glyph_and_label_rules(self) -> None:
     from fontTools.ttLib import TTFont

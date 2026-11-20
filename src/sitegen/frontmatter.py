@@ -77,6 +77,7 @@ def parse_document(path: Path) -> ParsedDocument:
     projects=_projects_value(path, raw.get("projects")),
     copyright=_optional_string(path, raw, "copyright"),
     now_playing=now_playing,
+    location=_optional_string(path, raw, "location"),
   )
   return ParsedDocument(metadata=metadata, body=body)
 

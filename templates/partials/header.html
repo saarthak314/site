@@ -6,4 +6,8 @@
     <a class="site-title" href="/" aria-label="sarthak tomar">s<span class="lam">λ</span>rthak tomar</a>
     {% endif %}
   </div>
+  {% if page.location is defined and page.location %}
+  {# where he is, set opposite the name as the dates sit opposite each role #}
+  <p class="site-location"><svg class="site-location__pin" viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false"><path d="M12 21.5s-7-6.1-7-11.7a7 7 0 0 1 14 0c0 5.6-7 11.7-7 11.7z"/><circle cx="12" cy="9.8" r="2.4"/></svg><span class="visually-hidden">based in </span>{{ page.location }}</p>
+  {% endif %}
 </header>

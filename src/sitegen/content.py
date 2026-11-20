@@ -157,6 +157,7 @@ class ContentRepository:
       projects=metadata.projects,
       copyright=metadata.copyright,
       now_playing=metadata.now_playing,
+      location=metadata.location,
     )
 
   def _ensure_unique_routes(self, pages: list[Page]) -> None:
@@ -216,6 +217,7 @@ class ContentRepository:
           "noindex": page.noindex,
           "copyright": page.copyright,
           "now_playing": page.now_playing,
+          "location": page.location,
           "experience": [
             {
               "role": item.role,

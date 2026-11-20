@@ -194,6 +194,8 @@ def _structured_data(page: Any, config: Any) -> dict[str, Any]:
         "https://linkedin.com/in/sarthaktomar2143",
       ],
     }
+    if getattr(page, "location", None):
+      payload["homeLocation"] = {"@type": "Place", "name": page.location}
   else:
     payload = {
       "@context": "https://schema.org",

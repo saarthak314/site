@@ -47,6 +47,7 @@ class PageMetadata:
   projects: tuple[ProjectItem, ...] = ()
   copyright: str | None = None
   now_playing: str | None = None
+  location: str | None = None
 
 
 @dataclass(frozen=True)
@@ -83,3 +84,4 @@ class Page:
   projects: tuple[ProjectItem, ...] = ()
   copyright: str | None = None
   now_playing: str | None = None
+  location: str | None = None

@@ -157,6 +157,18 @@ class TestFrontMatter(unittest.TestCase):
       )
       self.assertIsNone(parse_document(plain).metadata.copyright)
 
+  def test_parses_an_optional_location(self) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+      path = Path(temp_dir) / "home.md"
+      path.write_text(
+        "title: home\ndate: 2026-08-30\nlocation: new delhi\n-----\n\nhey."
+      )
+      plain = Path(temp_dir) / "plain.md"
+      plain.write_text("title: plain\ndate: 2026-08-30\n-----\n\nhey.")
+
+      self.assertEqual(parse_document(path).metadata.location, "new delhi")
+      self.assertIsNone(parse_document(plain).metadata.location)
+
   def test_parses_now_playing_as_an_absolute_url(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       path = Path(temp_dir) / "home.md"

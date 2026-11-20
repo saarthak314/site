@@ -780,8 +780,8 @@ class TestHomeRailTemplate(TemplateRenderingTestCase):
     self.assertLess(html.index('id="projects"'), html.index('class="now-slot"'))
     self.assertLess(html.index('class="now-slot"'), html.index("</main>"))
     # set apart from the sections as a small pane: its title sits on the
-    # frame rather than under a "## name ---" heading, with a turning disc,
-    # the track and its artists, and an ascii rail of how far it has got
+    # frame rather than under a "## name ---" heading, with a disc, the track
+    # and its artists, a spectrum in dots, and an ascii rail of how far it has got
     self.assertLess(html.index('<ul class="socials"'), html.index('class="now-slot"'))
     self.assertIn('<h2 class="now__head" id="now-title">listening</h2>', html)
     self.assertIn('<span class="now__source">spotify</span>', html)
