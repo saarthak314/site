@@ -442,6 +442,15 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn("max-height: calc(100dvh - 40px);", stylesheet)
     self.assertIn("overscroll-behavior: contain;", stylesheet)
     self.assertRegex(stylesheet, r"\.rail__item \{\n  overflow-wrap: anywhere;")
+    # phones hide the rail's meter; a thin fixed line at the top stands in,
+    # moved by transform only, absent on wide screens and in print
+    self.assertIn('bar.className = "read-bar";', script)
+    self.assertIn("if (scale !== drawn) bar.style.transform = drawn = scale;", script)
+    self.assertRegex(stylesheet, r"\.read-bar \{\n  display: none;\n\}")
+    self.assertRegex(
+      stylesheet,
+      r"@media screen and \(max-width: 999px\) \{\n  \.read-bar \{[^}]*position: fixed;[^}]*transform-origin: left;",
+    )
 
   def test_drafts_publish_with_a_notice_but_stay_out_of_feed_and_sitemap(self) -> None:
     draft_dir = self.project_root / "content" / "blogs" / "wip"

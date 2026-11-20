@@ -1926,6 +1926,12 @@ body > .layout {
   color: var(--ink-3);
 }
 
+/* phones hide that meter; a thin line along the top of the screen, in the
+   meter's blue, fills as the article is read instead */
+.read-bar {
+  display: none;
+}
+
 /* math: MathML rendered at build time, set in the browser's math font */
 
 math {
@@ -2021,6 +2027,20 @@ math[display="block"] {
 
   .layout--article main {
     padding-top: 24px;
+  }
+}
+
+@media screen and (max-width: 999px) {
+  .read-bar {
+    background: var(--accent-2);
+    display: block;
+    height: 2px;
+    inset: 0 0 auto;
+    pointer-events: none;
+    position: fixed;
+    transform: scaleX(0);
+    transform-origin: left;
+    z-index: 9;
   }
 }
 

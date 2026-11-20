@@ -81,6 +81,8 @@
     const cells = 12;
     let meter = null;
     let stats = null;
+    let bar = null;
+    let drawn = "";
     let minutes = 0;
     let count = "";
     if (progress) {
@@ -92,6 +94,12 @@
       meter.className = "progress__meter";
       stats.className = "progress__hi";
       progress.append("read ", meter, "\n", stats);
+      // phones hide the rail's meter; a thin line along the top of the screen
+      // stands in for it
+      bar = document.createElement("div");
+      bar.className = "read-bar";
+      bar.setAttribute("aria-hidden", "true");
+      document.body.append(bar);
     }
 
     let current = null;
@@ -155,6 +163,8 @@
         meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled) + " " + Math.round(fraction * 100) + "%";
         const left = Math.max(0, Math.ceil(minutes * (1 - fraction)));
         stats.textContent = (left ? left + " min left" : "done") + " // " + count + " words";
+        const scale = "scaleX(" + fraction.toFixed(3) + ")";
+        if (scale !== drawn) bar.style.transform = drawn = scale;
       }
       if (pinned || !sections.length) return;
       // (a page that scrolls less than a screen slides it over what it has)
