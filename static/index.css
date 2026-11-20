@@ -1,4 +1,4 @@
-/* Hallmark · checked: 2026-11-20 · genre: editorial and atmospheric (inferred; universal gates)
+/* Hallmark · checked: 2026-11-21 · genre: editorial and atmospheric (inferred; universal gates)
  * floor: 0 FAIL · fixed: 2a, 2b, 7a, 26b, 34, 40 (the cat, city and ships drawn as svg and the spectrum on a canvas, not text), 48, 63, 67, 73, F3, F16 · structural: printed (44c, 58, 59, 77, 78, 79)
  * finish-review: subagent · 4 findings · 4 resolved (bold phrases taken out of the intro copy; section heads at 20px and the gaps between sections varied by the owner)
  * built: the project · redesign: polish · v2.0.0 */
@@ -728,6 +728,7 @@ main {
 }
 
 .rail__item {
+  overflow-wrap: anywhere;
   padding: 2px 0;
 }
 
@@ -1969,9 +1970,29 @@ math[display="block"] {
     grid-template-columns: minmax(0, 1fr) 240px;
   }
 
+  /* the rail never runs past the foot of the screen: a long contents list
+     scrolls inside it, so the meter under the list stays in view */
   .layout--article .rail {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 40px);
+    max-height: calc(100dvh - 40px);
+    padding-bottom: 24px;
     position: sticky;
     top: 40px;
+  }
+
+  /* the padding, taken back by the margin, keeps focus rings inside the scroll box */
+  .layout--article .rail__fold {
+    margin: -8px;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+  }
+
+  .layout--article .rail__progress {
+    flex: none;
   }
 
   .rail__summary {

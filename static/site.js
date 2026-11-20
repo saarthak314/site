@@ -66,64 +66,130 @@
     });
   }
 
-  // Mark the heading currently in view in the rail.
-  const links = Array.from(document.querySelectorAll('.rail__list a[href^="#"]'));
-  if (links.length && "IntersectionObserver" in window) {
-    const byId = new Map(links.map((link) => [link.getAttribute("href").slice(1), link]));
-    const headings = Array.from(byId.keys())
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-    let current = null;
-    const setCurrent = (id) => {
-      const next = byId.get(id);
-      if (!next || next === current) return;
-      if (current) current.removeAttribute("aria-current");
-      next.setAttribute("aria-current", "true");
-      current = next;
-    };
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) setCurrent(entry.target.id);
-        });
-      },
-      { rootMargin: "0px 0px -70% 0px" },
-    );
-    headings.forEach((heading) => observer.observe(heading));
-  }
-
-  // Reading meter: how far down the article the reader is, in the rail's register.
-  const progress = document.querySelector(".rail__progress");
+  // The rail follows the reader: the meter says how far down the article they
+  // are, and the contents mark the section they are in. Both go by a reading
+  // line 30% down the screen. Near the end of a page the article can't scroll
+  // that far up, so the meter counts the furthest the page scrolls as the end,
+  // and the marking line slides down to the foot of the screen over the last
+  // screenful of scrolling, so the closing sections still get their turn.
   const article = document.querySelector(".blog-article");
-  if (progress && article) {
-    const minutes = parseInt(progress.dataset.minutes, 10) || 0;
-    const words = (article.textContent || "").trim().split(/\s+/).length;
-    const count = words >= 1000 ? (words / 1000).toFixed(1) + "k" : String(words);
+  const progress = document.querySelector(".rail__progress");
+  const sections = Array.from(document.querySelectorAll('.rail__list a[href^="#"]'))
+    .map((link) => ({ link, heading: document.getElementById(link.getAttribute("href").slice(1)) }))
+    .filter((section) => section.heading);
+  if (article && (progress || sections.length)) {
     const cells = 12;
-    const meter = document.createElement("span");
-    const stats = document.createElement("span");
-    meter.className = "progress__meter";
-    stats.className = "progress__hi";
-    progress.append("read ", meter, "\n", stats);
+    let meter = null;
+    let stats = null;
+    let minutes = 0;
+    let count = "";
+    if (progress) {
+      minutes = parseInt(progress.dataset.minutes, 10) || 0;
+      const words = (article.textContent || "").trim().split(/\s+/).length;
+      count = words >= 1000 ? (words / 1000).toFixed(1) + "k" : String(words);
+      meter = document.createElement("span");
+      stats = document.createElement("span");
+      meter.className = "progress__meter";
+      stats.className = "progress__hi";
+      progress.append("read ", meter, "\n", stats);
+    }
+
+    let current = null;
+    const mark = (link) => {
+      if (link === current) return;
+      if (current) current.removeAttribute("aria-current");
+      if (link) link.setAttribute("aria-current", "location");
+      current = link;
+      // a contents list taller than the screen scrolls inside the rail; keep
+      // the marked line in it, with a line or two of room either side
+      if (!link || !fold || fold.scrollHeight <= fold.clientHeight) return;
+      const box = fold.getBoundingClientRect();
+      const row = link.getBoundingClientRect();
+      const room = row.height * 2;
+      if (row.top < box.top + room) fold.scrollTop -= box.top + room - row.top;
+      else if (row.bottom > box.bottom - room) fold.scrollTop += row.bottom - (box.bottom - room);
+    };
+
+    // A jump from the contents (or any link to a heading) marks that heading
+    // even when the page can't scroll it up to the line, and holds the mark
+    // until the reader scrolls on after the jump has come to rest.
+    let pinned = false;
+    let moving = 0;
+    const rest = () => {
+      window.clearTimeout(moving);
+      moving = window.setTimeout(() => {
+        moving = 0;
+      }, 200);
+    };
+    const pin = (id) => {
+      const section = sections.find((entry) => entry.heading.id === id);
+      if (!section) return;
+      pinned = true;
+      mark(section.link);
+      rest();
+    };
+    // the heading a #hash names (a malformed escape is taken as it stands)
+    const named = () => {
+      const hash = window.location.hash.slice(1);
+      try {
+        return decodeURIComponent(hash);
+      } catch {
+        return hash;
+      }
+    };
+    sections.forEach(({ link, heading }) => link.addEventListener("click", () => pin(heading.id)));
+    window.addEventListener("hashchange", () => pin(named()));
+
     let queued = false;
     const paint = () => {
       queued = false;
-      const rect = article.getBoundingClientRect();
-      const line = window.innerHeight * 0.35;
-      const fraction = Math.min(1, Math.max(0, (line - rect.top) / Math.max(1, rect.height)));
-      const filled = Math.round(fraction * cells);
-      meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled) + " " + Math.round(fraction * 100) + "%";
-      const left = Math.max(0, Math.ceil(minutes * (1 - fraction)));
-      stats.textContent = (left ? left + " min left" : "done") + " // " + count + " words";
+      const view = window.innerHeight;
+      const y = window.scrollY;
+      const end = Math.max(0, document.documentElement.scrollHeight - view);
+      if (meter) {
+        const box = article.getBoundingClientRect();
+        const start = Math.max(0, box.top + y - view * 0.3);
+        const finish = Math.min(end, box.bottom + y - view * 0.3);
+        const fraction = finish > start ? Math.min(1, Math.max(0, (y - start) / (finish - start))) : Number(y >= finish);
+        const filled = Math.round(fraction * cells);
+        meter.textContent = "\u2593".repeat(filled) + "\u2591".repeat(cells - filled) + " " + Math.round(fraction * 100) + "%";
+        const left = Math.max(0, Math.ceil(minutes * (1 - fraction)));
+        stats.textContent = (left ? left + " min left" : "done") + " // " + count + " words";
+      }
+      if (pinned || !sections.length) return;
+      // (a page that scrolls less than a screen slides it over what it has)
+      const line = view * (0.3 + 0.7 * Math.max(0, 1 - (end - y) / (Math.min(view, end) || 1)));
+      let found = null;
+      for (const { link, heading } of sections) {
+        if (heading.getBoundingClientRect().top > line) break;
+        found = link;
+      }
+      mark(found);
     };
     const request = () => {
       if (queued) return;
       queued = true;
       window.requestAnimationFrame(paint);
     };
-    window.addEventListener("scroll", request, { passive: true });
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (pinned && !moving) pinned = false;
+        else if (pinned) rest();
+        request();
+      },
+      { passive: true },
+    );
     window.addEventListener("resize", request);
+    // images and late fonts change the article's height without a scroll
+    if ("ResizeObserver" in window) new ResizeObserver(request).observe(article);
     paint();
+    // arriving on a link to a heading that is on screen marks that heading
+    const target = sections.find((entry) => entry.heading.id === named());
+    if (target) {
+      const top = target.heading.getBoundingClientRect().top;
+      if (top >= 0 && top < window.innerHeight) pin(target.heading.id);
+    }
   }
 
   // Now playing: a worker answers /now with the spotify track playing (or the

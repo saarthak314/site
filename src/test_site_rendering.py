@@ -418,6 +418,31 @@ class TestSiteRendering(unittest.TestCase):
     self.assertIn('<details class="rail__fold" open>', randomness)
     self.assertIn('<span class="blog-updated">updated', randomness)
 
+  def test_article_rail_marks_and_measures_from_one_scroll_reading(self) -> None:
+    script = PROJECT_ROOT.joinpath("static", "site.js").read_text()
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+
+    # the old observer only marked a heading entering a band at the top, so
+    # scrolling back up, reloading part way down or jumping to a closing
+    # section left the wrong mark; the meter stopped short of 100%
+    self.assertNotIn('rootMargin: "0px 0px -70% 0px"', script)
+    self.assertIn("const finish = Math.min(end, box.bottom + y - view * 0.3);", script)
+    self.assertIn(
+      "const line = view * (0.3 + 0.7 * Math.max(0, 1 - (end - y) / (Math.min(view, end) || 1)));",
+      script,
+    )
+    self.assertIn('link.setAttribute("aria-current", "location");', script)
+    self.assertIn('window.addEventListener("hashchange", () => pin(named()));', script)
+    self.assertIn("if (pinned && !moving) pinned = false;", script)
+    self.assertIn("new ResizeObserver(request).observe(article)", script)
+    # a malformed #hash must not throw and stop the rest of the script
+    self.assertIn("return decodeURIComponent(hash);", script)
+    self.assertNotIn("=== decodeURIComponent(window.location.hash)", script)
+    # a long list scrolls inside the rail, so the meter stays on screen
+    self.assertIn("max-height: calc(100dvh - 40px);", stylesheet)
+    self.assertIn("overscroll-behavior: contain;", stylesheet)
+    self.assertRegex(stylesheet, r"\.rail__item \{\n  overflow-wrap: anywhere;")
+
   def test_drafts_publish_with_a_notice_but_stay_out_of_feed_and_sitemap(self) -> None:
     draft_dir = self.project_root / "content" / "blogs" / "wip"
     draft_dir.mkdir()
