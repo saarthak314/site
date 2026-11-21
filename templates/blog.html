@@ -1,6 +1,9 @@
 {% extends "base.html" %}
+{% from "partials/contents.html" import contents %}
 
 {% block main %}
+{% set toc = [] %}
+{% for level, text, id in page.rendered.headings if level in (2, 3) %}{% set _ = toc.append((level, text, id)) %}{% endfor %}
 <div class="layout layout--article">
   <main id="main-content" tabindex="-1">
     <header class="blog-header">
@@ -13,15 +16,32 @@
       </p>
       {% if page.draft %}<p class="blog-draft" role="note"><strong>draft.</strong> still being written, so things will change.</p>{% endif %}
     </header>
+    {% if toc|length >= 2 %}
+    {# narrow screens: the contents fold under the title (the rail is hidden) #}
+    <nav class="toc" aria-label="contents">
+      <details class="toc__fold">
+        <summary class="toc__summary">contents</summary>
+        {{ contents(toc) }}
+      </details>
+    </nav>
+    {% endif %}
     <article class="blog-article">{{ content }}</article>
     {% if page.tags %}
     <nav class="blog-tags" aria-label="Article tags">
       {% for tag in page.tags %}<a href="/tags/{{ tag|tag_slug }}/">{{ tag }}</a>{% endfor %}
     </nav>
     {% endif %}
-    <nav class="article-nav" aria-label="Article navigation">
-      <a href="/">home</a>
-      <a href="#main-content">top</a>
+    <nav class="article-nav" aria-label="more writing">
+      {% if older or newer %}
+      <div class="article-nav__posts">
+        {% if older %}<a class="article-nav__post article-nav__post--older" href="{{ older.route }}" rel="prev"><span class="article-nav__dir">&larr; older</span><span class="article-nav__title">{{ older.title }}</span></a>{% endif %}
+        {% if newer %}<a class="article-nav__post article-nav__post--newer" href="{{ newer.route }}" rel="next"><span class="article-nav__dir">newer &rarr;</span><span class="article-nav__title">{{ newer.title }}</span></a>{% endif %}
+      </div>
+      {% endif %}
+      <div class="article-nav__site">
+        <a href="/">home</a>
+        <a href="#main-content">top</a>
+      </div>
     </nav>
   </main>
   {% include "partials/rail.html" %}

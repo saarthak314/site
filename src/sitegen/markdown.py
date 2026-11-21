@@ -26,6 +26,25 @@ _CONTROL_RE = re.compile(r"[\x00-\x20\x7f]+")
 _DANGEROUS_SCHEMES = {"data", "file", "javascript", "vbscript"}
 _GENERIC_LINK_LABELS = {"here", "link", "more", "this"}
 _VIDEO_SUFFIXES = (".mp4", ".webm")
+# how a fence's language is named on its frame, where the short name differs
+_LANGUAGE_LABELS = {
+  "c++": "c++",
+  "cpp": "c++",
+  "cxx": "c++",
+  "cs": "c#",
+  "csharp": "c#",
+  "fsharp": "f#",
+  "js": "javascript",
+  "plaintext": "text",
+  "py": "python",
+  "reason": "reasonml",
+  "ts": "typescript",
+  "txt": "text",
+}
+# fence names a "#" is part of, which the character filter would strip
+_SHARP_LANGUAGES = {"c#": "csharp", "f#": "fsharp"}
+# a quote's closing line that names who said it: "-- name" or "— name"
+_CITE_RE = re.compile(r"^(?:--|\u2014|\u2013)\s")
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +73,8 @@ class MarkdownRenderer:
     environment: dict[str, object] = {}
     tokens = self._markdown.parse(markdown, environment)
     headings = self._assign_heading_ids(tokens)
+    _link_headings(tokens)
+    _cite_quotes(tokens)
     self._label_generic_links(tokens)
     self._add_image_attributes(tokens)
     _mark_image_figures(tokens)
@@ -86,6 +107,9 @@ class MarkdownRenderer:
     markdown.add_render_rule("mathjax", _render_mathjax)
     markdown.add_render_rule("visually_hidden", _render_visually_hidden)
     markdown.add_render_rule("fence", _render_fence)
+    markdown.add_render_rule("blockquote_open", _render_blockquote_open)
+    markdown.add_render_rule("quote_cite_open", _render_quote_cite_open)
+    markdown.add_render_rule("quote_cite_close", _render_quote_cite_close)
     markdown.add_render_rule("image", _render_image)
     markdown.validateLink = _is_safe_link
     return markdown
@@ -332,16 +356,121 @@ def _render_fence(
       f"{drawing}</pre></figure>\n"
     )
   language = token.info.strip().split(maxsplit=1)[0] if token.info.strip() else "text"
+  language = _SHARP_LANGUAGES.get(language.lower(), language)
   safe_language = re.sub(r"[^a-zA-Z0-9_+-]", "", language) or "text"
+  # what a program printed: its own frame and label, kept apart from the code
+  # and left without a copy button
+  if safe_language.lower() == "output":
+    return (
+      '<div class="code code--output" data-label="output">'
+      f"<pre><samp>{escapeHtml(token.content)}</samp></pre></div>\n"
+    )
   try:
     lexer = get_lexer_by_name(safe_language)
   except ClassNotFound:
     lexer = TextLexer()
   highlighted = highlight(token.content, lexer, HtmlFormatter(nowrap=True))
-  return (
+  code = (
     f'<pre><code class="language-{escapeHtml(safe_language)}">'
-    f"{highlighted}</code></pre>\n"
+    f"{highlighted}</code></pre>"
   )
+  # the language, cut into the top edge of the frame (none for plain text)
+  label = _LANGUAGE_LABELS.get(safe_language.lower(), safe_language.lower())
+  if label == "text":
+    return code + "\n"
+  return f'<div class="code" data-label="{escapeHtml(label)}">{code}</div>\n'
+
+
+def _link_headings(tokens: list[Token]) -> None:
+  """Section headings link to themselves, so a reader can share one section.
+
+  The whole heading text is the link (the heading keeps its plain name for
+  screen readers); a heading that already holds a link is left alone, since
+  links can't nest.
+  """
+  for index, token in enumerate(tokens[:-1]):
+    if token.type != "heading_open" or token.tag not in {"h2", "h3"}:
+      continue
+    inline = tokens[index + 1]
+    heading_id = token.attrGet("id")
+    children = inline.children
+    if inline.type != "inline" or not heading_id or not children:
+      continue
+    if any(child.type == "link_open" for child in _walk_tokens(children)):
+      continue
+    opening = Token("link_open", "a", 1)
+    opening.attrs = {"class": "heading-link", "href": f"#{heading_id}"}
+    inline.children = [opening, *children, Token("link_close", "a", -1)]
+
+
+def _cite_quotes(tokens: list[Token]) -> None:
+  """A quote whose last line names who said it ("-- albert einstein") becomes
+  a figure: the quote, then that line as its caption, outside the blockquote."""
+  index = 0
+  while index < len(tokens):
+    opening = tokens[index]
+    if opening.type != "blockquote_open":
+      index += 1
+      continue
+    depth = 0
+    closing_index = index
+    for candidate in range(index, len(tokens)):
+      kind = tokens[candidate].type
+      depth += kind == "blockquote_open"
+      depth -= kind == "blockquote_close"
+      if depth == 0:
+        closing_index = candidate
+        break
+    last = tokens[closing_index - 3 : closing_index]
+    if (
+      closing_index - index > 4
+      and [token.type for token in last]
+      == ["paragraph_open", "inline", "paragraph_close"]
+      and last[0].level == opening.level + 1
+      and (last[1].children or [Token("", "", 0)])[0].type == "text"
+      and _CITE_RE.match(last[1].children[0].content)
+    ):
+      last[0].type, last[2].type = "quote_cite_open", "quote_cite_close"
+      opening.meta["cited"] = True
+      del tokens[closing_index - 3 : closing_index]
+      tokens[closing_index - 2 : closing_index - 2] = last
+    index += 1
+
+
+def _render_blockquote_open(
+  renderer: RendererHTML,
+  tokens: Sequence[Token],
+  index: int,
+  options: dict[str, object],
+  environment: dict[str, object],
+) -> str:
+  del environment
+  opening = renderer.renderToken(tokens, index, options, {})
+  return (
+    f'<figure class="quote">\n{opening}' if tokens[index].meta.get("cited") else opening
+  )
+
+
+def _render_quote_cite_open(
+  renderer: RendererHTML,
+  tokens: Sequence[Token],
+  index: int,
+  options: dict[str, object],
+  environment: dict[str, object],
+) -> str:
+  del renderer, tokens, index, options, environment
+  return '<figcaption class="quote__cite">'
+
+
+def _render_quote_cite_close(
+  renderer: RendererHTML,
+  tokens: Sequence[Token],
+  index: int,
+  options: dict[str, object],
+  environment: dict[str, object],
+) -> str:
+  del renderer, tokens, index, options, environment
+  return "</figcaption>\n</figure>\n"
 
 
 def _is_diagram_fence(token: Token) -> bool:

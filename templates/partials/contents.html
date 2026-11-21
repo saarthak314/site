@@ -1,0 +1,9 @@
+{# an article's sections (its h2s, with h3s indented under them), listed in the
+   rail on wide screens and in a fold under the title on narrow ones -#}
+{% macro contents(toc) -%}
+<ol class="rail__list">
+  {% for level, text, id in toc %}
+  <li class="rail__item{% if level == 3 %} rail__item--sub{% endif %}"><a href="#{{ id }}">{{ text }}</a></li>
+  {% endfor %}
+</ol>
+{%- endmacro %}

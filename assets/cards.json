@@ -1,0 +1,18 @@
+{
+  "amazon_ml_hackathon": {
+    "title": "winning #3 in amazon ml challenge",
+    "date": "08 oct 2026"
+  },
+  "learn_ocaml": {
+    "title": "why you should learn ocaml",
+    "date": "30 jul 2025"
+  },
+  "make_cool_stuff": {
+    "title": "make cool stuff",
+    "date": "30 aug 2025"
+  },
+  "randomness_impl": {
+    "title": "on randomness and its implementation",
+    "date": "19 jul 2025"
+  }
+}

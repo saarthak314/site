@@ -1,15 +1,6 @@
-{% set toc = [] %}
-{% for level, text, id in page.rendered.headings if level in (2, 3) %}{% set _ = toc.append((level, text, id)) %}{% endfor %}
+{% from "partials/contents.html" import contents %}
+{# wide screens only: the contents beside the article, and the reading meter -#}
 <nav class="rail rail--article" aria-label="contents">
-  {% if toc|length >= 2 %}
-  <details class="rail__fold" open>
-    <summary class="rail__summary">contents</summary>
-    <ol class="rail__list">
-      {% for level, text, id in toc %}
-      <li class="rail__item{% if level == 3 %} rail__item--sub{% endif %}"><a href="#{{ id }}">{{ text }}</a></li>
-      {% endfor %}
-    </ol>
-  </details>
-  {% endif %}
+  {% if toc|length >= 2 %}{{ contents(toc) }}{% endif %}
   <pre class="rail__progress" aria-hidden="true" data-minutes="{{ page.rendered.reading_time.split(' ')[0] }}"></pre>
 </nav>

@@ -109,7 +109,7 @@ while reason compiles down to native code via ocaml's toolchain, it specifically
 
 ex:
 
-```
+```reason
 type schoolPerson = Teacher | Director | Student(string);
 let greeting = person =>
   switch (person) {

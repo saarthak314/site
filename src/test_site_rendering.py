@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from sitegen.build import BuildOptions, SiteBuilder
+from sitegen.frontmatter import parse_document
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -415,7 +416,7 @@ class TestSiteRendering(unittest.TestCase):
     self.assertNotIn("highlight.min.js", randomness)
     self.assertIn('class="k">', randomness)
     self.assertIn('<nav class="rail rail--article" aria-label="contents">', randomness)
-    self.assertIn('<details class="rail__fold" open>', randomness)
+    self.assertIn('<details class="toc__fold">', randomness)
     self.assertIn('<span class="blog-updated">updated', randomness)
 
   def test_article_rail_marks_and_measures_from_one_scroll_reading(self) -> None:
@@ -431,7 +432,13 @@ class TestSiteRendering(unittest.TestCase):
       "const line = view * (0.3 + 0.7 * Math.max(0, 1 - (end - y) / (Math.min(view, end) || 1)));",
       script,
     )
-    self.assertIn('link.setAttribute("aria-current", "location");', script)
+    self.assertIn(
+      'section.links.forEach((link) => link.setAttribute("aria-current", "location"));',
+      script,
+    )
+    # the contents are listed twice, so each section keeps both links
+    self.assertIn("section.links.push(link);", script)
+    self.assertNotIn("fold.open = wide.matches", script)
     self.assertIn('window.addEventListener("hashchange", () => pin(named()));', script)
     self.assertIn("if (pinned && !moving) pinned = false;", script)
     self.assertIn("new ResizeObserver(request).observe(article)", script)
@@ -449,7 +456,111 @@ class TestSiteRendering(unittest.TestCase):
     self.assertRegex(stylesheet, r"\.read-bar \{\n  display: none;\n\}")
     self.assertRegex(
       stylesheet,
-      r"@media screen and \(max-width: 999px\) \{\n  \.read-bar \{[^}]*position: fixed;[^}]*transform-origin: left;",
+      r"@media screen and \(width < 1000px\) \{\n  \.read-bar \{[^}]*position: fixed;[^}]*transform-origin: left;",
+    )
+
+  def test_posts_link_the_posts_either_side_and_carry_their_own_cards(self) -> None:
+    def page(slug: str) -> str:
+      return self.output_dir.joinpath(f"blogs/{slug}/index.html").read_text()
+
+    def foot(html: str) -> str:
+      start = html.index('<nav class="article-nav"')
+      return html[start : html.index("</nav>", html.index("article-nav__site"))]
+
+    # newest first: amazon_ml_hackathon, make_cool_stuff, learn_ocaml, randomness_impl
+    ocaml = foot(page("learn_ocaml"))
+    self.assertIn(
+      '<a class="article-nav__post article-nav__post--older" href="/blogs/randomness_impl/" rel="prev">',
+      ocaml,
+    )
+    self.assertIn(
+      '<a class="article-nav__post article-nav__post--newer" href="/blogs/make_cool_stuff/" rel="next">',
+      ocaml,
+    )
+    self.assertIn(
+      '<span class="article-nav__title">on randomness and its implementation</span>',
+      ocaml,
+    )
+    newest, oldest = foot(page("amazon_ml_hackathon")), foot(page("randomness_impl"))
+    self.assertIn("article-nav__post--older", newest)
+    self.assertNotIn("article-nav__post--newer", newest)
+    self.assertIn("article-nav__post--newer", oldest)
+    self.assertNotIn("article-nav__post--older", oldest)
+    for links in (ocaml, newest, oldest):
+      self.assertIn('<a href="/">home</a>', links)
+      self.assertIn('<a href="#main-content">top</a>', links)
+      self.assertNotIn("mailto:", links)
+
+    # every post has its own link preview card; the home page keeps the site's
+    for slug in (
+      "amazon_ml_hackathon",
+      "learn_ocaml",
+      "make_cool_stuff",
+      "randomness_impl",
+    ):
+      self.assertTrue(
+        PROJECT_ROOT.joinpath("static", "images", "cards", f"{slug}.jpg").is_file()
+      )
+      self.assertIn(
+        f'<meta property="og:image" content="https://sarrthak.com/images/cards/{slug}.jpg" />',
+        page(slug),
+      )
+    self.assertIn(
+      '<meta property="og:image:alt" content="why you should learn ocaml, by sλrthak tomar,',
+      page("learn_ocaml"),
+    )
+    home = self.output_dir.joinpath("index.html").read_text()
+    self.assertIn("/images/social-card-cat.jpg", home)
+    # a card shows its post's title and date; one drawn before a rename or a
+    # new date would ship the old words, so the notes the script keeps must match
+    notes = json.loads(PROJECT_ROOT.joinpath("assets", "cards.json").read_text())
+    for source in sorted(PROJECT_ROOT.glob("content/blogs/*/index.md")):
+      metadata = parse_document(source).metadata
+      slug = metadata.slug or source.parent.name
+      if not PROJECT_ROOT.joinpath(
+        "static", "images", "cards", f"{slug}.jpg"
+      ).is_file():
+        continue
+      self.assertEqual(
+        notes.get(slug),
+        {"title": metadata.title, "date": metadata.date.strftime("%d %b %Y").lower()},
+        f"the {slug} card is out of date: uv run python scripts/generate_social_card.py --posts",
+      )
+
+  def test_post_pages_label_code_set_output_apart_and_cite_quotes(self) -> None:
+    randomness = self.output_dir.joinpath(
+      "blogs/randomness_impl/index.html"
+    ).read_text()
+    ocaml = self.output_dir.joinpath("blogs/learn_ocaml/index.html").read_text()
+    stylesheet = PROJECT_ROOT.joinpath("static", "index.css").read_text()
+
+    self.assertIn(
+      '<div class="code" data-label="c++"><pre><code class="language-cpp">', randomness
+    )
+    self.assertEqual(
+      randomness.count('<div class="code code--output" data-label="output">'), 3
+    )
+    self.assertNotIn("<p>output:</p>", randomness)
+    self.assertIn('<div class="code" data-label="reasonml">', ocaml)
+    self.assertIn(
+      '<h3 id="monte-carlo-integration"><a class="heading-link" href="#monte-carlo-integration">',
+      randomness,
+    )
+    self.assertIn(
+      '<figcaption class="quote__cite">-- Albert Einstein, 1947</figcaption>',
+      randomness,
+    )
+    self.assertIn("content: attr(data-label);", stylesheet)
+    # wide and narrow layouts meet with no gap, so zoom never shows both lists
+    self.assertIn("@media (width >= 1000px) {", stylesheet)
+    self.assertIn("@media (width < 1000px) {", stylesheet)
+    self.assertNotIn("min-width: 1000px", stylesheet)
+    self.assertNotIn("max-width: 999px", stylesheet)
+    self.assertNotIn('content: " #"', stylesheet)
+    self.assertIn("text-decoration-color: var(--accent-2);", stylesheet)
+    # inline code is a tint now, not a bordered box
+    self.assertRegex(
+      stylesheet, r"\ncode \{\n  background: var\(--hover\);\n  color: var\(--ink\);"
     )
 
   def test_drafts_publish_with_a_notice_but_stay_out_of_feed_and_sitemap(self) -> None:

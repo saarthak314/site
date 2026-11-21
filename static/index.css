@@ -677,46 +677,54 @@ main {
   padding-top: 40px;
 }
 
-.rail {
+.rail,
+.toc {
   color: var(--ink-3);
   font-size: 12.5px;
   line-height: 1.7;
   min-width: 0;
+}
+
+.rail {
   padding-top: 40px;
 }
 
-.rail a {
+.rail a,
+.toc a {
   color: inherit;
   text-decoration: none;
 }
 
 .rail a:hover,
-.rail a[aria-current] {
+.rail a[aria-current],
+.toc a:hover,
+.toc a[aria-current] {
   color: var(--ink);
 }
 
-.rail__fold {
-  margin: 0;
+/* narrow screens: the contents fold under the title, closed until opened */
+.toc {
+  margin-top: 24px;
 }
 
-.rail__summary {
+.toc__summary {
   color: var(--ink-3);
   cursor: pointer;
   list-style: none;
   padding: 6px 0;
 }
 
-.rail__summary::-webkit-details-marker {
+.toc__summary::-webkit-details-marker {
   display: none;
 }
 
-.rail__summary::before {
+.toc__summary::before {
   color: var(--ink-4);
   content: "+ ";
   content: "+ " / "";
 }
 
-.rail__fold[open] > .rail__summary::before {
+.toc__fold[open] > .toc__summary::before {
   content: "- ";
   content: "- " / "";
 }
@@ -1095,6 +1103,23 @@ a.home-project__name:hover {
   scroll-margin-top: 1.5rem;
 }
 
+/* a section heading links to itself, so one section can be shared; the "##"
+   before it already marks it, so hover and focus only add a faint underline
+   in the marker's blue */
+.heading-link,
+.blog-article .heading-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.heading-link:hover,
+.heading-link:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: var(--accent-2);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.25em;
+}
+
 .blog-article h2 {
   font-size: 1.2rem;
   margin: 3rem 0 1rem;
@@ -1131,13 +1156,13 @@ a.home-project__name:hover {
   color: var(--ink-4);
 }
 
+/* inline code: a faint tint, no box, so a line full of names stays calm */
 code {
   background: var(--hover);
-  border: 1px solid var(--line-soft);
   color: var(--ink);
   font-family: var(--code);
   font-size: 0.9em;
-  padding: 0.05em 0.35em;
+  padding: 0.1em 0.3em;
 }
 
 .blog-article pre {
@@ -1163,6 +1188,44 @@ code {
   min-width: max-content;
   overflow: visible;
   padding: 0;
+}
+
+/* the language, cut into the top edge of the frame like the listening pane's
+   title; the frame's margin passes through the wrapper, so its top is the
+   frame's top */
+.code {
+  position: relative;
+}
+
+.blog-article .code::before {
+  background: var(--bg);
+  color: var(--ink-3);
+  content: attr(data-label);
+  font-family: var(--mono);
+  font-size: 11px;
+  left: 12px;
+  line-height: 1.5;
+  padding: 0 1ch;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+/* what a program printed: a dashed frame and dimmer ink, so it can't pass
+   for code */
+.code--output pre {
+  border-style: dashed;
+}
+
+.code--output samp {
+  color: var(--ink-3);
+  display: block;
+  font-family: var(--code);
+  font-size: 13px;
+  line-height: 1.7;
+  min-width: max-content;
 }
 
 .blog-article pre .copy {
@@ -1279,6 +1342,23 @@ blockquote p {
   margin-bottom: 0.6rem;
 }
 
+.quote {
+  margin: 1.75rem 0;
+}
+
+.quote blockquote {
+  margin: 0;
+}
+
+/* who said it, under the quote and lined up with its words */
+.quote__cite {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.6;
+  margin-top: 0.6rem;
+  padding-left: calc(1.1rem + 2px);
+}
+
 .blog-article img:not(.figure img) {
   display: block;
   height: auto;
@@ -1314,10 +1394,50 @@ blockquote p {
 
 .article-nav {
   border-top: 1px solid var(--line-soft);
-  display: flex;
   font-size: 12.5px;
-  justify-content: space-between;
   margin-top: 3rem;
+}
+
+/* the posts either side by date: older on the left, newer on the right */
+.article-nav__posts {
+  column-gap: 32px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding-top: 20px;
+}
+
+.article-nav .article-nav__post {
+  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.article-nav__post--newer {
+  grid-column: 2;
+  text-align: right;
+}
+
+.article-nav .article-nav__post--newer {
+  align-items: end;
+}
+
+.article-nav__title {
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.5;
+  text-wrap: balance;
+}
+
+.article-nav__post:hover .article-nav__title {
+  color: var(--ink);
+}
+
+.article-nav__site {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
 }
 
 .article-nav a {
@@ -1969,7 +2089,8 @@ math[display="block"] {
 
 /* responsive */
 
-@media (min-width: 1000px) {
+/* ranges, not 999/1000px limits: zoom can leave the width between the two */
+@media (width >= 1000px) {
   .layout {
     align-items: start;
     column-gap: 72px;
@@ -1989,7 +2110,7 @@ math[display="block"] {
   }
 
   /* the padding, taken back by the margin, keeps focus rings inside the scroll box */
-  .layout--article .rail__fold {
+  .layout--article .rail .rail__list {
     margin: -8px;
     min-height: 0;
     overflow-y: auto;
@@ -2001,23 +2122,15 @@ math[display="block"] {
     flex: none;
   }
 
-  .rail__summary {
+  .toc {
     display: none;
   }
 }
 
-@media (max-width: 999px) {
+@media (width < 1000px) {
+  /* the contents sit under the title instead, and a line along the top of
+     the screen stands in for the meter */
   .layout--article .rail {
-    order: -1;
-    padding-top: 28px;
-  }
-
-  .layout--article .rail__back,
-  .rail__progress {
-    display: none;
-  }
-
-  .layout--article .rail:not(:has(.rail__fold)) {
     display: none;
   }
 
@@ -2030,7 +2143,7 @@ math[display="block"] {
   }
 }
 
-@media screen and (max-width: 999px) {
+@media screen and (width < 1000px) {
   .read-bar {
     background: var(--accent-2);
     display: block;
@@ -2106,7 +2219,8 @@ math[display="block"] {
     padding: 12px 12px;
   }
 
-  .blog-article pre code {
+  .blog-article pre code,
+  .code--output samp {
     font-size: 12.5px;
   }
 

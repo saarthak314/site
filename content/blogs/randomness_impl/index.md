@@ -47,7 +47,7 @@ the `<cstdlib>` library exports a low level function called `rand` that produces
 
 prototype for `rand` is
 
-```
+```cpp
 int rand();
 ```
 
@@ -70,9 +70,7 @@ int main(void) {
 }
 ```
 
-output:
-
-```
+```output
 RAND_MAX: 2147483647
 1804289383
  846930886
@@ -216,7 +214,7 @@ because we don’t know what those calculations are, it is best to think of the 
 
 let's use our previous example where we printed 10 seemingly random numbers
 
-```
+```output
 RAND_MAX: 2147483647
 1804289383
  846930886
@@ -365,9 +363,7 @@ int main(void) {
 }
 ```
 
-output:
-
-```
+```output
 0.78468
 0.785398
 ```

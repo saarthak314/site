@@ -108,7 +108,8 @@ class SiteBuilder:
         template_digest = self._template_digest(
           template_renderer, config, page.template
         )
-        context_digest = index.digest if page.route == "/" else ""
+        # the home page lists every post, and a post links the ones either side
+        context_digest = index.digest if page.route == "/" or page.is_post else ""
         page_digest = _hash_values(
           config_digest,
           template_digest,

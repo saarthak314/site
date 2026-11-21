@@ -1,18 +1,6 @@
 (() => {
   "use strict";
 
-  // The rail's table of contents folds on narrow screens. Without this script it
-  // stays open everywhere, which is a fine fallback.
-  const wide = window.matchMedia("(min-width: 1000px)");
-  const fold = document.querySelector(".rail__fold");
-  if (fold) {
-    const sync = () => {
-      fold.open = wide.matches;
-    };
-    sync();
-    wide.addEventListener("change", sync);
-  }
-
   // The banner's dots ride a wave under the mouse, or under a finger. That
   // code lives in cat.js and loads the first time the mouse really moves over
   // the banner or a finger touches it, so a page load pays for nothing but the
@@ -72,11 +60,23 @@
   // that far up, so the meter counts the furthest the page scrolls as the end,
   // and the marking line slides down to the foot of the screen over the last
   // screenful of scrolling, so the closing sections still get their turn.
+  // The contents are listed twice (the rail on wide screens, the fold under
+  // the title on narrow ones), so each section keeps both of its links.
   const article = document.querySelector(".blog-article");
   const progress = document.querySelector(".rail__progress");
-  const sections = Array.from(document.querySelectorAll('.rail__list a[href^="#"]'))
-    .map((link) => ({ link, heading: document.getElementById(link.getAttribute("href").slice(1)) }))
-    .filter((section) => section.heading);
+  const list = document.querySelector(".rail .rail__list");
+  const sections = [];
+  document.querySelectorAll('.rail__list a[href^="#"]').forEach((link) => {
+    const id = link.getAttribute("href").slice(1);
+    let section = sections.find((entry) => entry.heading.id === id);
+    if (!section) {
+      const heading = document.getElementById(id);
+      if (!heading) return;
+      section = { heading, links: [] };
+      sections.push(section);
+    }
+    section.links.push(link);
+  });
   if (article && (progress || sections.length)) {
     const cells = 12;
     let meter = null;
@@ -103,19 +103,20 @@
     }
 
     let current = null;
-    const mark = (link) => {
-      if (link === current) return;
-      if (current) current.removeAttribute("aria-current");
-      if (link) link.setAttribute("aria-current", "location");
-      current = link;
+    const mark = (section) => {
+      if (section === current) return;
+      if (current) current.links.forEach((link) => link.removeAttribute("aria-current"));
+      if (section) section.links.forEach((link) => link.setAttribute("aria-current", "location"));
+      current = section;
       // a contents list taller than the screen scrolls inside the rail; keep
       // the marked line in it, with a line or two of room either side
-      if (!link || !fold || fold.scrollHeight <= fold.clientHeight) return;
-      const box = fold.getBoundingClientRect();
+      const link = section && section.links.find((entry) => list && list.contains(entry));
+      if (!link || list.scrollHeight <= list.clientHeight) return;
+      const box = list.getBoundingClientRect();
       const row = link.getBoundingClientRect();
       const room = row.height * 2;
-      if (row.top < box.top + room) fold.scrollTop -= box.top + room - row.top;
-      else if (row.bottom > box.bottom - room) fold.scrollTop += row.bottom - (box.bottom - room);
+      if (row.top < box.top + room) list.scrollTop -= box.top + room - row.top;
+      else if (row.bottom > box.bottom - room) list.scrollTop += row.bottom - (box.bottom - room);
     };
 
     // A jump from the contents (or any link to a heading) marks that heading
@@ -133,7 +134,7 @@
       const section = sections.find((entry) => entry.heading.id === id);
       if (!section) return;
       pinned = true;
-      mark(section.link);
+      mark(section);
       rest();
     };
     // the heading a #hash names (a malformed escape is taken as it stands)
@@ -145,7 +146,9 @@
         return hash;
       }
     };
-    sections.forEach(({ link, heading }) => link.addEventListener("click", () => pin(heading.id)));
+    sections.forEach(({ links, heading }) =>
+      links.forEach((link) => link.addEventListener("click", () => pin(heading.id))),
+    );
     window.addEventListener("hashchange", () => pin(named()));
 
     let queued = false;
@@ -170,9 +173,9 @@
       // (a page that scrolls less than a screen slides it over what it has)
       const line = view * (0.3 + 0.7 * Math.max(0, 1 - (end - y) / (Math.min(view, end) || 1)));
       let found = null;
-      for (const { link, heading } of sections) {
-        if (heading.getBoundingClientRect().top > line) break;
-        found = link;
+      for (const section of sections) {
+        if (section.heading.getBoundingClientRect().top > line) break;
+        found = section;
       }
       mark(found);
     };

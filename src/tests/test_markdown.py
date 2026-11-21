@@ -157,6 +157,70 @@ class TestHeadingsFiguresAndDiagrams(unittest.TestCase):
   def setUp(self) -> None:
     self.renderer = MarkdownRenderer()
 
+  def test_section_headings_link_to_themselves_unless_they_hold_a_link(self) -> None:
+    rendered = self.renderer.render(
+      "## a `code` head\n\n### sub\n\n#### deep\n\n## see [docs](https://example.com)"
+    )
+
+    self.assertIn(
+      '<h2 id="a-code-head"><a class="heading-link" href="#a-code-head">a <code>code</code> head</a></h2>',
+      rendered.html,
+    )
+    self.assertIn(
+      '<h3 id="sub"><a class="heading-link" href="#sub">sub</a></h3>', rendered.html
+    )
+    self.assertIn('<h4 id="deep">deep</h4>', rendered.html)
+    self.assertIn(
+      '<h2 id="see-docs">see <a href="https://example.com">docs</a></h2>', rendered.html
+    )
+    # the contents still read the plain heading text
+    self.assertEqual(rendered.headings[0], (2, "a code head", "a-code-head"))
+
+  def test_code_fences_carry_their_language_on_the_frame(self) -> None:
+    html = self.renderer.render(
+      "```cpp\nint x;\n```\n\n```\nplain\n```\n\n```zig\nconst x = 1;\n```\n\n```c#\nvar x;\n```"
+    ).html
+
+    self.assertIn(
+      '<div class="code" data-label="c++"><pre><code class="language-cpp">', html
+    )
+    self.assertIn('<pre><code class="language-text">plain', html)
+    self.assertIn('<div class="code" data-label="zig">', html)
+    self.assertIn(
+      '<div class="code" data-label="c#"><pre><code class="language-csharp">', html
+    )
+    self.assertEqual(html.count('class="code"'), 3)
+
+  def test_output_fences_are_samples_without_code_or_highlighting(self) -> None:
+    rendered = self.renderer.render("```output\nRAND_MAX: <2147483647>\n```")
+
+    self.assertEqual(
+      rendered.html,
+      '<div class="code code--output" data-label="output">'
+      "<pre><samp>RAND_MAX: &lt;2147483647&gt;\n</samp></pre></div>\n",
+    )
+
+  def test_a_closing_dash_line_becomes_the_quotes_caption(self) -> None:
+    html = self.renderer.render(
+      "> _never dice._\n>\n> -- Albert Einstein, 1947\n\n"
+      "> also\n>\n> \u2014 someone\n\n"
+      "> -- alone\n\n"
+      "> no credit\n>\n> just two lines\n\n"
+      "> sql\n>\n> `-- note` starts a comment"
+    ).html
+
+    self.assertIn(
+      '<figure class="quote">\n<blockquote>\n<p><em>never dice.</em></p>\n</blockquote>\n'
+      '<figcaption class="quote__cite">-- Albert Einstein, 1947</figcaption>\n</figure>',
+      html,
+    )
+    self.assertIn('<figcaption class="quote__cite">\u2014 someone</figcaption>', html)
+    self.assertIn("<blockquote>\n<p>-- alone</p>\n</blockquote>", html)
+    self.assertIn("<p>just two lines</p>\n</blockquote>", html)
+    # code that happens to start with "--" is not a credit
+    self.assertIn("<p><code>-- note</code> starts a comment</p>\n</blockquote>", html)
+    self.assertEqual(html.count("<figure"), 2)
+
   def test_collects_headings_with_levels_text_and_ids(self) -> None:
     rendered = self.renderer.render(
       "# title\n\n## first *thing*\n\n### a sub-point\n\n## second\n\nbody"

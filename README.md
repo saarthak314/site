@@ -59,6 +59,14 @@ front matter takes:
 - `title` and `date`, both required
 - optional: `updated`, `description`, `tags`, `aliases` (old urls that redirect here), `slug`, `permalink`, `social_image`, `noindex`, `copyright` (overrides the © line in the footer)
 
+in a post:
+
+- a code fence's language (` ```cpp `) shows as a small label on its frame; a fence marked ` ```output ` is what a program printed, set in a dashed frame with no copy button
+- a quote whose last line starts with `-- ` (or `—`) shows that line under the quote as its credit
+- every `##` and `###` heading links to itself, and the posts either side by date are linked at the foot
+
+each post gets its own link preview card (the banner, the title, the date) once `scripts/generate_social_card.py --posts` has drawn `static/images/cards/<slug>.jpg`; until then it uses the site's card. run it again after adding a post or changing a title.
+
 drafts (`draft: true`) publish like any other post but carry a draft notice and a badge in the lists, are `noindex`, and stay out of the feed and sitemap. pass `--no-drafts` to any command to leave them out entirely.
 
 `now_playing: https://.../now` on the home page turns on the listening pane under the social links. the browser fetches it from the worker, and the pane stays hidden until the worker answers.
@@ -75,7 +83,7 @@ uv run python scripts/optimize_images.py      # rebuild responsive images and ic
 uv run python scripts/subset_fonts.py         # rebuild the symbol font subset (λ, box drawing, banner, city and player glyphs)
 uv run python scripts/generate_cat.py         # redraw the home banner (cat in space, as svg dots)
 uv run python scripts/generate_art.py         # redraw the dartboard svg in the randomness post
-uv run python scripts/generate_social_card.py # redraw the link preview card (the banner over the name)
+uv run python scripts/generate_social_card.py --posts # redraw the link preview cards (the site's, and one per post)
 ./test.sh                                     # lint, format check, tests, a clean build, check, diff check
 ```
 

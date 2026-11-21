@@ -564,13 +564,20 @@ class TestBlogTemplate(TemplateRenderingTestCase):
 
     html = self.render(article, namespace(config=config()))
 
-    self.assertIn('<details class="rail__fold" open>', html)
-    self.assertIn('<summary class="rail__summary">contents</summary>', html)
-    self.assertIn('<li class="rail__item"><a href="#first">first</a></li>', html)
-    self.assertIn(
-      '<li class="rail__item rail__item--sub"><a href="#a-sub">a sub</a></li>', html
-    )
-    self.assertIn('<li class="rail__item"><a href="#second">second</a></li>', html)
+    # narrow screens: a closed fold under the title, before the article;
+    # wide screens: the same list in the rail
+    self.assertIn('<nav class="toc" aria-label="contents">', html)
+    self.assertIn('<details class="toc__fold">', html)
+    self.assertIn('<summary class="toc__summary">contents</summary>', html)
+    self.assertLess(html.index('class="blog-header"'), html.index('class="toc"'))
+    self.assertLess(html.index('class="toc"'), html.index('class="blog-article"'))
+    self.assertNotIn("rail__fold", html)
+    for item in (
+      '<li class="rail__item"><a href="#first">first</a></li>',
+      '<li class="rail__item rail__item--sub"><a href="#a-sub">a sub</a></li>',
+      '<li class="rail__item"><a href="#second">second</a></li>',
+    ):
+      self.assertEqual(html.count(item), 2, item)
     self.assertNotIn('href="#title"', html)
     self.assertNotIn('href="#deep"', html)
     self.assertRegex(
@@ -589,6 +596,7 @@ class TestBlogTemplate(TemplateRenderingTestCase):
     html = self.render(article, namespace(config=config()))
 
     self.assertNotIn("rail__fold", html)
+    self.assertNotIn('class="toc"', html)
     self.assertNotIn('href="#only"', html)
     self.assertRegex(
       html, r'<pre class="rail__progress" aria-hidden="true" data-minutes="\d+"></pre>'

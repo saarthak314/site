@@ -15,7 +15,7 @@
     <meta property="og:title" content="{{ document_title }}" />
     <meta property="og:description" content="{{ meta_description }}" />
     <meta property="og:url" content="{{ page.canonical_url }}" />
-    {%- set social_alt = "sλrthak tomar, under a dot drawing of a cat in a spacesuit with the earth behind it" if page.social_image_url.endswith(config.social_image) else document_title %}
+    {%- set social_alt = "sλrthak tomar, under a dot drawing of a cat in a spacesuit with the earth behind it" if page.social_image_url.endswith(config.social_image) else (page.title ~ ", by sλrthak tomar, under a dot drawing of a cat in a spacesuit" if "/images/cards/" in page.social_image_url else document_title) %}
     <meta property="og:image" content="{{ page.social_image_url }}" />
     <meta property="og:image:alt" content="{{ social_alt }}" />
     <meta property="og:image:width" content="{{ page.social_image_width }}" />

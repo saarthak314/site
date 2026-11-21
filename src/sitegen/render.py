@@ -49,6 +49,7 @@ class TemplateRenderer:
       now_origin=_origin(getattr(page, "now_playing", None)),
       structured_data=_structured_data(page, values.get("config")),
     )
+    values["older"], values["newer"] = _neighbours(page, values.get("index"))
     output = self.environment.get_template(page.template).render(**values)
     return "\n".join(line.rstrip() for line in output.splitlines()) + "\n"
 
@@ -152,6 +153,22 @@ def _origin(url: Any) -> str:
     return ""
   parts = urlsplit(str(url))
   return f"{parts.scheme}://{parts.netloc}" if parts.scheme and parts.netloc else ""
+
+
+def _neighbours(page: Any, index: Any) -> tuple[Any, Any]:
+  """The posts either side of this one by date, for the links at its foot;
+  drafts are skipped unless this page is the draft."""
+  if not getattr(page, "is_post", False) or index is None:
+    return None, None
+  posts = [post for post in index.posts if not post.draft or post.route == page.route]
+  position = next(
+    (number for number, post in enumerate(posts) if post.route == page.route), None
+  )
+  if position is None:
+    return None, None
+  newer = posts[position - 1] if position > 0 else None
+  older = posts[position + 1] if position + 1 < len(posts) else None
+  return older, newer
 
 
 def _body_class(template_name: str) -> str:

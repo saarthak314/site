@@ -122,7 +122,11 @@ class ContentRepository:
     if route is None:
       route = metadata.permalink or f"/blogs/{slug}/"
     output_path = _route_to_output_path(route)
-    social_image = metadata.social_image or self.config.social_image
+    social_image = (
+      metadata.social_image
+      or self._post_card(slug, is_post)
+      or self.config.social_image
+    )
     social_image_url = _absolute_url(self.config.site_url, social_image)
     social_image_path = self.config.static_dir / social_image.lstrip("/")
     social_dimensions = (
@@ -172,6 +176,14 @@ class ContentRepository:
           )
         sources_by_route[route] = page.source_path
 
+  def _post_card(self, slug: str, is_post: bool) -> str | None:
+    """A post's own link preview card, if one has been drawn for it (by
+    scripts/generate_social_card.py --posts); otherwise the site's card."""
+    if not is_post:
+      return None
+    card = f"/images/cards/{slug}.jpg"
+    return card if (self.config.static_dir / card.lstrip("/")).is_file() else None
+
   def _build_tags(self, posts: tuple[Page, ...]) -> tuple[TagPage, ...]:
     grouped: dict[str, tuple[str, list[Page]]] = {}
     for post in posts:
@@ -206,6 +218,7 @@ class ContentRepository:
           "title": page.title,
           "date": page.date.isoformat(),
           "updated": page.updated.isoformat() if page.updated else None,
+          "draft": page.draft,
           "description": page.description,
           "image": page.social_image_url,
           "image_width": page.social_image_width,
