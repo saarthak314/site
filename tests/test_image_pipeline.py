@@ -11,7 +11,7 @@ from sitegen.image_pipeline import (
   write_social_card,
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class TestImagePipeline(unittest.TestCase):

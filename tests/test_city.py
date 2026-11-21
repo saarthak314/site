@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sitegen.city import ALLOWED_GLYPHS, FAR_ROWS, NEAR_ROWS, STAR_ROWS, city_layers
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 LIGHT_RE = re.compile(r'<rect class="lt')
 
 

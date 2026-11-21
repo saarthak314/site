@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_DIR = PROJECT_ROOT / ".github" / "workflows"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 
@@ -97,7 +97,7 @@ class TestWorkflowConfiguration(unittest.TestCase):
 
     self.assertIn("uv run ruff check .", script)
     self.assertIn("uv run ruff format --check .", script)
-    self.assertIn("uv run python -m unittest discover -s src -p 'test*.py'", script)
+    self.assertIn("uv run python -m unittest discover -s tests -p 'test*.py'", script)
     self.assertIn("uv run python -m compileall -q src", script)
     self.assertIn("uv run sitegen build --no-incremental", script)
     self.assertIn("uv run sitegen check", script)

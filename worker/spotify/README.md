@@ -12,11 +12,11 @@ responses are cached for 30 seconds. errors come back as `502 {"error": "..."}`.
 ## setup
 
 1. create an app at https://developer.spotify.com/dashboard with the redirect uri `http://127.0.0.1:8899/callback` and the web api enabled. note the client id and secret.
-2. mint the refresh token once, from the repo root:
+2. mint the refresh token once, from this directory:
    ```sh
-   SPOTIFY_CLIENT_ID=... SPOTIFY_CLIENT_SECRET=... python3 scripts/spotify_auth.py
+   SPOTIFY_CLIENT_ID=... SPOTIFY_CLIENT_SECRET=... python3 auth.py
    ```
-3. deploy, from this directory:
+3. deploy, also from here:
    ```sh
    npx wrangler login
    npx wrangler secret put SPOTIFY_CLIENT_ID

@@ -6,7 +6,7 @@ from fontTools.ttLib import TTFont
 
 from sitegen.font_pipeline import SYMBOL_UNICODES, covered_codepoints, subset_font
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FONT = PROJECT_ROOT / "assets" / "fonts" / "JetBrainsMono-Regular.ttf"
 
 

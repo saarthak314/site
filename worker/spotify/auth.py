@@ -1,7 +1,7 @@
 """One-time Spotify authorisation: prints the refresh token the worker needs.
 
 Usage:
-  SPOTIFY_CLIENT_ID=... SPOTIFY_CLIENT_SECRET=... python3 scripts/spotify_auth.py
+  SPOTIFY_CLIENT_ID=... SPOTIFY_CLIENT_SECRET=... python3 auth.py
 
 The Spotify app must list http://127.0.0.1:8899/callback as a redirect URI.
 Nothing is written to disk; paste the printed token into

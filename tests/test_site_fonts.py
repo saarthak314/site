@@ -8,7 +8,7 @@ from pathlib import Path
 from sitegen.build import BuildOptions, SiteBuilder
 from sitegen.font_pipeline import covered_codepoints
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class _TextCollector(HTMLParser):

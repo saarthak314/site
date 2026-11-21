@@ -6,10 +6,9 @@ from types import SimpleNamespace
 
 from jinja2 import FileSystemLoader, StrictUndefined, UndefinedError
 
-from sitegen.render import TemplateRenderer
-from sitegen.templates import create_environment
+from sitegen.render import TemplateRenderer, create_environment
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE_ROOT = PROJECT_ROOT / "templates"
 
 
@@ -120,8 +119,6 @@ class TestTemplateEnvironment(unittest.TestCase):
         environment.get_template("escaped.html").render()
 
   def test_renderer_supports_build_facing_construction(self) -> None:
-    from sitegen.templates import TemplateRenderer as BuildTemplateRenderer
-
     site_config = namespace(
       template_dir=TEMPLATE_ROOT,
       site_url="https://sarrthak.com",
@@ -130,7 +127,7 @@ class TestTemplateEnvironment(unittest.TestCase):
       author_name="Sarthak Tomar",
       twitter_handle="@sarthak2143",
     )
-    renderer = BuildTemplateRenderer(site_config)
+    renderer = TemplateRenderer(site_config)
     post = page(
       title="systems post",
       route="/blogs/systems/",

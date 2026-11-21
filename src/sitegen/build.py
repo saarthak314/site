@@ -221,7 +221,7 @@ class SiteBuilder:
     return MarkdownRenderer(static_dir=config.static_dir)
 
   def _default_template_renderer(self, config: SiteConfig):
-    from sitegen.templates import TemplateRenderer
+    from sitegen.render import TemplateRenderer
 
     return TemplateRenderer(config)
 

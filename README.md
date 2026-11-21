@@ -15,14 +15,19 @@ no frontend framework: markdown goes in, and plain html, one stylesheet and two 
   - `index.css`, plus `code.css` for code blocks
   - `site.js` for the listening pane, its spectrum and the ships; `cat.js` for the ripple through the banner under a mouse or a finger
   - fonts, images, `CNAME`, `robots.txt`, `llms.txt`
-- `assets/`: source fonts and images; the scripts below turn them into the symbol font subset and the webp variants in `static/`
-- `src/sitegen/`: the generator
-  - front matter, markdown, the content index and jinja rendering
-  - atomic builds, feeds, validation and the dev server
-  - `city.py`, the skyline drawn under each post
-- `src/tests/`: unit tests, one file per module; `src/test_*.py` test the whole built site
-- `scripts/`: generators for the art, images and fonts, plus `verify.sh`, the check ci runs
-- `worker/spotify/`: the cloudflare worker behind the listening pane; its own readme covers setup
+- `assets/`: the sources behind generated files in `static/`: original images, the full fonts, and `cards.json`, what each post's card was drawn with
+- `src/sitegen/`: the generator, roughly in the order a build runs
+  - `config.py`, `frontmatter.py`, `content.py`, `models.py`: read `config.json` and the pages into one content index
+  - `markdown.py`: markdown to html, with code, math, image sizes, heading links and quote credits
+  - `render.py`: the jinja environment and what each template is given; `city.py` draws the skyline under each post
+  - `build.py`, `manifest.py`, `feeds.py`: atomic, incremental builds, the rss feed and the sitemap
+  - `validate.py`: what `sitegen check` checks
+  - `server.py`, `http_server.py`, `live_reload.py`, `watcher.py`: the dev server
+  - `cli.py` is the `sitegen` command; `smoke.py` checks production after a deploy
+  - `image_pipeline.py`, `font_pipeline.py`: the image and font steps the scripts below use
+- `tests/`: one file per generator module, named after it; `test_site.py` and `test_site_fonts.py` build the real site and check the result; `test_workflows.py` holds ci and this readme to what they promise
+- `scripts/`: redraw generated files (the banner, the link cards, the dartboard, image variants, the font subset); `verify.sh` is the full check ci runs
+- `worker/spotify/`: the cloudflare worker behind the listening pane, and `auth.py`, which mints its spotify token; its own readme covers setup
 - `config.json`: site url, author, email, twitter handle, default social image
 - `.github/workflows/`: checks, deploy, link check
 
@@ -46,7 +51,7 @@ uv sync --dev
 uv run sitegen dev --open
 ```
 
-`dev` rebuilds on source changes, hot-swaps css, reloads changed pages, and keeps the last valid build visible when something breaks. `./main.sh` does the same on `0.0.0.0:${PORT:-8888}`.
+`dev` rebuilds on source changes, hot-swaps css, reloads changed pages, and keeps the last valid build visible when something breaks. add `--host 0.0.0.0` to open it from a phone on the same network.
 
 ## writing
 
@@ -82,12 +87,10 @@ uv run sitegen serve                          # serve once without dev tooling
 uv run python scripts/optimize_images.py      # rebuild responsive images and icons from assets/
 uv run python scripts/subset_fonts.py         # rebuild the symbol font subset (λ, box drawing, banner, city and player glyphs)
 uv run python scripts/generate_cat.py         # redraw the home banner (cat in space, as svg dots)
-uv run python scripts/generate_art.py         # redraw the dartboard svg in the randomness post
+uv run python scripts/generate_dartboard.py   # redraw the dartboard svg in the randomness post
 uv run python scripts/generate_social_card.py --posts # redraw the link preview cards (the site's, and one per post)
-./test.sh                                     # lint, format check, tests, a clean build, check, diff check
+./scripts/verify.sh                           # lint, format check, tests, a clean build, check, diff check
 ```
-
-`python3 src/main.py` still works as the old build-only entrypoint.
 
 ## how it ships
 
