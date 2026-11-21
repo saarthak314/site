@@ -7,7 +7,7 @@ from pathlib import Path
 from threading import Event, Thread, current_thread
 from typing import TextIO
 
-from .config import SiteConfig
+from sitegen.config import SiteConfig
 
 SOURCE_INPUTS = ("config.json", "content", "templates", "static")
 

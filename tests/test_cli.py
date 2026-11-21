@@ -36,10 +36,10 @@ def import_sitegen_module(module_name: str) -> Iterator[types.ModuleType]:
   injected["sitegen.build"].BuildOptions = FakeBuildOptions
   injected["sitegen.build"].SiteBuilder = PlaceholderBuilder
   injected["sitegen.validate"].SiteValidator = PlaceholderValidator
-  managed_names = (*injected, "sitegen.cli", "sitegen.server")
+  managed_names = (*injected, "sitegen.cli", "sitegen.dev.server")
   saved_modules = {name: sys.modules.get(name) for name in managed_names}
 
-  for name in ("sitegen.cli", "sitegen.server"):
+  for name in ("sitegen.cli", "sitegen.dev.server"):
     sys.modules.pop(name, None)
   sys.modules.update(injected)
 

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TextIO
 
 from .build import BuildOptions, SiteBuilder
-from .server import serve
+from .dev.server import serve
 from .validate import SiteValidator
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:[-_][a-z0-9]+)*$")

@@ -42,10 +42,10 @@ def import_sitegen_module(module_name: str) -> Iterator[types.ModuleType]:
   injected["sitegen.build"].BuildOptions = FakeBuildOptions
   injected["sitegen.build"].SiteBuilder = PlaceholderBuilder
   injected["sitegen.validate"].SiteValidator = PlaceholderValidator
-  managed_names = (*injected, "sitegen.cli", "sitegen.server")
+  managed_names = (*injected, "sitegen.cli", "sitegen.dev.server")
   saved_modules = {name: sys.modules.get(name) for name in managed_names}
 
-  for name in ("sitegen.cli", "sitegen.server"):
+  for name in ("sitegen.cli", "sitegen.dev.server"):
     sys.modules.pop(name, None)
   sys.modules.update(injected)
 
@@ -60,7 +60,7 @@ def import_sitegen_module(module_name: str) -> Iterator[types.ModuleType]:
 
 class TestServer(unittest.TestCase):
   def test_live_reload_state_publishes_versioned_events(self) -> None:
-    with import_sitegen_module("sitegen.live_reload") as live_reload:
+    with import_sitegen_module("sitegen.dev.live_reload") as live_reload:
       state_class = getattr(live_reload, "LiveReloadState", None)
       self.assertIsNotNone(state_class)
       state = state_class()
@@ -74,7 +74,7 @@ class TestServer(unittest.TestCase):
       self.assertIsNone(state.wait_for_update(1, timeout=0))
 
   def test_live_reload_markup_injects_versioned_client_before_body(self) -> None:
-    with import_sitegen_module("sitegen.live_reload") as live_reload:
+    with import_sitegen_module("sitegen.dev.live_reload") as live_reload:
       inject = getattr(live_reload, "inject_live_reload", None)
       self.assertTrue(callable(inject))
 
@@ -86,7 +86,7 @@ class TestServer(unittest.TestCase):
     self.assertLess(rendered.index("new EventSource"), rendered.index("</body>"))
 
   def test_live_reload_client_swaps_css_and_renders_build_errors(self) -> None:
-    with import_sitegen_module("sitegen.live_reload") as live_reload:
+    with import_sitegen_module("sitegen.dev.live_reload") as live_reload:
       client = getattr(live_reload, "LIVE_RELOAD_CLIENT", "")
 
     self.assertIn('link[rel="stylesheet"]', client)
@@ -101,7 +101,7 @@ class TestServer(unittest.TestCase):
         encoding="utf-8",
       )
 
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         parameters = inspect.signature(server.SiteRequestHandler.__init__).parameters
         self.assertIn("reload_state", parameters)
         state = server.LiveReloadState()
@@ -130,7 +130,7 @@ class TestServer(unittest.TestCase):
   def test_request_handler_streams_versioned_reload_events(self) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
       root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         self.assertTrue(hasattr(server.SiteRequestHandler, "_serve_events"))
         state = server.LiveReloadState()
         state.publish("css", "static/index.css")
@@ -161,7 +161,7 @@ class TestServer(unittest.TestCase):
     self.assertIn('data: {"message": "static/index.css"}', payload)
 
   def test_request_handler_suppresses_access_logs_during_live_reload(self) -> None:
-    with import_sitegen_module("sitegen.server") as server:
+    with import_sitegen_module("sitegen.dev.server") as server:
       self.assertIn("log_message", server.SiteRequestHandler.__dict__)
       handler = server.SiteRequestHandler.__new__(server.SiteRequestHandler)
       handler.reload_state = server.LiveReloadState()
@@ -172,7 +172,7 @@ class TestServer(unittest.TestCase):
     self.assertEqual(stderr.getvalue(), "")
 
   def test_request_handler_declares_utf8_for_text_assets(self) -> None:
-    with import_sitegen_module("sitegen.server") as server:
+    with import_sitegen_module("sitegen.dev.server") as server:
       handler = server.SiteRequestHandler.__new__(server.SiteRequestHandler)
 
       self.assertEqual(
@@ -193,7 +193,7 @@ class TestServer(unittest.TestCase):
         encoding="utf-8",
       )
 
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         state = server.LiveReloadState()
         handler = partial(
           server.SiteRequestHandler,
@@ -265,7 +265,7 @@ class TestServer(unittest.TestCase):
 
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         server.snapshot_sources = lambda _root: (
           events.append("snapshot") or initial_snapshot
         )
@@ -317,7 +317,7 @@ class TestServer(unittest.TestCase):
 
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         server.serve(
           project_root,
           FakeBuildOptions(),
@@ -354,7 +354,7 @@ class TestServer(unittest.TestCase):
       return object()
 
     with tempfile.TemporaryDirectory() as temp_dir:
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         with self.assertRaisesRegex(RuntimeError, "initial build failed"):
           server.serve(
             Path(temp_dir),
@@ -420,7 +420,7 @@ class TestServer(unittest.TestCase):
     times = iter((5.0, 5.025))
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         server.serve(
           project_root,
           FakeBuildOptions(),
@@ -499,7 +499,7 @@ class TestServer(unittest.TestCase):
 
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         server.serve(
           project_root,
           FakeBuildOptions(),
@@ -557,7 +557,7 @@ class TestServer(unittest.TestCase):
     stdout = io.StringIO()
     with tempfile.TemporaryDirectory() as temp_dir:
       project_root = Path(temp_dir)
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         parameters = inspect.signature(server.serve).parameters
         self.assertIn("live_reload", parameters)
         server.serve(
@@ -601,7 +601,7 @@ class TestServer(unittest.TestCase):
         pass
 
     with tempfile.TemporaryDirectory() as temp_dir:
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         server.serve(
           Path(temp_dir),
           FakeBuildOptions(),

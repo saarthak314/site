@@ -37,10 +37,10 @@ def import_sitegen_module(module_name: str) -> Iterator[types.ModuleType]:
   injected["sitegen.build"].BuildOptions = FakeBuildOptions
   injected["sitegen.build"].SiteBuilder = PlaceholderBuilder
   injected["sitegen.validate"].SiteValidator = PlaceholderValidator
-  managed_names = (*injected, "sitegen.cli", "sitegen.server")
+  managed_names = (*injected, "sitegen.cli", "sitegen.dev.server")
   saved_modules = {name: sys.modules.get(name) for name in managed_names}
 
-  for name in ("sitegen.cli", "sitegen.server"):
+  for name in ("sitegen.cli", "sitegen.dev.server"):
     sys.modules.pop(name, None)
   sys.modules.update(injected)
 
@@ -71,7 +71,7 @@ class TestPollingWatcher(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(path.name)
 
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         snapshot = server.snapshot_sources(project_root)
 
     self.assertEqual(set(snapshot), set(tracked_paths))
@@ -102,7 +102,7 @@ class TestPollingWatcher(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(path.name)
 
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         snapshot = server.snapshot_sources(project_root)
 
     self.assertEqual(
@@ -117,7 +117,7 @@ class TestPollingWatcher(unittest.TestCase):
     def snapshotter(_: Path) -> dict[Path, int]:
       return dict(state["snapshot"])
 
-    with import_sitegen_module("sitegen.server") as server:
+    with import_sitegen_module("sitegen.dev.server") as server:
       watcher = server.PollingWatcher(
         Path("/project"),
         rebuilds.append,
@@ -152,7 +152,7 @@ class TestPollingWatcher(unittest.TestCase):
       output.parent.mkdir(parents=True)
       output.write_text("last valid output")
 
-      with import_sitegen_module("sitegen.server") as server:
+      with import_sitegen_module("sitegen.dev.server") as server:
         watcher = server.PollingWatcher(
           Path(temp_dir),
           rebuild,
@@ -184,7 +184,7 @@ class TestPollingWatcher(unittest.TestCase):
       rebuild_started.set()
       release_rebuild.wait()
 
-    with import_sitegen_module("sitegen.server") as server:
+    with import_sitegen_module("sitegen.dev.server") as server:
       watcher = server.PollingWatcher(
         Path("/project"),
         rebuild,

@@ -107,7 +107,7 @@ class TestWorkflowConfiguration(unittest.TestCase):
     configuration = load_yaml(".github/dependabot.yml")
     ecosystems = {update["package-ecosystem"] for update in configuration["updates"]}
 
-    self.assertEqual(ecosystems, {"pip", "github-actions"})
+    self.assertEqual(ecosystems, {"uv", "github-actions"})
     for update in configuration["updates"]:
       self.assertEqual(update["schedule"]["interval"], "weekly")
       self.assertEqual(update["open-pull-requests-limit"], "5")

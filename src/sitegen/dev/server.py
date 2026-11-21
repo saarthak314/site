@@ -9,8 +9,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TextIO
 
-from .build import BuildOptions, SiteBuilder
-from .http_server import ServedDirectory, SiteRequestHandler
+from sitegen.build import BuildOptions, SiteBuilder
+
+from .handler import ServedDirectory, SiteRequestHandler
 from .live_reload import LiveReloadState
 from .watcher import PollingWatcher, snapshot_sources
 

@@ -22,10 +22,10 @@ no frontend framework: markdown goes in, and plain html, one stylesheet and two 
   - `render.py`: the jinja environment and what each template is given; `city.py` draws the skyline under each post
   - `build.py`, `manifest.py`, `feeds.py`: atomic, incremental builds, the rss feed and the sitemap
   - `validate.py`: what `sitegen check` checks
-  - `server.py`, `http_server.py`, `live_reload.py`, `watcher.py`: the dev server
+  - `dev/`: the local server behind `serve` and `dev`: `server.py` runs it, `handler.py` answers requests, `watcher.py` spots source changes, `live_reload.py` tells the open page
   - `cli.py` is the `sitegen` command; `smoke.py` checks production after a deploy
   - `image_pipeline.py`, `font_pipeline.py`: the image and font steps the scripts below use
-- `tests/`: one file per generator module, named after it; `test_site.py` and `test_site_fonts.py` build the real site and check the result; `test_workflows.py` holds ci and this readme to what they promise
+- `tests/`: named after the module they cover (`test_server.py` and `test_watcher.py` cover `dev/`); `test_site.py` and `test_site_fonts.py` build the real site and check the result; `test_workflows.py` holds ci and this readme to what they promise
 - `scripts/`: redraw generated files (the banner, the link cards, the dartboard, image variants, the font subset); `verify.sh` is the full check ci runs
 - `worker/spotify/`: the cloudflare worker behind the listening pane, and `auth.py`, which mints its spotify token; its own readme covers setup
 - `config.json`: site url, author, email, twitter handle, default social image
@@ -97,6 +97,6 @@ uv run python scripts/generate_social_card.py --posts # redraw the link preview 
 - **ci:** every push runs `scripts/verify.sh` on python 3.11 and 3.13.
 - **deploy:** a push to `main` builds the site, deploys it to github pages, and smoke-tests production.
 - **links:** a weekly lychee job checks published links for rot. hosts that block bots are listed in `.lycheeignore`.
-- **dependencies:** dependabot checks python and action dependencies weekly.
+- **dependencies:** dependabot checks the python dependencies (through `uv.lock`) and the actions weekly.
 
 `docs/` is generated output and stays out of git.
